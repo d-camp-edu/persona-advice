@@ -31,7 +31,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 처방 시뮬레이션의 모든 도메인 규칙은 React/Firestore에서 분리된 순수 함수로 구현해 Vitest로 단위 테스트한다. **이 분리가 이 프로젝트의 가장 중요한 아키텍처 결정.** 5개 핵심 모듈:
 
-- `lib/patientState.ts` — `getPatientCurrentState()` (기획.md §5-1): 같은 시연 세션 내 이전 처방이 있으면 마지막 결과를 누적해서 현재 상태로 사용, 없으면 `prevDrugs` 효과를 `initialHba1c`에서 차감.
+- `lib/patientState.ts` — `getPatientCurrentState()` (기획.md §5-1 literal 해석, A안): 같은 시연 세션 내 이전 처방이 있으면 마지막 결과를 누적해서 현재 상태로 사용. 없을 때는 **type='초진'에 한해서만** `prevDrugs` 효과를 `initialHba1c`에서 차감하고(현 seed 상 초진은 prevDrugs가 비어 있어 사실상 no-op), 재진/리핏은 `initialHba1c`를 그대로 현재 HbA1c로 사용한다. 기획.md §3-4 결과 리포트 예시(p2+m_30 → 5.6)는 이 산식과 정확히 일치하지 않는 illustrative 수치다.
 - `lib/prescription.ts` — `calculatePrescription()` (기획.md §5-2~5-4): 약제 효과 합산, 부작용 확률 적용, **병포장 보너스**(전 약제 `pkg='bottle'`이면 HbA1c +0.3 추가 강하), **순응도 '나쁨' + 비병포장 + 약물 처방 → HbA1c가 오히려 +0.4 상승**, 결과 메시지 조합. **`rng?: () => number` 파라미터를 받아 외부 주입형으로 만들어 테스트에서 결정성 확보.**
 - `lib/deductions.ts` — `checkDeductions()` (기획.md §6): E11 상병 4규칙 + DPP-4i/GLP-1 RA 병용 금지. `isInsuranceException=true` 약제와 `isNotDrug=true` 약제는 검사에서 제외.
 - `lib/nonDmCoverage.ts` — `checkNonDmCoverage()` (기획.md §7): `initialHba1c < 6.5`인 비당뇨 환자에게 SGLT-2i 처방 시 HFrEF/HFpEF/CKD 특례 충족 여부.
@@ -73,7 +73,7 @@ artifacts/{appId}/public/data/
 - **결과 리포트 색상**: HbA1c/UACR/체중/BNP/NT-proBNP는 감소가 개선(초록), 증가가 악화(빨강). LVEF/eGFR은 반대 — 증가가 개선. 변동 없는 지표는 표시 생략. 환자가 해당 수치를 가지지 않으면(`0` 또는 `""`) 행 자체를 숨긴다.
 - **상병코드 검사 범위**: E11(당뇨) 처방 기준은 슬롯 1~3(보험 처방)의 약물 처방만 대상. 본인부담(슬롯 4~5), `isInsuranceException`, `isNotDrug` 약제는 제외.
 - **HbA1c 하한**: `newHba1c = max(4.5, currentHba1c - effect.h)` — 4.5% 이하로 내려가지 않도록 클램프.
-- **이전 복용약 누적**: `prevDrugs`는 환자 정의에 들어있는 "초기 내원 시 이력"이고, 같은 시연 세션 내 이전 처방은 `rx_sessions/{id}.prescriptions[]`의 마지막 항목에서 가져온다. 같은 병원+의사 재방문 시 이어받기는 `settings.allowSessionCarryover` 토글로 결정 (기본 false).
+- **이전 복용약 누적**: `prevDrugs`는 환자 정의에 들어있는 "초기 내원 시 이력"이고, 같은 시연 세션 내 이전 처방은 `rx_sessions/{id}.prescriptions[]`의 마지막 항목에서 가져온다. 같은 병원+의사 재방문 시 이어받기는 `settings.allowSessionCarryover` 토글로 결정 (기본 false). 산식은 `patientState.ts` 항목 참조 — A안에 따라 재진/리핏은 `prevDrugs` 효과를 차감하지 않는다.
 
 ## 작업 시 권장 순서
 
