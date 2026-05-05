@@ -1,51 +1,80 @@
 import { useEffect } from 'react';
 import { useDataStore } from './store/useDataStore';
+import { useSessionStore } from './store/useSessionStore';
+import LoginScreen from './screens/LoginScreen';
+import PatientSelectScreen from './screens/PatientSelectScreen';
+
+function PlaceholderScreen({ title, hint, onBack }: { title: string; hint: string; onBack: () => void }) {
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-white p-6 text-center">
+      <h1 className="text-xl font-bold">{title}</h1>
+      <p className="text-sm text-gray-500">{hint}</p>
+      <button
+        type="button"
+        onClick={onBack}
+        className="mt-2 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+      >
+        돌아가기
+      </button>
+    </div>
+  );
+}
 
 export default function App() {
   const status = useDataStore((s) => s.status);
   const error = useDataStore((s) => s.error);
-  const isUsingSeedFallback = useDataStore((s) => s.isUsingSeedFallback);
-  const patients = useDataStore((s) => s.patients);
-  const medications = useDataStore((s) => s.medications);
   const bootstrap = useDataStore((s) => s.bootstrap);
+
+  const phase = useSessionStore((s) => s.phase);
+  const resetToSelect = useSessionStore((s) => s.resetToSelect);
+  const exitAdmin = useSessionStore((s) => s.exitAdmin);
 
   useEffect(() => {
     void bootstrap();
   }, [bootstrap]);
 
-  return (
-    <div className="mx-auto flex h-full max-w-mobile flex-col items-center justify-center gap-3 bg-white p-6 text-center">
-      <h1 className="text-2xl font-bold">Persona Rx</h1>
-      <p className="text-sm text-gray-500">당뇨 처방 시뮬레이터 — M2 부트스트랩 확인</p>
-
-      <div className="mt-4 w-full rounded-xl border border-gray-200 p-4 text-left text-sm">
-        <div>
-          <span className="font-semibold">상태: </span>
-          {status === 'loading' && <span className="text-amber-600">로딩 중…</span>}
-          {status === 'ready' && <span className="text-green-600">준비 완료</span>}
-          {status === 'error' && <span className="text-red-600">오류</span>}
-          {status === 'idle' && <span className="text-gray-400">대기</span>}
-        </div>
-        {error && <div className="mt-1 text-xs text-red-500">{error}</div>}
-        <div className="mt-2">
-          <span className="font-semibold">데이터 소스: </span>
-          {isUsingSeedFallback ? (
-            <span className="text-gray-600">시드 fallback (firebaseConfig 미설정 또는 빈 컬렉션)</span>
-          ) : (
-            <span className="text-blue-600">Firestore 연결됨</span>
-          )}
-        </div>
-        <div className="mt-2">
-          <span className="font-semibold">환자: </span>
-          {patients.length}명
-        </div>
-        <div>
-          <span className="font-semibold">약제: </span>
-          {medications.length}종
-        </div>
+  if (status === 'loading' || status === 'idle') {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-white text-sm text-gray-500">
+        로딩 중…
       </div>
+    );
+  }
 
-      <p className="mt-2 text-xs text-gray-400">M3에서 로그인/환자 선택 화면 진행</p>
+  if (status === 'error') {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-white p-6 text-center">
+        <h1 className="text-lg font-semibold text-red-600">초기화 실패</h1>
+        <p className="text-sm text-gray-500">{error ?? '알 수 없는 오류'}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto h-full w-full max-w-mobile bg-white">
+      {phase === 'login' && <LoginScreen />}
+      {phase === 'select' && <PatientSelectScreen />}
+      {phase === 'rx' && (
+        <PlaceholderScreen
+          title="처방 화면 (M4 예정)"
+          hint="환자가 선택되었습니다."
+          onBack={resetToSelect}
+        />
+      )}
+      {phase === 'result' && (
+        <PlaceholderScreen
+          title="결과 리포트 (M6 예정)"
+          hint=""
+          onBack={resetToSelect}
+        />
+      )}
+      {phase === 'admin' && (
+        <PlaceholderScreen
+          title="Admin 콘솔 (M9 예정)"
+          hint=""
+          onBack={exitAdmin}
+        />
+      )}
     </div>
   );
 }
