@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronLeft, X } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, X } from 'lucide-react';
 import type { MedCategory, Medication } from '../../types';
 
 const CAT_ALL = '__all__';
@@ -10,6 +10,7 @@ interface MedSelectorProps {
   currentMedId: string | null;
   medications: Medication[];
   categories: MedCategory[];
+  currentEgfr: number;
   onClose: () => void;
   onPick: (slotIndex: number, medId: string) => void;
   onClear: (slotIndex: number) => void;
@@ -21,6 +22,7 @@ export default function MedSelector({
   currentMedId,
   medications,
   categories,
+  currentEgfr,
   onClose,
   onPick,
   onClear,
@@ -138,21 +140,31 @@ export default function MedSelector({
               ) : (
                 filteredMeds.map((m) => {
                   const isCurrent = m.id === currentMedId;
+                  const egfrWarn =
+                    m.egfrLimit > 0 && currentEgfr > 0 && currentEgfr < m.egfrLimit;
                   return (
                     <li key={m.id}>
                       <button
                         type="button"
                         onClick={() => handleMedPick(m.id)}
-                        className={`flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-left text-sm transition ${
+                        className={`flex w-full flex-col gap-1 rounded-lg border px-3 py-2.5 text-left text-sm transition ${
                           isCurrent
                             ? 'border-indigo-400 bg-indigo-50'
                             : 'border-gray-200 bg-white hover:border-indigo-300 hover:bg-indigo-50'
                         }`}
                       >
-                        <span className="truncate font-medium text-gray-900">{m.name}</span>
-                        {m.effect > 0 && (
-                          <span className="shrink-0 text-xs text-gray-500">
-                            HbA1c −{m.effect.toFixed(1)}
+                        <span className="flex items-center justify-between gap-2">
+                          <span className="truncate font-medium text-gray-900">{m.name}</span>
+                          {m.effect > 0 && (
+                            <span className="shrink-0 text-xs text-gray-500">
+                              HbA1c −{m.effect.toFixed(1)}
+                            </span>
+                          )}
+                        </span>
+                        {egfrWarn && (
+                          <span className="flex items-center gap-1 text-[11px] text-amber-700">
+                            <AlertTriangle size={12} />
+                            eGFR 하한 {m.egfrLimit} (현재 {currentEgfr.toFixed(0)}) — 신중 처방
                           </span>
                         )}
                       </button>

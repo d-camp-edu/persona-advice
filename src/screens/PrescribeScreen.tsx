@@ -7,6 +7,7 @@ import PatientChart from '../components/patient/PatientChart';
 import DiagCodeToggle from '../components/prescribe/DiagCodeToggle';
 import SlotList from '../components/prescribe/SlotList';
 import MedSelector from '../components/prescribe/MedSelector';
+import { getPatientCurrentState } from '../lib/patientState';
 
 export default function PrescribeScreen() {
   const patients = useDataStore((s) => s.patients);
@@ -23,6 +24,8 @@ export default function PrescribeScreen() {
   const clearSlot = useSessionStore((s) => s.clearSlot);
   const toggleDiag = useSessionStore((s) => s.toggleDiag);
   const resetToSelect = useSessionStore((s) => s.resetToSelect);
+  const confirmPrescription = useSessionStore((s) => s.confirmPrescription);
+  const sessionPrescriptions = useSessionStore((s) => s.sessionPrescriptions);
 
   const [selectorSlot, setSelectorSlot] = useState<number | null>(null);
 
@@ -46,8 +49,9 @@ export default function PrescribeScreen() {
     );
   }
 
-  // M4 단계에서는 시뮬레이션 결과가 아직 없으므로 currentHba1c는 base와 동일.
-  const currentHba1c = patient.initialHba1c;
+  const currentState = getPatientCurrentState(patient, sessionPrescriptions, medications);
+  const currentHba1c = currentState.hba1c;
+  const currentEgfr = currentState.egfr;
 
   const filledSlotCount = slots.filter((id) => id != null).length;
   const filledDrugSlotCount = slots
@@ -65,7 +69,7 @@ export default function PrescribeScreen() {
 
   const handleConfirm = () => {
     if (!canConfirm) return;
-    setRxPhase('result');
+    confirmPrescription();
   };
 
   return (
@@ -118,22 +122,13 @@ export default function PrescribeScreen() {
             slots={slots}
             medications={medications}
             diagCodes={diagCodes}
+            currentEgfr={currentEgfr}
             onToggleDiag={toggleDiag}
             onChangeSlot={(idx) => setSelectorSlot(idx)}
             onCancel={handleCancel}
             onConfirm={handleConfirm}
             canConfirm={canConfirm}
             needsDiag={needsDiag}
-          />
-        )}
-
-        {rxPhase === 'result' && (
-          <ResultPhaseView
-            onBack={() => setRxPhase('menu')}
-            onOpenReport={() => {
-              // M5/M6에서 실제 결과 리포트로 이동. 현재는 placeholder.
-              setRxPhase('menu');
-            }}
           />
         )}
       </div>
@@ -144,6 +139,7 @@ export default function PrescribeScreen() {
         currentMedId={selectorSlot != null ? slots[selectorSlot] : null}
         medications={medications}
         categories={categories}
+        currentEgfr={currentEgfr}
         onClose={() => setSelectorSlot(null)}
         onPick={(idx, medId) => {
           setSlot(idx, medId);
@@ -200,6 +196,7 @@ function PrescribePhaseView({
   slots,
   medications,
   diagCodes,
+  currentEgfr,
   onToggleDiag,
   onChangeSlot,
   onCancel,
@@ -210,6 +207,7 @@ function PrescribePhaseView({
   slots: (string | null)[];
   medications: ReturnType<typeof useDataStore.getState>['medications'];
   diagCodes: string[];
+  currentEgfr: number;
   onToggleDiag: (code: string) => void;
   onChangeSlot: (idx: number) => void;
   onCancel: () => void;
@@ -229,7 +227,12 @@ function PrescribePhaseView({
 
       <section>
         <h2 className="mb-2 text-xs font-semibold text-gray-600">처방 약제 (5슬롯)</h2>
-        <SlotList slots={slots} medications={medications} onChangeSlot={onChangeSlot} />
+        <SlotList
+          slots={slots}
+          medications={medications}
+          currentEgfr={currentEgfr}
+          onChangeSlot={onChangeSlot}
+        />
       </section>
 
       <div className="sticky bottom-0 -mx-4 flex gap-2 border-t border-gray-100 bg-white px-4 py-3">
@@ -253,36 +256,3 @@ function PrescribePhaseView({
   );
 }
 
-function ResultPhaseView({
-  onBack,
-  onOpenReport,
-}: {
-  onBack: () => void;
-  onOpenReport: () => void;
-}) {
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900">
-        처방이 확정되었습니다.
-        <br />
-        <span className="text-xs text-indigo-700">
-          (실제 결과 계산은 M5에서, 결과 리포트 화면은 M6에서 연결됩니다.)
-        </span>
-      </div>
-      <button
-        type="button"
-        onClick={onOpenReport}
-        className="rounded-lg bg-indigo-500 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-600"
-      >
-        결과 리포트 보기 →
-      </button>
-      <button
-        type="button"
-        onClick={onBack}
-        className="self-start rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-      >
-        ← 메뉴로
-      </button>
-    </div>
-  );
-}

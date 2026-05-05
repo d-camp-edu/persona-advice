@@ -6,17 +6,18 @@ import { useSessionStore } from '../store/useSessionStore';
 export default function LoginScreen() {
   const settings = useDataStore((s) => s.settings);
   const login = useSessionStore((s) => s.login);
+  const loginPending = useSessionStore((s) => s.loginPending);
   const goAdmin = useSessionStore((s) => s.goAdmin);
 
   const [hospital, setHospital] = useState('');
   const [doctor, setDoctor] = useState('');
 
-  const ready = hospital.trim().length > 0 && doctor.trim().length > 0;
+  const ready = hospital.trim().length > 0 && doctor.trim().length > 0 && !loginPending;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!ready) return;
-    login(hospital, doctor);
+    void login(hospital, doctor);
   };
 
   return (
@@ -77,7 +78,7 @@ export default function LoginScreen() {
           className="w-full rounded-lg py-3 text-sm font-semibold text-white shadow-md transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
           style={{ backgroundColor: settings.loginBtnColor }}
         >
-          시뮬레이션 시작하기
+          {loginPending ? '세션 준비 중...' : '시뮬레이션 시작하기'}
         </button>
       </form>
 

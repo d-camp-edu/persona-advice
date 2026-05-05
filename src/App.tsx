@@ -4,6 +4,7 @@ import { useSessionStore } from './store/useSessionStore';
 import LoginScreen from './screens/LoginScreen';
 import PatientSelectScreen from './screens/PatientSelectScreen';
 import PrescribeScreen from './screens/PrescribeScreen';
+import ResultReportScreen from './screens/ResultReportScreen';
 
 function PlaceholderScreen({ title, hint, onBack }: { title: string; hint: string; onBack: () => void }) {
   return (
@@ -27,7 +28,6 @@ export default function App() {
   const bootstrap = useDataStore((s) => s.bootstrap);
 
   const phase = useSessionStore((s) => s.phase);
-  const resetToSelect = useSessionStore((s) => s.resetToSelect);
   const exitAdmin = useSessionStore((s) => s.exitAdmin);
 
   useEffect(() => {
@@ -56,13 +56,7 @@ export default function App() {
       {phase === 'login' && <LoginScreen />}
       {phase === 'select' && <PatientSelectScreen />}
       {phase === 'rx' && <PrescribeScreen />}
-      {phase === 'result' && (
-        <PlaceholderScreen
-          title="결과 리포트 (M6 예정)"
-          hint=""
-          onBack={resetToSelect}
-        />
-      )}
+      {phase === 'result' && <ResultReportScreen />}
       {phase === 'admin' && (
         <PlaceholderScreen
           title="Admin 콘솔 (M9 예정)"
