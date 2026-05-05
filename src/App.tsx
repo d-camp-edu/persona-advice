@@ -3,6 +3,7 @@ import { useDataStore } from './store/useDataStore';
 import { useSessionStore } from './store/useSessionStore';
 import LoginScreen from './screens/LoginScreen';
 import PatientSelectScreen from './screens/PatientSelectScreen';
+import PrescribeScreen from './screens/PrescribeScreen';
 
 function PlaceholderScreen({ title, hint, onBack }: { title: string; hint: string; onBack: () => void }) {
   return (
@@ -54,13 +55,7 @@ export default function App() {
     <div className="mx-auto h-full w-full max-w-mobile bg-white">
       {phase === 'login' && <LoginScreen />}
       {phase === 'select' && <PatientSelectScreen />}
-      {phase === 'rx' && (
-        <PlaceholderScreen
-          title="처방 화면 (M4 예정)"
-          hint="환자가 선택되었습니다."
-          onBack={resetToSelect}
-        />
-      )}
+      {phase === 'rx' && <PrescribeScreen />}
       {phase === 'result' && (
         <PlaceholderScreen
           title="결과 리포트 (M6 예정)"
