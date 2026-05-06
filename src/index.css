@@ -13,3 +13,18 @@ body {
   font-family: system-ui, -apple-system, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   background: #f5f5f7;
 }
+
+/* 스크롤바 숨기기 (모바일 앱 느낌) */
+* {
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* 하단 sticky 바 — iOS 홈 인디케이터 safe area 보정 */
+@layer utilities {
+  .pb-safe {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+}

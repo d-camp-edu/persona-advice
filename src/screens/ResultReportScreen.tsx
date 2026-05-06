@@ -179,7 +179,7 @@ export default function ResultReportScreen() {
         </Section>
       </div>
 
-      <div className="sticky bottom-0 flex gap-2 border-t border-gray-100 bg-white px-4 py-3">
+      <div className="sticky bottom-0 flex gap-2 border-t border-gray-100 bg-white px-4 pt-3 pb-safe">
         <button
           type="button"
           onClick={resetToLogin}

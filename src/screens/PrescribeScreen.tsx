@@ -235,7 +235,7 @@ function PrescribePhaseView({
         />
       </section>
 
-      <div className="sticky bottom-0 -mx-4 flex gap-2 border-t border-gray-100 bg-white px-4 py-3">
+      <div className="sticky bottom-0 -mx-4 flex gap-2 border-t border-gray-100 bg-white px-4 pt-3 pb-safe">
         <button
           type="button"
           onClick={onCancel}
