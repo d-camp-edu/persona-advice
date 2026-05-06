@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore';
+import { collection, doc, getDocs, query, setDoc, where, writeBatch } from 'firebase/firestore';
 import type { RxSession } from '../types';
 import { getDb, isFirebaseConfigured } from './firebase';
 import { collectionPath, docPath } from './firestoreApi';
@@ -20,6 +20,27 @@ export async function loadLatestRxSession(sessionKey: string): Promise<RxSession
   const items = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<RxSession, 'id'>) }));
   items.sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
   return items[0];
+}
+
+export async function loadAllRxSessions(): Promise<RxSession[]> {
+  if (!isFirebaseConfigured()) return [];
+  const db = getDb();
+  if (!db) return [];
+  const snap = await getDocs(collection(db, collectionPath(COLL)));
+  const items = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<RxSession, 'id'>) }));
+  items.sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
+  return items;
+}
+
+export async function deleteAllRxSessions(): Promise<void> {
+  if (!isFirebaseConfigured()) return;
+  const db = getDb();
+  if (!db) return;
+  const snap = await getDocs(collection(db, collectionPath(COLL)));
+  if (snap.empty) return;
+  const batch = writeBatch(db);
+  for (const d of snap.docs) batch.delete(d.ref);
+  await batch.commit();
 }
 
 /**
