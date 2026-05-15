@@ -14,4 +14,5 @@ export interface SurveyResponse {
   hospitalName: string;
   answeredAt: string;
   answers: Record<string, string | string[]>;
+  loginFieldValues?: Record<string, string>;
 }

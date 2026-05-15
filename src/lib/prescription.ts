@@ -3,6 +3,7 @@ import type {
   GlobalSettings,
   Medication,
   Patient,
+  PatientMetricDef,
   PrescribedDrug,
   Prescription,
   PrescriptionResult,
@@ -17,11 +18,9 @@ export interface CalculatePrescriptionInput {
   diagCodes: string[];
   settings: GlobalSettings;
   exemptions: SideEffectExemption[];
-  /** 같은 시연 세션 내 위장장애 부작용 누적 횟수 등. key: 공병증 이름. */
   pastSideEffectCounts: Record<string, number>;
-  /** 테스트 결정성 확보용. 미지정 시 Math.random. */
+  patientMetricDefs?: PatientMetricDef[];
   rng?: () => number;
-  /** 결과 prescription의 timestamp(ISO). 미지정 시 new Date(). */
   now?: () => Date;
 }
 
@@ -47,6 +46,7 @@ export function calculatePrescription(input: CalculatePrescriptionInput): Prescr
     settings,
     exemptions,
     pastSideEffectCounts,
+    patientMetricDefs = [],
     rng = Math.random,
     now = () => new Date(),
   } = input;
@@ -65,8 +65,11 @@ export function calculatePrescription(input: CalculatePrescriptionInput): Prescr
   const giSkipDueToHistory = (pastSideEffectCounts['위장장애'] ?? 0) >= 2;
 
   const totals: Totals = { h: 0, w: 0, l: 0, n: 0, b: 0, nt: 0, eg: 0, ua: 0 };
+  const customTotals: Record<string, number> = {};
   const sideEffects: string[] = [];
   const comorbHits: ComorbHit[] = [];
+
+  const customDefs = patientMetricDefs.filter((d) => !d.isBuiltIn && d.enabled);
 
   for (const { med } of selected) {
     let eH = med.isNotDrug ? 0 : med.effect;
@@ -89,6 +92,10 @@ export function calculatePrescription(input: CalculatePrescriptionInput): Prescr
     totals.nt += med.effectNtprobnp;
     totals.eg += med.effectEgfr;
     totals.ua += med.effectUacr;
+
+    for (const def of customDefs) {
+      customTotals[def.id] = (customTotals[def.id] ?? 0) + ((med.customEffects ?? {})[def.id] ?? 0);
+    }
 
     for (const name of med.beneficialComorb) {
       if (patient.comorbidities.includes(name)) comorbHits.push({ name, kind: 'good' });
@@ -118,6 +125,18 @@ export function calculatePrescription(input: CalculatePrescriptionInput): Prescr
   const newNtprobnp = optionalNumeric(current.ntprobnp, totals.nt);
   const newEgfr = optionalNumeric(current.egfr, totals.eg);
   const newUacr = optionalNumeric(current.uacr, totals.ua);
+
+  const oldCustomMetrics: Record<string, number | ''> = {};
+  const newCustomMetrics: Record<string, number | ''> = {};
+  const nextCustomMetrics: Record<string, number> = {};
+  for (const def of customDefs) {
+    const cur = current.customMetrics?.[def.id] ?? 0;
+    const delta = customTotals[def.id] ?? 0;
+    const next = cur !== 0 ? round1(cur + delta) : cur;
+    oldCustomMetrics[def.id] = cur !== 0 ? cur : '';
+    newCustomMetrics[def.id] = cur !== 0 ? next : '';
+    nextCustomMetrics[def.id] = next;
+  }
 
   const hasSideEffect = sideEffects.length > 0;
   const patientFeedback = buildPatientFeedback(
@@ -168,6 +187,8 @@ export function calculatePrescription(input: CalculatePrescriptionInput): Prescr
     isPackagingBonus,
     isPoorAdherence,
     timestamp,
+    oldCustomMetrics,
+    newCustomMetrics,
   };
 
   return {
@@ -181,6 +202,7 @@ export function calculatePrescription(input: CalculatePrescriptionInput): Prescr
       ntprobnp: typeof newNtprobnp === 'number' ? newNtprobnp : 0,
       egfr: typeof newEgfr === 'number' ? newEgfr : 0,
       uacr: typeof newUacr === 'number' ? newUacr : 0,
+      customMetrics: nextCustomMetrics,
     },
   };
 }

@@ -10,6 +10,7 @@ import type {
   AllowedCombination,
   SideEffectExemption,
   SurveyQuestion,
+  PatientMetricDef,
 } from '../types';
 import {
   seedPatients,
@@ -18,6 +19,7 @@ import {
   seedDrugClasses,
   seedSettings,
   seedSurveyQuestions,
+  seedPatientMetricDefs,
 } from '../data/seed';
 import { subscribeCollection, subscribeDoc } from '../lib/firestoreApi';
 import { ensureAnonymousAuth, isFirebaseConfigured } from '../lib/firebase';
@@ -34,6 +36,7 @@ interface DataState {
   sideEffectExemptions: SideEffectExemption[];
   settings: GlobalSettings;
   surveyQuestions: SurveyQuestion[];
+  patientMetricDefs: PatientMetricDef[];
 
   status: LoadStatus;
   error: string | null;
@@ -59,6 +62,7 @@ export const useDataStore = create<DataState>((set, get) => ({
   sideEffectExemptions: [],
   settings: seedSettings,
   surveyQuestions: seedSurveyQuestions,
+  patientMetricDefs: seedPatientMetricDefs,
 
   status: 'idle',
   error: null,
@@ -125,6 +129,12 @@ export const useDataStore = create<DataState>((set, get) => ({
         subscribeCollection<SurveyQuestion>('surveyQuestions', (items) => {
           // Firebase 연결 시 항상 실데이터 우선 (빈 배열이면 서베이 미표시)
           set({ surveyQuestions: items });
+        }),
+      );
+      subs.push(
+        subscribeCollection<PatientMetricDef>('patientMetricDefs', (items) => {
+          if (items.length === 0) return;
+          set({ patientMetricDefs: items });
         }),
       );
 

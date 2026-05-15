@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings } from 'lucide-react';
+import { Settings, BarChart2 } from 'lucide-react';
 import { useDataStore } from '../store/useDataStore';
 import { useSessionStore } from '../store/useSessionStore';
 
@@ -8,17 +8,27 @@ export default function LoginScreen() {
   const login = useSessionStore((s) => s.login);
   const loginPending = useSessionStore((s) => s.loginPending);
   const goAdmin = useSessionStore((s) => s.goAdmin);
+  const goMyResults = useSessionStore((s) => s.goMyResults);
 
-  const [hospital, setHospital] = useState('');
-  const [doctor, setDoctor] = useState('');
+  const fields = [...(settings.loginFields ?? [])].sort((a, b) => a.order - b.order);
 
-  const ready = hospital.trim().length > 0 && doctor.trim().length > 0 && !loginPending;
+  const [values, setValues] = useState<Record<string, string>>(() =>
+    Object.fromEntries(fields.map((f) => [f.id, ''])),
+  );
+
+  const ready =
+    !loginPending &&
+    fields
+      .filter((f) => f.required)
+      .every((f) => (values[f.id] ?? '').trim().length > 0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!ready) return;
-    void login(hospital, doctor);
+    void login(values);
   };
+
+  const setValue = (id: string, v: string) => setValues((prev) => ({ ...prev, [id]: v }));
 
   return (
     <div
@@ -48,29 +58,22 @@ export default function LoginScreen() {
           <p className="mt-1 text-sm text-gray-500">{settings.loginSubTitle}</p>
         </div>
 
-        <label className="mb-3 block">
-          <span className="mb-1 block text-xs font-medium text-gray-600">병원명</span>
-          <input
-            type="text"
-            value={hospital}
-            onChange={(e) => setHospital(e.target.value)}
-            placeholder="예: 서울대학교병원 내분비내과"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-            autoComplete="off"
-          />
-        </label>
-
-        <label className="mb-5 block">
-          <span className="mb-1 block text-xs font-medium text-gray-600">선생님 이름</span>
-          <input
-            type="text"
-            value={doctor}
-            onChange={(e) => setDoctor(e.target.value)}
-            placeholder="예: 홍길동"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-            autoComplete="off"
-          />
-        </label>
+        {fields.map((field, i) => (
+          <label key={field.id} className={`block ${i < fields.length - 1 ? 'mb-3' : 'mb-5'}`}>
+            <span className="mb-1 block text-xs font-medium text-gray-600">
+              {field.label}
+              {field.required && <span className="ml-0.5 text-red-400">*</span>}
+            </span>
+            <input
+              type="text"
+              value={values[field.id] ?? ''}
+              onChange={(e) => setValue(field.id, e.target.value)}
+              placeholder={field.placeholder}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              autoComplete="off"
+            />
+          </label>
+        ))}
 
         <button
           type="submit"
@@ -78,7 +81,16 @@ export default function LoginScreen() {
           className="w-full rounded-lg py-3 text-sm font-semibold text-white shadow-md transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
           style={{ backgroundColor: settings.loginBtnColor }}
         >
-          {loginPending ? '세션 준비 중...' : '시뮬레이션 시작하기'}
+          {loginPending ? '세션 준비 중...' : '페르소나 자문 디테일 시작하기'}
+        </button>
+
+        <button
+          type="button"
+          onClick={goMyResults}
+          className="mt-3 w-full rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center justify-center gap-2"
+        >
+          <BarChart2 size={15} />
+          내가 한 자문 디테일 결과 조회
         </button>
       </form>
 

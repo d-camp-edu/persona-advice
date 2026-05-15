@@ -1,6 +1,7 @@
 import { useAdminStore, type AdminTab } from '../store/useAdminStore';
 import { useSessionStore } from '../store/useSessionStore';
 import AdminGate from '../components/admin/AdminGate';
+import PatientProfileTab from '../components/admin/PatientProfileTab';
 import SettingsTab from '../components/admin/SettingsTab';
 import PatientsTab from '../components/admin/PatientsTab';
 import MedsTab from '../components/admin/MedsTab';
@@ -11,6 +12,7 @@ import HistoryTab from '../components/admin/HistoryTab';
 import SurveyTab from '../components/admin/SurveyTab';
 
 const TABS: { id: AdminTab; label: string }[] = [
+  { id: 'patientProfile', label: '환자 프로파일' },
   { id: 'settings', label: '설정' },
   { id: 'patients', label: '환자 관리' },
   { id: 'meds', label: '약제 관리' },
@@ -32,7 +34,6 @@ export default function AdminScreen() {
 
   return (
     <div className="flex h-full flex-col bg-gray-50">
-      {/* 헤더 */}
       <div className="flex items-center justify-between bg-white px-4 py-3 shadow-sm">
         <h1 className="text-sm font-bold text-gray-900">Admin 콘솔</h1>
         <div className="flex items-center gap-3">
@@ -53,7 +54,6 @@ export default function AdminScreen() {
         </div>
       </div>
 
-      {/* 탭 바 */}
       <div className="flex overflow-x-auto border-b border-gray-200 bg-white">
         {TABS.map((tab) => (
           <button
@@ -71,8 +71,8 @@ export default function AdminScreen() {
         ))}
       </div>
 
-      {/* 콘텐츠 */}
       <div className="flex-1 overflow-y-auto p-4">
+        {activeTab === 'patientProfile' && <PatientProfileTab />}
         {activeTab === 'settings' && <SettingsTab />}
         {activeTab === 'patients' && <PatientsTab />}
         {activeTab === 'meds' && <MedsTab />}

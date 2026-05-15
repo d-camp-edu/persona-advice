@@ -9,7 +9,7 @@ import { saveDoc } from '../lib/firestoreApi';
 import type { Medication, Prescription, PrescriptionResult, RxSession, SurveyResponse } from '../types';
 import { useDataStore } from './useDataStore';
 
-export type Phase = 'login' | 'survey' | 'select' | 'rx' | 'result' | 'admin';
+export type Phase = 'login' | 'survey' | 'select' | 'rx' | 'result' | 'admin' | 'myresults';
 export type RxPhase = 'menu' | 'chart' | 'prescribe' | 'result';
 
 export type ComorbFilter = string;
@@ -28,6 +28,7 @@ interface SessionState {
   sessionKey: string;
   sessionDocId: string;
   sessionCreatedAt: string;
+  loginFieldValues: Record<string, string>;
 
   currentPatientId: string | null;
   slots: Slots;
@@ -38,8 +39,9 @@ interface SessionState {
   lastResult: PrescriptionResult | null;
   loginPending: boolean;
 
-  login: (hospital: string, doctor: string) => Promise<void>;
+  login: (fieldValues: Record<string, string>) => Promise<void>;
   completeSurvey: (answers: Record<string, string | string[]>) => Promise<void>;
+  goMyResults: () => void;
   selectPatient: (id: string) => void;
   setComorbFilter: (filter: ComorbFilter) => void;
   setSlot: (idx: number, medId: string | null) => void;
@@ -62,6 +64,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   sessionKey: '',
   sessionDocId: '',
   sessionCreatedAt: '',
+  loginFieldValues: {},
 
   currentPatientId: null,
   slots: emptySlots(),
@@ -72,9 +75,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   lastResult: null,
   loginPending: false,
 
-  login: async (hospital, doctor) => {
-    const h = hospital.trim();
-    const d = doctor.trim();
+  login: async (fieldValues) => {
+    const h = (fieldValues['hospital'] ?? '').trim();
+    const d = (fieldValues['doctor'] ?? '').trim();
     if (!h || !d) return;
     if (get().loginPending) return;
     const key = makeSessionKey(h, d);
@@ -115,6 +118,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       sessionDocId,
       sessionCreatedAt,
       sessionPrescriptions,
+      loginFieldValues: fieldValues,
       phase: nextPhase,
       comorbFilter: '전체',
       currentPatientId: null,
@@ -124,13 +128,14 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   },
 
   completeSurvey: async (answers) => {
-    const { sessionDocId, doctorName, hospitalName } = get();
+    const { sessionDocId, doctorName, hospitalName, loginFieldValues } = get();
     const response: Omit<SurveyResponse, 'id'> = {
       sessionDocId,
       doctorName,
       hospitalName,
       answeredAt: new Date().toISOString(),
       answers,
+      loginFieldValues,
     };
     try {
       await saveDoc('surveyResponses', sessionDocId, response as unknown as Record<string, unknown>);
@@ -188,6 +193,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       sessionKey,
       sessionDocId,
       sessionCreatedAt,
+      loginFieldValues,
     } = get();
     if (!currentPatientId) return;
     const patient = data.patients.find((p) => p.id === currentPatientId);
@@ -197,7 +203,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       id ? data.medications.find((m) => m.id === id) ?? null : null,
     );
 
-    const current = getPatientCurrentState(patient, sessionPrescriptions, data.medications);
+    const current = getPatientCurrentState(patient, sessionPrescriptions, data.medications, data.patientMetricDefs);
     const pastSideEffectCounts = countPastSideEffects(
       sessionPrescriptions,
       patient.id,
@@ -212,6 +218,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       settings: data.settings,
       exemptions: data.sideEffectExemptions,
       pastSideEffectCounts,
+      patientMetricDefs: data.patientMetricDefs,
     });
 
     const nonDmReasons: string[] = [];
@@ -256,6 +263,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         sessionKey,
         createdAt: sessionCreatedAt || new Date().toISOString(),
         prescriptions: nextPrescriptions,
+        loginFieldValues,
       };
       void saveRxSession(session).catch((e) => {
         console.warn('[session] saveRxSession failed', e);
@@ -283,6 +291,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       sessionKey: '',
       sessionDocId: '',
       sessionCreatedAt: '',
+      loginFieldValues: {},
       currentPatientId: null,
       slots: emptySlots(),
       diagCodes: [],
@@ -294,6 +303,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
   goAdmin: () => set({ phase: 'admin' }),
   exitAdmin: () => set({ phase: 'login' }),
+  goMyResults: () => set({ phase: 'myresults' }),
 }));
 
 function countPastSideEffects(

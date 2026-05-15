@@ -7,6 +7,7 @@ import PatientSelectScreen from './screens/PatientSelectScreen';
 import PrescribeScreen from './screens/PrescribeScreen';
 import ResultReportScreen from './screens/ResultReportScreen';
 import AdminScreen from './screens/AdminScreen';
+import MyResultsScreen from './screens/MyResultsScreen';
 
 export default function App() {
   const status = useDataStore((s) => s.status);
@@ -44,6 +45,7 @@ export default function App() {
       {phase === 'rx' && <PrescribeScreen />}
       {phase === 'result' && <ResultReportScreen />}
       {phase === 'admin' && <AdminScreen />}
+      {phase === 'myresults' && <MyResultsScreen />}
     </div>
   );
 }

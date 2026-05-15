@@ -1,20 +1,24 @@
-import type { CurrentState, Medication, Patient, Prescription } from '../types';
+import type { CurrentState, Medication, Patient, PatientMetricDef, Prescription } from '../types';
 
-/**
- * 같은 시연 세션 내 이전 처방이 있으면 마지막 처방 결과를 현재 상태로 사용한다.
- *
- * 이전 처방이 없는 경우 (기획.md §5-1):
- * - 초진 환자만 prevDrugs effect를 initialHba1c에서 차감해 baseline을 만든다.
- *   (실제 seed에서 초진은 prevDrugs가 모두 비어 있어 사실상 no-op이며,
- *    초진 외 type에 대해서는 initialHba1c가 이미 prevDrugs 복용 중인 현재 상태로 정의된다.)
- * - 재진/리핏 환자는 initialHba1c를 그대로 현재 HbA1c로 사용한다.
- */
 export function getPatientCurrentState(
   patient: Patient,
   sessionPrescriptions: Prescription[],
   meds: Medication[],
+  metricDefs: PatientMetricDef[] = [],
 ): CurrentState {
   const last = lastPrescriptionForPatient(sessionPrescriptions, patient.id);
+
+  const customDefs = metricDefs.filter((d) => !d.isBuiltIn && d.enabled);
+  const customMetrics: Record<string, number> = {};
+  for (const def of customDefs) {
+    if (last) {
+      const v = last.newCustomMetrics?.[def.id];
+      customMetrics[def.id] = typeof v === 'number' ? v : (patient.customMetrics?.[def.id] ?? 0);
+    } else {
+      customMetrics[def.id] = patient.customMetrics?.[def.id] ?? 0;
+    }
+  }
+
   if (last) {
     return {
       hba1c: last.newHba1c,
@@ -25,6 +29,7 @@ export function getPatientCurrentState(
       ntprobnp: numericOr(last.newNtprobnp, patient.ntprobnp),
       egfr: numericOr(last.newEgfr, patient.egfr),
       uacr: numericOr(last.newUacr, patient.uacr),
+      customMetrics,
     };
   }
 
@@ -46,6 +51,7 @@ export function getPatientCurrentState(
     ntprobnp: patient.ntprobnp,
     egfr: patient.egfr,
     uacr: patient.uacr,
+    customMetrics,
   };
 }
 

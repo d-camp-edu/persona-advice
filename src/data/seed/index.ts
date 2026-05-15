@@ -5,3 +5,4 @@ export { seedDrugClasses } from './drugClasses.seed';
 export { seedComorbidities } from './comorbidities.seed';
 export { seedSettings } from './settings.seed';
 export { seedSurveyQuestions } from './surveyQuestions.seed';
+export { seedPatientMetricDefs } from './patientMetricDefs.seed';

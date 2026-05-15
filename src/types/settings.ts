@@ -1,5 +1,13 @@
 import type { Comorbidity } from './medication';
 
+export interface LoginFieldDef {
+  id: string;
+  label: string;
+  placeholder: string;
+  required: boolean;
+  order: number;
+}
+
 export interface GlobalSettings {
   loginBgStart: string;
   loginBgEnd: string;
@@ -10,6 +18,7 @@ export interface GlobalSettings {
   loginTitleIconUrl: string;
   encounterDoctorImg: string;
   backgroundImgUrl: string;
+  loginFields?: LoginFieldDef[];
 
   packagingBonusEffect: number;
   initialMetforminThreshold: number;

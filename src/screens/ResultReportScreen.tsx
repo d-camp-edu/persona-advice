@@ -5,7 +5,7 @@ import { useSessionStore } from '../store/useSessionStore';
 import MetricRow from '../components/result/MetricRow';
 import Badge from '../components/common/Badge';
 import { genderLabel, typeBadgeColor } from '../components/patient/patientStyle';
-import type { Prescription } from '../types';
+import type { PatientMetricDef, Prescription } from '../types';
 
 export default function ResultReportScreen() {
   const lastResult = useSessionStore((s) => s.lastResult);
@@ -15,6 +15,7 @@ export default function ResultReportScreen() {
   const resetToLogin = useSessionStore((s) => s.resetToLogin);
 
   const patients = useDataStore((s) => s.patients);
+  const patientMetricDefs = useDataStore((s) => s.patientMetricDefs);
 
   const patient = useMemo(
     () => (lastResult ? patients.find((p) => p.id === lastResult.prescription.patientId) : null),
@@ -107,7 +108,7 @@ export default function ResultReportScreen() {
         </Section>
 
         <Section title="지표 변화" icon={<Activity size={14} />}>
-          <MetricsBlock prescription={prescription} />
+          <MetricsBlock prescription={prescription} metricDefs={patientMetricDefs} />
         </Section>
 
         {comorbEntries.length > 0 && (
@@ -219,7 +220,15 @@ function Section({
   );
 }
 
-function MetricsBlock({ prescription }: { prescription: Prescription }) {
+function MetricsBlock({
+  prescription,
+  metricDefs,
+}: {
+  prescription: Prescription;
+  metricDefs: PatientMetricDef[];
+}) {
+  const customDefs = metricDefs.filter((d) => !d.isBuiltIn && d.enabled);
+
   return (
     <div className="space-y-1.5">
       <MetricRow
@@ -278,6 +287,21 @@ function MetricsBlock({ prescription }: { prescription: Prescription }) {
         better="down"
         digits={1}
       />
+      {customDefs.map((def) => {
+        const oldVal = prescription.oldCustomMetrics?.[def.id];
+        const newVal = prescription.newCustomMetrics?.[def.id];
+        return (
+          <MetricRow
+            key={def.id}
+            label={def.label}
+            unit={def.unit}
+            oldValue={oldVal ?? ''}
+            newValue={newVal ?? ''}
+            better={def.direction === 'increase_good' ? 'up' : 'down'}
+            digits={1}
+          />
+        );
+      })}
     </div>
   );
 }

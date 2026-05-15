@@ -31,6 +31,7 @@ export interface Medication {
   allow2TQD: boolean;
 
   order: number;
+  customEffects?: Record<string, number>;
 }
 
 export interface MedCategory {

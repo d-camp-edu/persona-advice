@@ -2,6 +2,16 @@ export type PatientType = '초진' | '재진' | '리핏';
 export type Gender = 'M' | 'F';
 export type Adherence = '좋음' | '나쁨';
 
+export interface PatientMetricDef {
+  id: string;
+  label: string;
+  unit: string;
+  direction: 'decrease_good' | 'increase_good';
+  isBuiltIn: boolean;
+  enabled: boolean;
+  order: number;
+}
+
 export interface Patient {
   id: string;
   name: string;
@@ -33,6 +43,7 @@ export interface Patient {
   prevTreatment: string;
 
   imageUrl: string;
+  customMetrics?: Record<string, number>;
 }
 
 export interface CurrentState {
@@ -44,4 +55,5 @@ export interface CurrentState {
   ntprobnp: number;
   egfr: number;
   uacr: number;
+  customMetrics?: Record<string, number>;
 }

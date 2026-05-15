@@ -42,6 +42,8 @@ export interface Prescription {
   isPackagingBonus: boolean;
   isPoorAdherence: boolean;
   timestamp: string;
+  oldCustomMetrics?: Record<string, number | ''>;
+  newCustomMetrics?: Record<string, number | ''>;
 }
 
 export interface RxSession {
@@ -51,6 +53,7 @@ export interface RxSession {
   sessionKey: string;
   createdAt: string;
   prescriptions: Prescription[];
+  loginFieldValues?: Record<string, string>;
 }
 
 export interface PrescriptionResult {
@@ -64,5 +67,6 @@ export interface PrescriptionResult {
     ntprobnp: number;
     egfr: number;
     uacr: number;
+    customMetrics?: Record<string, number>;
   };
 }

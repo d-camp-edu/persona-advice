@@ -69,7 +69,7 @@ export default function SurveyScreen() {
       {/* Header */}
       <div className="px-6 pt-10 pb-4">
         <p className="text-sm font-medium text-white/80 mb-1">{doctorName} 선생님</p>
-        <h1 className="text-xl font-bold text-white">시연 전 간단한 질문입니다</h1>
+        <h1 className="text-xl font-bold text-white">아래 내용에 대해 서베이 부탁드립니다.</h1>
       </div>
 
       {/* Progress bar */}

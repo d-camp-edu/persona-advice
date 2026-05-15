@@ -1,14 +1,15 @@
 import { create } from 'zustand';
 
 export type AdminTab =
+  | 'patientProfile'
   | 'settings'
   | 'patients'
   | 'meds'
+  | 'survey'
   | 'rules'
   | 'allowed'
   | 'exemptions'
-  | 'history'
-  | 'survey';
+  | 'history';
 
 interface AdminState {
   isAuthed: boolean;
