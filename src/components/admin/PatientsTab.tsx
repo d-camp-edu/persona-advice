@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { useDataStore } from '../../store/useDataStore';
 import { saveDoc, removeDoc } from '../../lib/firestoreApi';
 import { uploadPatients } from '../../data/seedRunner';
+import ImageUploader from '../common/ImageUploader';
 import type { Patient, PatientType, Gender, Adherence } from '../../types';
 
 const inp =
@@ -72,8 +73,18 @@ function PatientEditor({
 
   return (
     <div className="border-t border-gray-100 bg-gray-50 px-4 py-3">
+      {/* 환자 사진 업로드 */}
+      <div className="mb-4">
+        <ImageUploader
+          value={draft.imageUrl}
+          onChange={(url) => set('imageUrl', url)}
+          storagePath={`patients/${draft.id}`}
+          label="환자 사진"
+          previewSize="md"
+        />
+      </div>
+
       <div className="grid grid-cols-2 gap-x-3">
-        {/* 기본 */}
         <div>
           <label className="mb-0.5 block text-xs text-gray-500">이름</label>
           <input className={`${inp} mb-2`} value={draft.name} onChange={(e) => set('name', e.target.value)} />
@@ -123,10 +134,7 @@ function PatientEditor({
       </div>
 
       <label className="mb-0.5 block text-xs text-gray-500">설명</label>
-      <textarea rows={2} className={`${inp} mb-2 resize-none`} value={draft.desc} onChange={(e) => set('desc', e.target.value)} />
-
-      <label className="mb-0.5 block text-xs text-gray-500">이미지 URL</label>
-      <input className={`${inp} mb-3`} value={draft.imageUrl} onChange={(e) => set('imageUrl', e.target.value)} placeholder="https://..." />
+      <textarea rows={2} className={`${inp} mb-3 resize-none`} value={draft.desc} onChange={(e) => set('desc', e.target.value)} />
 
       {/* 심장 */}
       <p className="mb-1 text-xs font-semibold text-gray-600">심부전 지표</p>
@@ -315,9 +323,18 @@ export default function PatientsTab() {
               onClick={() => setExpanded(expanded === p.id ? null : p.id)}
               className="flex w-full items-center justify-between border-b border-gray-100 px-4 py-3 text-left hover:bg-gray-50"
             >
-              <div>
-                <span className="text-sm font-medium text-gray-900">{p.name}</span>
-                <span className="ml-2 text-xs text-gray-400">{p.type} · HbA1c {p.initialHba1c}%</span>
+              <div className="flex items-center gap-2.5">
+                {p.imageUrl ? (
+                  <img src={p.imageUrl} className="h-8 w-8 rounded-lg object-cover border border-gray-100" alt="" />
+                ) : (
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 border border-gray-100">
+                    <span className="text-xs text-slate-400">無</span>
+                  </div>
+                )}
+                <div>
+                  <span className="text-sm font-medium text-gray-900">{p.name}</span>
+                  <span className="ml-2 text-xs text-gray-400">{p.type} · HbA1c {p.initialHba1c}%</span>
+                </div>
               </div>
               {expanded === p.id ? (
                 <ChevronUp className="h-4 w-4 text-gray-400" />

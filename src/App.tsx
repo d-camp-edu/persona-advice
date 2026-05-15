@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useDataStore } from './store/useDataStore';
 import { useSessionStore } from './store/useSessionStore';
 import LoginScreen from './screens/LoginScreen';
+import SurveyScreen from './screens/SurveyScreen';
 import PatientSelectScreen from './screens/PatientSelectScreen';
 import PrescribeScreen from './screens/PrescribeScreen';
 import ResultReportScreen from './screens/ResultReportScreen';
@@ -38,6 +39,7 @@ export default function App() {
   return (
     <div className="mx-auto h-full w-full max-w-mobile bg-white">
       {phase === 'login' && <LoginScreen />}
+      {phase === 'survey' && <SurveyScreen />}
       {phase === 'select' && <PatientSelectScreen />}
       {phase === 'rx' && <PrescribeScreen />}
       {phase === 'result' && <ResultReportScreen />}

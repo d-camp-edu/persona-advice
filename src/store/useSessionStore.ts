@@ -5,13 +5,14 @@ import { calculatePrescription } from '../lib/prescription';
 import { checkDeductions } from '../lib/deductions';
 import { checkNonDmCoverage } from '../lib/nonDmCoverage';
 import { loadLatestRxSession, saveRxSession } from '../lib/sessionRepo';
-import type { Medication, Prescription, PrescriptionResult, RxSession } from '../types';
+import { saveDoc } from '../lib/firestoreApi';
+import type { Medication, Prescription, PrescriptionResult, RxSession, SurveyResponse } from '../types';
 import { useDataStore } from './useDataStore';
 
-export type Phase = 'login' | 'select' | 'rx' | 'result' | 'admin';
+export type Phase = 'login' | 'survey' | 'select' | 'rx' | 'result' | 'admin';
 export type RxPhase = 'menu' | 'chart' | 'prescribe' | 'result';
 
-export type ComorbFilter = string; // '전체' 또는 공병증 이름
+export type ComorbFilter = string;
 
 type Slot = string | null;
 type Slots = [Slot, Slot, Slot, Slot, Slot];
@@ -26,7 +27,6 @@ interface SessionState {
   doctorName: string;
   sessionKey: string;
   sessionDocId: string;
-  /** 세션 doc 최초 생성 시각(ISO). 동일 doc을 덮어쓸 때 보존된다. */
   sessionCreatedAt: string;
 
   currentPatientId: string | null;
@@ -34,14 +34,12 @@ interface SessionState {
   diagCodes: string[];
   comorbFilter: ComorbFilter;
 
-  /** 같은 시연 세션 내 누적 처방. Firestore rx_sessions와 동기화. */
   sessionPrescriptions: Prescription[];
-  /** 직전 처방 시뮬레이션 결과. result 화면에서 사용. */
   lastResult: PrescriptionResult | null;
-  /** 로그인 진행 중 플래그(Firestore carryover 조회 동안). */
   loginPending: boolean;
 
   login: (hospital: string, doctor: string) => Promise<void>;
+  completeSurvey: (answers: Record<string, string | string[]>) => Promise<void>;
   selectPatient: (id: string) => void;
   setComorbFilter: (filter: ComorbFilter) => void;
   setSlot: (idx: number, medId: string | null) => void;
@@ -107,6 +105,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       sessionCreatedAt = new Date(now).toISOString();
     }
 
+    const surveyQuestions = useDataStore.getState().surveyQuestions;
+    const nextPhase: Phase = surveyQuestions.length > 0 ? 'survey' : 'select';
+
     set({
       hospitalName: h,
       doctorName: d,
@@ -114,12 +115,29 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       sessionDocId,
       sessionCreatedAt,
       sessionPrescriptions,
-      phase: 'select',
+      phase: nextPhase,
       comorbFilter: '전체',
       currentPatientId: null,
       loginPending: false,
       lastResult: null,
     });
+  },
+
+  completeSurvey: async (answers) => {
+    const { sessionDocId, doctorName, hospitalName } = get();
+    const response: Omit<SurveyResponse, 'id'> = {
+      sessionDocId,
+      doctorName,
+      hospitalName,
+      answeredAt: new Date().toISOString(),
+      answers,
+    };
+    try {
+      await saveDoc('surveyResponses', sessionDocId, response as unknown as Record<string, unknown>);
+    } catch (e) {
+      console.warn('[survey] save failed', e);
+    }
+    set({ phase: 'select' });
   },
 
   selectPatient: (id) => {
@@ -196,7 +214,6 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       pastSideEffectCounts,
     });
 
-    // 비당뇨 SGLT-2i 특례 미충족 → 보험슬롯(1~3)도 자가부담으로 전환
     const nonDmReasons: string[] = [];
     const insuranceSlotMeds: Medication[] = [];
     for (const drug of result.prescription.prescribedDrugs) {
@@ -209,7 +226,6 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         nonDmReasons.push(`${drug.name}: ${cov.reason}`);
         continue;
       }
-      // 자가부담으로 전환된 약은 보험 삭감 대상에서 제외.
       insuranceSlotMeds.push(med);
     }
 

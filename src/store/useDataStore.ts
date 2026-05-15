@@ -9,6 +9,7 @@ import type {
   DeductionRule,
   AllowedCombination,
   SideEffectExemption,
+  SurveyQuestion,
 } from '../types';
 import {
   seedPatients,
@@ -16,6 +17,7 @@ import {
   seedMedCategories,
   seedDrugClasses,
   seedSettings,
+  seedSurveyQuestions,
 } from '../data/seed';
 import { subscribeCollection, subscribeDoc } from '../lib/firestoreApi';
 import { ensureAnonymousAuth, isFirebaseConfigured } from '../lib/firebase';
@@ -31,6 +33,7 @@ interface DataState {
   allowedCombinations: AllowedCombination[];
   sideEffectExemptions: SideEffectExemption[];
   settings: GlobalSettings;
+  surveyQuestions: SurveyQuestion[];
 
   status: LoadStatus;
   error: string | null;
@@ -55,6 +58,7 @@ export const useDataStore = create<DataState>((set, get) => ({
   allowedCombinations: [],
   sideEffectExemptions: [],
   settings: seedSettings,
+  surveyQuestions: seedSurveyQuestions,
 
   status: 'idle',
   error: null,
@@ -66,7 +70,6 @@ export const useDataStore = create<DataState>((set, get) => ({
     set({ status: 'loading', error: null });
 
     if (!isFirebaseConfigured()) {
-      // 시드 fallback만으로 동작 — 모든 시드는 이미 초기 상태에 들어가 있음
       set({ status: 'ready', isUsingSeedFallback: true });
       return;
     }
@@ -74,8 +77,6 @@ export const useDataStore = create<DataState>((set, get) => ({
     try {
       await ensureAnonymousAuth();
 
-      // 컬렉션이 비어 있으면 시드(초기 상태)를 그대로 두고, 데이터가 있으면 갱신.
-      // 한 컬렉션이라도 실데이터가 있으면 fallback 플래그는 false.
       subs.push(
         subscribeCollection<Patient>('patients', (items) => {
           if (items.length === 0) return;
@@ -118,6 +119,12 @@ export const useDataStore = create<DataState>((set, get) => ({
       subs.push(
         subscribeDoc<GlobalSettings>('settings', 'global', (data) => {
           if (data) set({ settings: data });
+        }),
+      );
+      subs.push(
+        subscribeCollection<SurveyQuestion>('surveyQuestions', (items) => {
+          // Firebase 연결 시 항상 실데이터 우선 (빈 배열이면 서베이 미표시)
+          set({ surveyQuestions: items });
         }),
       );
 

@@ -7,7 +7,8 @@ export type AdminTab =
   | 'rules'
   | 'allowed'
   | 'exemptions'
-  | 'history';
+  | 'history'
+  | 'survey';
 
 interface AdminState {
   isAuthed: boolean;
