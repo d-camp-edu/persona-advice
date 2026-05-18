@@ -4,7 +4,7 @@ import { useDataStore } from '../../store/useDataStore';
 import { saveDoc, removeDoc } from '../../lib/firestoreApi';
 import { uploadPatients } from '../../data/seedRunner';
 import ImageUploader from '../common/ImageUploader';
-import type { Patient, PatientType, Gender, Adherence } from '../../types';
+import type { Patient, PatientType, Gender, Adherence, PatientMetricDef } from '../../types';
 
 const inp =
   'w-full rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-indigo-500';
@@ -36,6 +36,7 @@ function newPatient(): Patient {
     ckdStandardTx: false,
     prevDrugs: [],
     prevTreatment: '',
+    otherMedications: '',
     imageUrl: '',
   };
 }
@@ -43,11 +44,13 @@ function newPatient(): Patient {
 function PatientEditor({
   patient,
   comorbNames,
+  metricDefs,
   onSave,
   onDelete,
 }: {
   patient: Patient;
   comorbNames: string[];
+  metricDefs: PatientMetricDef[];
   onSave: (p: Patient) => void;
   onDelete: () => void;
 }) {
@@ -197,6 +200,34 @@ function PatientEditor({
         ))}
       </div>
 
+      {/* 커스텀 검사 지표 */}
+      {metricDefs.filter((d) => !d.isBuiltIn && d.enabled).length > 0 && (
+        <>
+          <p className="mb-1 text-xs font-semibold text-gray-600">커스텀 검사 지표</p>
+          <div className="mb-3 grid grid-cols-2 gap-x-3">
+            {metricDefs
+              .filter((d) => !d.isBuiltIn && d.enabled)
+              .sort((a, b) => a.order - b.order)
+              .map((def) => (
+                <div key={def.id}>
+                  <label className="mb-0.5 block text-xs text-gray-500">
+                    {def.label}{def.unit ? ` (${def.unit})` : ''}
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    className={`${inp} mb-1`}
+                    value={draft.customMetrics?.[def.id] ?? 0}
+                    onChange={(e) =>
+                      set('customMetrics', { ...draft.customMetrics, [def.id]: +e.target.value })
+                    }
+                  />
+                </div>
+              ))}
+          </div>
+        </>
+      )}
+
       {/* 이전 복용약 */}
       <label className="mb-0.5 block text-xs text-gray-500">이전 복용약 (쉼표 구분)</label>
       <input
@@ -206,6 +237,9 @@ function PatientEditor({
       />
       <label className="mb-0.5 block text-xs text-gray-500">이전 치료 요약</label>
       <input className={`${inp} mb-3`} value={draft.prevTreatment} onChange={(e) => set('prevTreatment', e.target.value)} />
+
+      <label className="mb-0.5 block text-xs text-gray-500">당뇨 외 복용약 (타 질환 약물, 쉼표 구분)</label>
+      <textarea rows={2} className={`${inp} mb-3 resize-none`} value={draft.otherMedications ?? ''} onChange={(e) => set('otherMedications', e.target.value)} placeholder="예: 아스피린 100mg, 암로디핀 5mg" />
 
       {/* 공병증 */}
       <p className="mb-1 text-xs font-semibold text-gray-600">공병증</p>
@@ -249,6 +283,7 @@ function PatientEditor({
 export default function PatientsTab() {
   const patients = useDataStore((s) => s.patients);
   const settings = useDataStore((s) => s.settings);
+  const metricDefs = useDataStore((s) => s.patientMetricDefs);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [seeding, setSeeding] = useState(false);
   const [flash, setFlash] = useState('');
@@ -346,6 +381,7 @@ export default function PatientsTab() {
               <PatientEditor
                 patient={p}
                 comorbNames={comorbNames}
+                metricDefs={metricDefs}
                 onSave={handleSave}
                 onDelete={() => handleDelete(p.id)}
               />

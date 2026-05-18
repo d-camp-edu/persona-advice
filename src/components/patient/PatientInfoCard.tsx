@@ -3,16 +3,24 @@ import Badge from '../common/Badge';
 import type { Comorbidity, Patient } from '../../types';
 import { colorForComorb, genderLabel, typeBadgeColor } from './patientStyle';
 
+interface PinnedLab {
+  label: string;
+  value: string;
+  unit: string;
+}
+
 interface PatientInfoCardProps {
   patient: Patient;
   currentHba1c: number;
   comorbidities: Comorbidity[];
+  pinnedLabs?: PinnedLab[];
 }
 
 export default function PatientInfoCard({
   patient,
   currentHba1c,
   comorbidities,
+  pinnedLabs,
 }: PatientInfoCardProps) {
   const hba1cChanged = Math.abs(currentHba1c - patient.initialHba1c) > 0.0001;
 
@@ -68,6 +76,17 @@ export default function PatientInfoCard({
               <Badge key={name} color={colorForComorb(name, comorbidities)}>
                 {name}
               </Badge>
+            ))}
+          </div>
+        )}
+        {pinnedLabs && pinnedLabs.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 border-t border-indigo-100 pt-1.5">
+            {pinnedLabs.map((lab) => (
+              <span key={lab.label} className="text-xs text-slate-600">
+                <span className="font-semibold text-indigo-700">{lab.label}</span>{' '}
+                <span className="font-bold text-slate-800">{lab.value}</span>
+                {lab.unit && <span className="text-slate-400"> {lab.unit}</span>}
+              </span>
             ))}
           </div>
         )}

@@ -1,6 +1,6 @@
 import { User } from 'lucide-react';
 import Badge from '../common/Badge';
-import type { Medication, Patient } from '../../types';
+import type { Medication, Patient, PatientMetricDef } from '../../types';
 import { useDataStore } from '../../store/useDataStore';
 import { colorForComorb, genderLabel, typeBadgeColor } from './patientStyle';
 
@@ -8,16 +8,18 @@ interface PatientChartProps {
   patient: Patient;
   currentHba1c: number;
   medications: Medication[];
+  pinnedLabs?: string[];
+  onToggleLab?: (label: string) => void;
 }
 
-interface LabRow {
+export interface LabRow {
   label: string;
   value: string;
   unit: string;
   show: boolean;
 }
 
-function buildLabRows(p: Patient): LabRow[] {
+export function buildLabRows(p: Patient): LabRow[] {
   return [
     { label: 'HbA1c', value: p.initialHba1c.toFixed(1), unit: '%', show: true },
     { label: 'eGFR', value: String(p.egfr), unit: 'ml/min/1.73m²', show: p.egfr > 0 },
@@ -27,6 +29,19 @@ function buildLabRows(p: Patient): LabRow[] {
     { label: 'BNP', value: String(p.bnp), unit: 'pg/mL', show: p.bnp > 0 },
     { label: 'NT-proBNP', value: String(p.ntprobnp), unit: 'pg/mL', show: p.ntprobnp > 0 },
   ];
+}
+
+export function buildCustomMetricRows(
+  p: Patient,
+  defs: PatientMetricDef[],
+): LabRow[] {
+  const customDefs = defs.filter((d) => !d.isBuiltIn && d.enabled);
+  return customDefs
+    .map((def) => {
+      const val = p.customMetrics?.[def.id] ?? 0;
+      return { label: def.label, value: String(val), unit: def.unit, show: val > 0 };
+    })
+    .filter((r) => r.show);
 }
 
 function resolvePrevDrugNames(p: Patient, meds: Medication[]): string[] {
@@ -43,14 +58,17 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
-export default function PatientChart({ patient, currentHba1c, medications }: PatientChartProps) {
+export default function PatientChart({ patient, currentHba1c, medications, pinnedLabs, onToggleLab }: PatientChartProps) {
   const settings = useDataStore((s) => s.settings);
+  const metricDefs = useDataStore((s) => s.patientMetricDefs);
   const labs = buildLabRows(patient).filter((r) => r.show);
+  const customRows = buildCustomMetricRows(patient, metricDefs);
   const prevNames = resolvePrevDrugNames(patient, medications);
   const hba1cChanged = Math.abs(currentHba1c - patient.initialHba1c) > 0.0001;
   const hasHistory = prevNames.length > 0 || patient.prevTreatment.trim().length > 0;
+  const hasOtherMeds = (patient.otherMedications ?? '').trim().length > 0;
 
-  const labsWithoutHba1c = labs.filter((l) => l.label !== 'HbA1c');
+  const labsWithoutHba1c = [...labs.filter((l) => l.label !== 'HbA1c'), ...customRows];
 
   return (
     <div className="space-y-3">
@@ -163,24 +181,48 @@ export default function PatientChart({ patient, currentHba1c, medications }: Pat
         </div>
       )}
 
+      {/* Section 2-b: 당뇨 외 복용약물 */}
+      {hasOtherMeds && (
+        <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+          <SectionHeader title="당뇨 외 복용약물" />
+          <div className="bg-white px-4 py-3">
+            <p className="text-sm text-slate-700 whitespace-pre-wrap">{patient.otherMedications}</p>
+          </div>
+        </div>
+      )}
+
       {/* Section 3: 내원 시 검사 결과 */}
       {labsWithoutHba1c.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
           <SectionHeader title="내원 시 검사 결과" />
           <div className="bg-white p-3">
+            {onToggleLab && (
+              <p className="mb-2 text-[10px] text-slate-400">체크하면 처방 화면 상단에 고정됩니다</p>
+            )}
             <div className="grid grid-cols-2 gap-2">
-              {labsWithoutHba1c.map((lab) => (
-                <div
-                  key={lab.label}
-                  className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5"
-                >
-                  <p className="mb-1 text-xs font-semibold text-slate-500">{lab.label}</p>
-                  <p className="text-base font-bold text-slate-800 leading-tight">{lab.value}</p>
-                  {lab.unit && (
-                    <p className="mt-0.5 text-[10px] text-slate-400 leading-tight">{lab.unit}</p>
-                  )}
-                </div>
-              ))}
+              {labsWithoutHba1c.map((lab) => {
+                const pinned = pinnedLabs?.includes(lab.label) ?? false;
+                return (
+                  <div
+                    key={lab.label}
+                    className={`relative rounded-lg border px-3 py-2.5 ${pinned ? 'border-indigo-300 bg-indigo-50' : 'border-slate-100 bg-slate-50'}`}
+                  >
+                    {onToggleLab && (
+                      <input
+                        type="checkbox"
+                        checked={pinned}
+                        onChange={() => onToggleLab(lab.label)}
+                        className="absolute right-2 top-2 h-3.5 w-3.5 cursor-pointer accent-indigo-600"
+                      />
+                    )}
+                    <p className="mb-1 text-xs font-semibold text-slate-500">{lab.label}</p>
+                    <p className="text-base font-bold text-slate-800 leading-tight">{lab.value}</p>
+                    {lab.unit && (
+                      <p className="mt-0.5 text-[10px] text-slate-400 leading-tight">{lab.unit}</p>
+                    )}
+                  </div>
+                );
+              })}
               {/* Extra flags */}
               {patient.hfHospitalization && (
                 <div className="rounded-lg border border-orange-100 bg-orange-50 px-3 py-2.5">

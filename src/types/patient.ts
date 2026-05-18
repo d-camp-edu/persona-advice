@@ -41,6 +41,7 @@ export interface Patient {
 
   prevDrugs: string[];
   prevTreatment: string;
+  otherMedications?: string;
 
   imageUrl: string;
   customMetrics?: Record<string, number>;
