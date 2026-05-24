@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Settings, BarChart2, RotateCcw } from 'lucide-react';
 import { useDataStore } from '../store/useDataStore';
-import { useSessionStore } from '../store/useSessionStore';
+import { useSessionStore, type InstitutionType } from '../store/useSessionStore';
 
 function loadLastLogin(): Record<string, string> | null {
   try {
@@ -25,6 +25,7 @@ export default function LoginScreen() {
   const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(fields.map((f) => [f.id, ''])),
   );
+  const [institutionType, setInstitutionType] = useState<InstitutionType>('병원');
 
   const ready =
     !loginPending &&
@@ -35,7 +36,7 @@ export default function LoginScreen() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!ready) return;
-    void login(values);
+    void login(values, institutionType);
   };
 
   const setValue = (id: string, v: string) => setValues((prev) => ({ ...prev, [id]: v }));
@@ -84,6 +85,27 @@ export default function LoginScreen() {
             />
           </label>
         ))}
+
+        {/* 기관 유형 선택 */}
+        <div className="mb-4">
+          <p className="mb-1.5 text-xs font-medium text-gray-600">기관 유형</p>
+          <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+            {(['병원', '의원'] as InstitutionType[]).map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setInstitutionType(type)}
+                className={`flex-1 py-2 text-sm font-semibold transition-colors ${
+                  institutionType === type
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {lastLogin && (
           <button

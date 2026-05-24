@@ -44,6 +44,7 @@ export interface Patient {
   otherMedications?: string;
 
   imageUrl: string;
+  brochureUrl?: string;
   customMetrics?: Record<string, number>;
 }
 

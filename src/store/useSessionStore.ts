@@ -11,6 +11,7 @@ import { useDataStore } from './useDataStore';
 
 export type Phase = 'login' | 'survey' | 'select' | 'rx' | 'result' | 'admin' | 'myresults';
 export type RxPhase = 'menu' | 'chart' | 'prescribe' | 'result';
+export type InstitutionType = '병원' | '의원';
 
 export type ComorbFilter = string;
 
@@ -25,6 +26,7 @@ interface SessionState {
 
   hospitalName: string;
   doctorName: string;
+  institutionType: InstitutionType;
   sessionKey: string;
   sessionDocId: string;
   sessionCreatedAt: string;
@@ -39,7 +41,7 @@ interface SessionState {
   lastResult: PrescriptionResult | null;
   loginPending: boolean;
 
-  login: (fieldValues: Record<string, string>) => Promise<void>;
+  login: (fieldValues: Record<string, string>, institutionType: InstitutionType) => Promise<void>;
   completeSurvey: (answers: Record<string, string | string[]>) => Promise<void>;
   goMyResults: () => void;
   selectPatient: (id: string) => void;
@@ -61,6 +63,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
   hospitalName: '',
   doctorName: '',
+  institutionType: '병원',
   sessionKey: '',
   sessionDocId: '',
   sessionCreatedAt: '',
@@ -75,7 +78,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   lastResult: null,
   loginPending: false,
 
-  login: async (fieldValues) => {
+  login: async (fieldValues, institutionType) => {
     const h = (fieldValues['hospital'] ?? '').trim();
     const d = (fieldValues['doctor'] ?? '').trim();
     if (!h || !d) return;
@@ -120,6 +123,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     set({
       hospitalName: h,
       doctorName: d,
+      institutionType,
       sessionKey: key,
       sessionDocId,
       sessionCreatedAt,
@@ -294,6 +298,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       rxPhase: 'menu',
       hospitalName: '',
       doctorName: '',
+      institutionType: '병원',
       sessionKey: '',
       sessionDocId: '',
       sessionCreatedAt: '',

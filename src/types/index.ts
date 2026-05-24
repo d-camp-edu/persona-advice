@@ -3,3 +3,4 @@ export * from './medication';
 export * from './session';
 export * from './settings';
 export * from './survey';
+export * from './gift';

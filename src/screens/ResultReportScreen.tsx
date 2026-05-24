@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
-import { ArrowLeft, ClipboardList, Pill, Activity, AlertTriangle, ShieldCheck, MessageCircle } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
+import { ArrowLeft, ClipboardList, Pill, Activity, AlertTriangle, ShieldCheck, MessageCircle, BookOpen, X, Gift as GiftIcon } from 'lucide-react';
 import { useDataStore } from '../store/useDataStore';
 import { useSessionStore } from '../store/useSessionStore';
+import GiftRoulette from '../components/gift/GiftRoulette';
 import MetricRow from '../components/result/MetricRow';
 import Badge from '../components/common/Badge';
 import { genderLabel, typeBadgeColor } from '../components/patient/patientStyle';
@@ -16,6 +17,10 @@ export default function ResultReportScreen() {
 
   const patients = useDataStore((s) => s.patients);
   const patientMetricDefs = useDataStore((s) => s.patientMetricDefs);
+  const gifts = useDataStore((s) => s.gifts);
+  const institutionType = useSessionStore((s) => s.institutionType);
+  const [showBrochure, setShowBrochure] = useState(false);
+  const [showRoulette, setShowRoulette] = useState(false);
 
   const patient = useMemo(
     () => (lastResult ? patients.find((p) => p.id === lastResult.prescription.patientId) : null),
@@ -180,22 +185,64 @@ export default function ResultReportScreen() {
         </Section>
       </div>
 
-      <div className="sticky bottom-0 flex gap-2 border-t border-gray-100 bg-white px-4 pt-3 pb-safe">
-        <button
-          type="button"
-          onClick={resetToLogin}
-          className="flex-1 rounded-lg border border-gray-300 bg-white py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
-        >
-          처음으로
-        </button>
-        <button
-          type="button"
-          onClick={resetToSelect}
-          className="flex-[2] rounded-lg bg-indigo-500 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-600"
-        >
-          다른 환자 진료 →
-        </button>
+      <div className="sticky bottom-0 flex flex-col gap-2 border-t border-gray-100 bg-white px-4 pt-3 pb-safe">
+        <div className="flex gap-2">
+          {patient.brochureUrl && (
+            <button
+              type="button"
+              onClick={() => setShowBrochure(true)}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-500 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-600"
+            >
+              <BookOpen size={15} />
+              브로셔 확인
+            </button>
+          )}
+          {gifts.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowRoulette(true)}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-amber-400 py-3 text-sm font-semibold text-amber-900 shadow-sm hover:bg-amber-300"
+            >
+              <GiftIcon size={15} />
+              선물 받기
+            </button>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={resetToLogin}
+            className="flex-1 rounded-lg border border-gray-300 bg-white py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            처음으로
+          </button>
+          <button
+            type="button"
+            onClick={resetToSelect}
+            className="flex-[2] rounded-lg bg-indigo-500 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-600"
+          >
+            다른 환자 진료 →
+          </button>
+        </div>
       </div>
+
+      {showBrochure && patient.brochureUrl && (
+        <BrochureViewer
+          url={patient.brochureUrl}
+          onClose={() => {
+            setShowBrochure(false);
+            if (gifts.length > 0) setShowRoulette(true);
+          }}
+        />
+      )}
+
+      {showRoulette && (
+        <GiftRoulette
+          gifts={gifts}
+          institutionType={institutionType}
+          onClose={() => setShowRoulette(false)}
+        />
+      )}
     </div>
   );
 }
@@ -302,6 +349,59 @@ function MetricsBlock({
           />
         );
       })}
+    </div>
+  );
+}
+
+function BrochureViewer({ url, onClose }: { url: string; onClose: () => void }) {
+  const [isPortrait, setIsPortrait] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(orientation: portrait)').matches,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(orientation: portrait)');
+    const handler = (e: MediaQueryListEvent) => setIsPortrait(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  const containerStyle: React.CSSProperties = isPortrait
+    ? {
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        width: '100vh',
+        height: '100vw',
+        transform: 'translate(-50%, -50%) rotate(90deg)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }
+    : {
+        position: 'absolute',
+        inset: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black">
+      <div style={containerStyle}>
+        <img
+          src={url}
+          alt="브로셔"
+          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+        />
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="닫기"
+        className="absolute right-3 top-3 z-10 flex items-center justify-center rounded-full bg-white/20 p-2 text-white backdrop-blur-sm hover:bg-white/30"
+      >
+        <X size={20} />
+      </button>
     </div>
   );
 }

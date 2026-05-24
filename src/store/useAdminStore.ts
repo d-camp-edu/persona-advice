@@ -6,6 +6,7 @@ export type AdminTab =
   | 'patients'
   | 'meds'
   | 'survey'
+  | 'gifts'
   | 'rules'
   | 'allowed'
   | 'exemptions'

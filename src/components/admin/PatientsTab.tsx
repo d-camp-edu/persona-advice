@@ -38,6 +38,7 @@ function newPatient(): Patient {
     prevTreatment: '',
     otherMedications: '',
     imageUrl: '',
+    brochureUrl: '',
   };
 }
 
@@ -85,6 +86,18 @@ function PatientEditor({
           label="환자 사진"
           previewSize="md"
         />
+      </div>
+
+      {/* 브로셔 업로드 */}
+      <div className="mb-4">
+        <ImageUploader
+          value={draft.brochureUrl ?? ''}
+          onChange={(url) => set('brochureUrl', url)}
+          storagePath={`brochures/${draft.id}`}
+          label="브로셔 이미지 (PPT 와이드)"
+          previewSize="md"
+        />
+        <p className="mt-1 text-[10px] text-gray-400">처방 결과 화면 하단 '브로셔 확인' 버튼으로 표시됩니다</p>
       </div>
 
       <div className="grid grid-cols-2 gap-x-3">

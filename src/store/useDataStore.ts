@@ -11,6 +11,7 @@ import type {
   SideEffectExemption,
   SurveyQuestion,
   PatientMetricDef,
+  Gift,
 } from '../types';
 import {
   seedPatients,
@@ -20,6 +21,7 @@ import {
   seedSettings,
   seedSurveyQuestions,
   seedPatientMetricDefs,
+  seedGifts,
 } from '../data/seed';
 import { subscribeCollection, subscribeDoc } from '../lib/firestoreApi';
 import { ensureAnonymousAuth, isFirebaseConfigured } from '../lib/firebase';
@@ -37,6 +39,7 @@ interface DataState {
   settings: GlobalSettings;
   surveyQuestions: SurveyQuestion[];
   patientMetricDefs: PatientMetricDef[];
+  gifts: Gift[];
 
   status: LoadStatus;
   error: string | null;
@@ -63,6 +66,7 @@ export const useDataStore = create<DataState>((set, get) => ({
   settings: seedSettings,
   surveyQuestions: seedSurveyQuestions,
   patientMetricDefs: seedPatientMetricDefs,
+  gifts: seedGifts,
 
   status: 'idle',
   error: null,
@@ -135,6 +139,11 @@ export const useDataStore = create<DataState>((set, get) => ({
         subscribeCollection<PatientMetricDef>('patientMetricDefs', (items) => {
           if (items.length === 0) return;
           set({ patientMetricDefs: items });
+        }),
+      );
+      subs.push(
+        subscribeCollection<Gift>('gifts', (items) => {
+          set({ gifts: items });
         }),
       );
 
