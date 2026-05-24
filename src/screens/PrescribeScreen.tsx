@@ -3,7 +3,7 @@ import { ArrowLeft, FileText, Pill } from 'lucide-react';
 import { useDataStore } from '../store/useDataStore';
 import { useSessionStore } from '../store/useSessionStore';
 import PatientInfoCard from '../components/patient/PatientInfoCard';
-import PatientChart, { buildLabRows, buildCustomMetricRows } from '../components/patient/PatientChart';
+import PatientChart from '../components/patient/PatientChart';
 import DiagCodeToggle from '../components/prescribe/DiagCodeToggle';
 import SlotList from '../components/prescribe/SlotList';
 import MedSelector from '../components/prescribe/MedSelector';
@@ -14,7 +14,6 @@ export default function PrescribeScreen() {
   const medications = useDataStore((s) => s.medications);
   const categories = useDataStore((s) => s.medCategories);
   const settings = useDataStore((s) => s.settings);
-  const metricDefs = useDataStore((s) => s.patientMetricDefs);
 
   const currentPatientId = useSessionStore((s) => s.currentPatientId);
   const rxPhase = useSessionStore((s) => s.rxPhase);
@@ -29,7 +28,6 @@ export default function PrescribeScreen() {
   const sessionPrescriptions = useSessionStore((s) => s.sessionPrescriptions);
 
   const [selectorSlot, setSelectorSlot] = useState<number | null>(null);
-  const [pinnedLabLabels, setPinnedLabLabels] = useState<string[]>([]);
 
   const patient = useMemo(
     () => patients.find((p) => p.id === currentPatientId) ?? null,
@@ -54,18 +52,6 @@ export default function PrescribeScreen() {
   const currentState = getPatientCurrentState(patient, sessionPrescriptions, medications);
   const currentHba1c = currentState.hba1c;
   const currentEgfr = currentState.egfr;
-
-  const allLabRows = [
-    ...buildLabRows(patient).filter((r) => r.show && r.label !== 'HbA1c'),
-    ...buildCustomMetricRows(patient, metricDefs),
-  ];
-  const pinnedLabRows = allLabRows.filter((r) => pinnedLabLabels.includes(r.label));
-
-  const handleToggleLab = (label: string) => {
-    setPinnedLabLabels((prev) =>
-      prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label],
-    );
-  };
 
   const filledSlotCount = slots.filter((id) => id != null).length;
   const filledDrugSlotCount = slots
@@ -107,7 +93,6 @@ export default function PrescribeScreen() {
           patient={patient}
           currentHba1c={currentHba1c}
           comorbidities={settings.comorbidities}
-          pinnedLabs={pinnedLabRows}
         />
       </div>
 
@@ -127,8 +112,6 @@ export default function PrescribeScreen() {
                 patient={patient}
                 currentHba1c={currentHba1c}
                 medications={medications}
-                pinnedLabs={pinnedLabLabels}
-                onToggleLab={handleToggleLab}
               />
             }
           />

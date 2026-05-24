@@ -8,8 +8,6 @@ interface PatientChartProps {
   patient: Patient;
   currentHba1c: number;
   medications: Medication[];
-  pinnedLabs?: string[];
-  onToggleLab?: (label: string) => void;
 }
 
 export interface LabRow {
@@ -58,7 +56,7 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
-export default function PatientChart({ patient, currentHba1c, medications, pinnedLabs, onToggleLab }: PatientChartProps) {
+export default function PatientChart({ patient, currentHba1c, medications }: PatientChartProps) {
   const settings = useDataStore((s) => s.settings);
   const metricDefs = useDataStore((s) => s.patientMetricDefs);
   const labs = buildLabRows(patient).filter((r) => r.show);
@@ -196,33 +194,19 @@ export default function PatientChart({ patient, currentHba1c, medications, pinne
         <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
           <SectionHeader title="내원 시 검사 결과" />
           <div className="bg-white p-3">
-            {onToggleLab && (
-              <p className="mb-2 text-[10px] text-slate-400">체크하면 처방 화면 상단에 고정됩니다</p>
-            )}
             <div className="grid grid-cols-2 gap-2">
-              {labsWithoutHba1c.map((lab) => {
-                const pinned = pinnedLabs?.includes(lab.label) ?? false;
-                return (
-                  <div
-                    key={lab.label}
-                    className={`relative rounded-lg border px-3 py-2.5 ${pinned ? 'border-indigo-300 bg-indigo-50' : 'border-slate-100 bg-slate-50'}`}
-                  >
-                    {onToggleLab && (
-                      <input
-                        type="checkbox"
-                        checked={pinned}
-                        onChange={() => onToggleLab(lab.label)}
-                        className="absolute right-2 top-2 h-3.5 w-3.5 cursor-pointer accent-indigo-600"
-                      />
-                    )}
-                    <p className="mb-1 text-xs font-semibold text-slate-500">{lab.label}</p>
-                    <p className="text-base font-bold text-slate-800 leading-tight">{lab.value}</p>
-                    {lab.unit && (
-                      <p className="mt-0.5 text-[10px] text-slate-400 leading-tight">{lab.unit}</p>
-                    )}
-                  </div>
-                );
-              })}
+              {labsWithoutHba1c.map((lab) => (
+                <div
+                  key={lab.label}
+                  className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5"
+                >
+                  <p className="mb-1 text-xs font-semibold text-slate-500">{lab.label}</p>
+                  <p className="text-base font-bold text-slate-800 leading-tight">{lab.value}</p>
+                  {lab.unit && (
+                    <p className="mt-0.5 text-[10px] text-slate-400 leading-tight">{lab.unit}</p>
+                  )}
+                </div>
+              ))}
               {/* Extra flags */}
               {patient.hfHospitalization && (
                 <div className="rounded-lg border border-orange-100 bg-orange-50 px-3 py-2.5">

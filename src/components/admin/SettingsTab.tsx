@@ -3,6 +3,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useDataStore } from '../../store/useDataStore';
 import { saveDoc } from '../../lib/firestoreApi';
 import { uploadSettings } from '../../data/seedRunner';
+import ImageUploader from '../common/ImageUploader';
 import type { GlobalSettings, Comorbidity, LoginFieldDef } from '../../types';
 
 const inp =
@@ -128,18 +129,42 @@ export default function SettingsTab() {
             <input className={`${inpSm} flex-1`} value={draft.loginBtnColor} onChange={(e) => set('loginBtnColor', e.target.value)} />
           </div>
         </Field>
-        <Field label="로고 URL">
-          <input className={inp} value={draft.loginLogoUrl} onChange={(e) => set('loginLogoUrl', e.target.value)} placeholder="https://..." />
-        </Field>
-        <Field label="타이틀 아이콘 URL">
-          <input className={inp} value={draft.loginTitleIconUrl} onChange={(e) => set('loginTitleIconUrl', e.target.value)} placeholder="https://..." />
-        </Field>
-        <Field label="배경 이미지 URL">
-          <input className={inp} value={draft.backgroundImgUrl} onChange={(e) => set('backgroundImgUrl', e.target.value)} placeholder="https://..." />
-        </Field>
-        <Field label="의사 이미지 URL">
-          <input className={inp} value={draft.encounterDoctorImg} onChange={(e) => set('encounterDoctorImg', e.target.value)} placeholder="https://..." />
-        </Field>
+        <div className="mb-3">
+          <ImageUploader
+            label="로고"
+            value={draft.loginLogoUrl}
+            onChange={(url) => set('loginLogoUrl', url)}
+            storagePath="settings/loginLogo"
+            previewSize="sm"
+          />
+        </div>
+        <div className="mb-3">
+          <ImageUploader
+            label="타이틀 아이콘"
+            value={draft.loginTitleIconUrl}
+            onChange={(url) => set('loginTitleIconUrl', url)}
+            storagePath="settings/titleIcon"
+            previewSize="sm"
+          />
+        </div>
+        <div className="mb-3">
+          <ImageUploader
+            label="배경 이미지"
+            value={draft.backgroundImgUrl}
+            onChange={(url) => set('backgroundImgUrl', url)}
+            storagePath="settings/backgroundImg"
+            previewSize="sm"
+          />
+        </div>
+        <div className="mb-3">
+          <ImageUploader
+            label="의사 이미지"
+            value={draft.encounterDoctorImg}
+            onChange={(url) => set('encounterDoctorImg', url)}
+            storagePath="settings/doctorImg"
+            previewSize="sm"
+          />
+        </div>
       </Section>
 
       {/* 로그인 입력 필드 */}

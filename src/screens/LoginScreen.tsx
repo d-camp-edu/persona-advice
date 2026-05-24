@@ -1,7 +1,16 @@
 import { useState } from 'react';
-import { Settings, BarChart2 } from 'lucide-react';
+import { Settings, BarChart2, RotateCcw } from 'lucide-react';
 import { useDataStore } from '../store/useDataStore';
 import { useSessionStore } from '../store/useSessionStore';
+
+function loadLastLogin(): Record<string, string> | null {
+  try {
+    const raw = localStorage.getItem('persona_rx_last_login');
+    return raw ? (JSON.parse(raw) as Record<string, string>) : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function LoginScreen() {
   const settings = useDataStore((s) => s.settings);
@@ -11,6 +20,7 @@ export default function LoginScreen() {
   const goMyResults = useSessionStore((s) => s.goMyResults);
 
   const fields = [...(settings.loginFields ?? [])].sort((a, b) => a.order - b.order);
+  const lastLogin = loadLastLogin();
 
   const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(fields.map((f) => [f.id, ''])),
@@ -74,6 +84,20 @@ export default function LoginScreen() {
             />
           </label>
         ))}
+
+        {lastLogin && (
+          <button
+            type="button"
+            onClick={() => {
+              const merged = Object.fromEntries(fields.map((f) => [f.id, lastLogin[f.id] ?? '']));
+              setValues(merged);
+            }}
+            className="mb-3 w-full flex items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 py-2.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition"
+          >
+            <RotateCcw size={14} />
+            재접속 (이전 정보 불러오기)
+          </button>
+        )}
 
         <button
           type="submit"

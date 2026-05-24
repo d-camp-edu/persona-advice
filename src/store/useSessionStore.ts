@@ -111,6 +111,12 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     const surveyQuestions = useDataStore.getState().surveyQuestions;
     const nextPhase: Phase = surveyQuestions.length > 0 ? 'survey' : 'select';
 
+    try {
+      localStorage.setItem('persona_rx_last_login', JSON.stringify(fieldValues));
+    } catch {
+      // ignore storage errors
+    }
+
     set({
       hospitalName: h,
       doctorName: d,
