@@ -1,7 +1,7 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app';
 import { getFirestore, type Firestore } from 'firebase/firestore';
-import { getAuth, signInAnonymously, type Auth } from 'firebase/auth';
-import { firebaseConfig, APP_ID, isFirebaseConfigured } from './firebaseConfig';
+import { getAuth, signInAnonymously, onAuthStateChanged, type Auth } from 'firebase/auth';
+import { firebaseConfig, APP_ID, isFirebaseConfigured, isStorageConfigured } from './firebaseConfig';
 
 let appInstance: FirebaseApp | null = null;
 let dbInstance: Firestore | null = null;
@@ -26,13 +26,31 @@ export function initFirebase(): {
 export async function ensureAnonymousAuth(): Promise<string | null> {
   const { auth } = initFirebase();
   if (!auth) return null;
-  if (auth.currentUser) return auth.currentUser.uid;
-  const cred = await signInAnonymously(auth);
-  return cred.user.uid;
+  // onAuthStateChanged로 SDK 초기화 완료를 기다린 후 처리
+  // (auth.currentUser 직접 체크 시 Firestore 토큰 전파 전에 permission-denied 발생하는 문제 방지)
+  return new Promise<string | null>((resolve, reject) => {
+    const unsub = onAuthStateChanged(
+      auth,
+      async (user) => {
+        unsub();
+        try {
+          if (user) {
+            resolve(user.uid);
+          } else {
+            const cred = await signInAnonymously(auth);
+            resolve(cred.user.uid);
+          }
+        } catch (e) {
+          reject(e);
+        }
+      },
+      reject,
+    );
+  });
 }
 
 export function getDb(): Firestore | null {
   return initFirebase().db;
 }
 
-export { APP_ID, isFirebaseConfigured };
+export { APP_ID, isFirebaseConfigured, isStorageConfigured };
