@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowLeft, ClipboardList, Pill, Activity, AlertTriangle, ShieldCheck, MessageCircle, BookOpen, X, Gift as GiftIcon } from 'lucide-react';
 import { useDataStore } from '../store/useDataStore';
 import { useSessionStore } from '../store/useSessionStore';
@@ -196,7 +197,7 @@ export default function ResultReportScreen() {
               className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-500 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-600"
             >
               <BookOpen size={15} />
-              브로셔 확인
+              {getYouTubeId(patient.brochureUrl) ? '영상 보기' : '브로셔 확인'}
             </button>
           )}
           {gifts.length > 0 && (
@@ -355,7 +356,27 @@ function MetricsBlock({
   );
 }
 
+function getYouTubeId(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, '');
+    if (host === 'youtu.be') {
+      const id = u.pathname.slice(1).split('/')[0];
+      return id || null;
+    }
+    if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com') {
+      if (u.pathname === '/watch') return u.searchParams.get('v');
+      const m = u.pathname.match(/^\/(?:embed|shorts|v|live)\/([^/?#]+)/);
+      if (m) return m[1];
+    }
+  } catch {
+    // 잘못된 URL은 그냥 null
+  }
+  return null;
+}
+
 function BrochureViewer({ url, onClose }: { url: string; onClose: () => void }) {
+  const ytId = useMemo(() => getYouTubeId(url), [url]);
   const [isPortrait, setIsPortrait] = useState(
     () => typeof window !== 'undefined' && window.matchMedia('(orientation: portrait)').matches,
   );
@@ -366,6 +387,35 @@ function BrochureViewer({ url, onClose }: { url: string; onClose: () => void }) 
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, []);
+
+  // YouTube: 가로 16:9 영상 — 회전 없이 화면 가운데 꽉 맞춤
+  if (ytId) {
+    const src = `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`;
+    const overlay = (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
+        <div className="relative w-full" style={{ maxWidth: '100vw' }}>
+          <div className="mx-auto aspect-video w-full" style={{ maxHeight: '100vh' }}>
+            <iframe
+              src={src}
+              title="브로셔 영상"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              className="h-full w-full border-0"
+            />
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="닫기"
+          className="absolute right-3 top-3 z-10 flex items-center justify-center rounded-full bg-white/20 p-2 text-white backdrop-blur-sm hover:bg-white/30"
+        >
+          <X size={20} />
+        </button>
+      </div>
+    );
+    return createPortal(overlay, document.body);
+  }
 
   const containerStyle: React.CSSProperties = isPortrait
     ? {
@@ -387,7 +437,7 @@ function BrochureViewer({ url, onClose }: { url: string; onClose: () => void }) 
         justifyContent: 'center',
       };
 
-  return (
+  const overlay = (
     <div className="fixed inset-0 z-50 bg-black">
       <div style={containerStyle}>
         <img
@@ -406,4 +456,5 @@ function BrochureViewer({ url, onClose }: { url: string; onClose: () => void }) 
       </button>
     </div>
   );
+  return createPortal(overlay, document.body);
 }

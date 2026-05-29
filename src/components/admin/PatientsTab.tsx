@@ -88,7 +88,7 @@ function PatientEditor({
         />
       </div>
 
-      {/* 브로셔 업로드 */}
+      {/* 브로셔 업로드 또는 YouTube 링크 */}
       <div className="mb-4">
         <ImageUploader
           value={draft.brochureUrl ?? ''}
@@ -97,7 +97,20 @@ function PatientEditor({
           label="브로셔 이미지 (PPT 와이드)"
           previewSize="md"
         />
-        <p className="mt-1 text-[10px] text-gray-400">처방 결과 화면 하단 '브로셔 확인' 버튼으로 표시됩니다</p>
+        <div className="mt-2">
+          <label className="mb-1 block text-[11px] text-gray-500">또는 YouTube 영상 링크</label>
+          <input
+            type="text"
+            className={inp}
+            value={draft.brochureUrl ?? ''}
+            onChange={(e) => set('brochureUrl', e.target.value)}
+            placeholder="https://youtu.be/... 또는 https://www.youtube.com/watch?v=..."
+          />
+        </div>
+        <p className="mt-1 text-[10px] text-gray-400">
+          처방 결과 화면 하단 '브로셔 확인' 버튼으로 표시됩니다. YouTube 링크는 영상이 임베드 재생되며,
+          링크가 있는 사람만 접근하도록 영상 자체를 '일부 공개(Unlisted)' 설정하세요.
+        </p>
       </div>
 
       <div className="grid grid-cols-2 gap-x-3">
