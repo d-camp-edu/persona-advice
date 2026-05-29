@@ -12,6 +12,8 @@ export interface SurveyResponse {
   sessionDocId: string;
   doctorName: string;
   hospitalName: string;
+  department?: string;
+  institutionType?: '병원' | '의원';
   answeredAt: string;
   answers: Record<string, string | string[]>;
   loginFieldValues?: Record<string, string>;

@@ -26,6 +26,11 @@ export default function LoginScreen() {
     Object.fromEntries(fields.map((f) => [f.id, ''])),
   );
   const [institutionType, setInstitutionType] = useState<InstitutionType>('병원');
+  const [department, setDepartment] = useState<string>('');
+
+  const departmentOptions = (settings.hospitalDepartments ?? []).filter(
+    (d) => d.trim().length > 0,
+  );
 
   const ready =
     !loginPending &&
@@ -36,7 +41,7 @@ export default function LoginScreen() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!ready) return;
-    void login(values, institutionType);
+    void login(values, institutionType, institutionType === '병원' ? department : '');
   };
 
   const setValue = (id: string, v: string) => setValues((prev) => ({ ...prev, [id]: v }));
@@ -57,7 +62,7 @@ export default function LoginScreen() {
             <img
               src={settings.loginLogoUrl}
               alt=""
-              className="mx-auto mb-3 h-12 w-12 object-contain"
+              className="mx-auto mb-4 h-32 w-auto max-w-[220px] object-contain"
             />
           )}
           <h1 className="flex items-center justify-center gap-2 text-2xl font-bold text-gray-900">
@@ -70,20 +75,55 @@ export default function LoginScreen() {
         </div>
 
         {fields.map((field, i) => (
-          <label key={field.id} className={`block ${i < fields.length - 1 ? 'mb-3' : 'mb-5'}`}>
-            <span className="mb-1 block text-xs font-medium text-gray-600">
-              {field.label}
-              {field.required && <span className="ml-0.5 text-red-400">*</span>}
-            </span>
-            <input
-              type="text"
-              value={values[field.id] ?? ''}
-              onChange={(e) => setValue(field.id, e.target.value)}
-              placeholder={field.placeholder}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-              autoComplete="off"
-            />
-          </label>
+          <div key={field.id}>
+            <label className={`block ${i < fields.length - 1 ? 'mb-3' : 'mb-5'}`}>
+              <span className="mb-1 block text-xs font-medium text-gray-600">
+                {field.label}
+                {field.required && <span className="ml-0.5 text-red-400">*</span>}
+              </span>
+              <input
+                type="text"
+                value={values[field.id] ?? ''}
+                onChange={(e) => setValue(field.id, e.target.value)}
+                placeholder={field.placeholder}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                autoComplete="off"
+              />
+            </label>
+
+            {field.id === 'hospital' && institutionType === '병원' && (
+              <label className="mb-3 block">
+                <span className="mb-1 block text-xs font-medium text-gray-600">분과</span>
+                {departmentOptions.length > 0 ? (
+                  <>
+                    <input
+                      type="text"
+                      list="hospital-department-options"
+                      value={department}
+                      onChange={(e) => setDepartment(e.target.value)}
+                      placeholder="예: 내분비내과"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                      autoComplete="off"
+                    />
+                    <datalist id="hospital-department-options">
+                      {departmentOptions.map((d) => (
+                        <option key={d} value={d} />
+                      ))}
+                    </datalist>
+                  </>
+                ) : (
+                  <input
+                    type="text"
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    placeholder="예: 내분비내과"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                    autoComplete="off"
+                  />
+                )}
+              </label>
+            )}
+          </div>
         ))}
 
         {/* 기관 유형 선택 */}
@@ -94,7 +134,10 @@ export default function LoginScreen() {
               <button
                 key={type}
                 type="button"
-                onClick={() => setInstitutionType(type)}
+                onClick={() => {
+                  setInstitutionType(type);
+                  if (type === '의원') setDepartment('');
+                }}
                 className={`flex-1 py-2 text-sm font-semibold transition-colors ${
                   institutionType === type
                     ? 'bg-indigo-600 text-white'

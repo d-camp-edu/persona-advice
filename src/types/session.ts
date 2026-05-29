@@ -50,6 +50,9 @@ export interface RxSession {
   id: string;
   hospitalName: string;
   doctorName: string;
+  /** 병원 선택 시 분과명. 의원 선택 시 빈 문자열. */
+  department?: string;
+  institutionType?: '병원' | '의원';
   sessionKey: string;
   createdAt: string;
   prescriptions: Prescription[];

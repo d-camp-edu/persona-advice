@@ -125,7 +125,8 @@ function SessionCard({ session }: { session: RxSession }) {
       >
         <div>
           <span className="text-sm font-semibold text-gray-900">
-            {session.hospitalName} · {session.doctorName}
+            {session.hospitalName}
+            {session.department && ` ${session.department}`} · {session.doctorName}
           </span>
           <span className="ml-2 text-xs text-gray-400">
             {session.createdAt.slice(0, 10)} · 처방 {session.prescriptions.length}건

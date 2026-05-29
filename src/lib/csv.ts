@@ -3,6 +3,7 @@ import type { RxSession } from '../types';
 export function sessionsToCSV(sessions: RxSession[]): string {
   const headers = [
     '병원',
+    '분과',
     '의사',
     '환자',
     '날짜',
@@ -27,6 +28,7 @@ export function sessionsToCSV(sessions: RxSession[]): string {
       });
       return [
         s.hospitalName,
+        s.department ?? '',
         s.doctorName,
         p.patientName,
         p.timestamp.slice(0, 10),

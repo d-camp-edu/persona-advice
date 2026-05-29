@@ -85,6 +85,15 @@ export const useDataStore = create<DataState>((set, get) => ({
     try {
       await ensureAnonymousAuth();
 
+      // settings/global 문서가 처음 도착할 때까지 ready 전환을 보류한다.
+      // 그렇지 않으면 시드 기본값으로 한 프레임 그려진 뒤 사용자 저장 설정이
+      // 뒤늦게 덮어쓰는 깜빡임이 발생한다.
+      let settingsArrived = false;
+      const markReadyIfSettings = () => {
+        if (!settingsArrived) return;
+        if (get().status !== 'ready') set({ status: 'ready' });
+      };
+
       subs.push(
         subscribeCollection<Patient>('patients', (items) => {
           if (items.length === 0) return;
@@ -127,6 +136,8 @@ export const useDataStore = create<DataState>((set, get) => ({
       subs.push(
         subscribeDoc<GlobalSettings>('settings', 'global', (data) => {
           if (data) set({ settings: data });
+          settingsArrived = true;
+          markReadyIfSettings();
         }),
       );
       subs.push(
@@ -147,7 +158,14 @@ export const useDataStore = create<DataState>((set, get) => ({
         }),
       );
 
-      set({ status: 'ready' });
+      // 안전망: settings 구독이 어떤 이유로든 4초 안에 도달하지 못하면
+      // (예: 네트워크 지연이 아닌 권한 문제) 시드값으로라도 화면을 표시한다.
+      setTimeout(() => {
+        if (!settingsArrived) {
+          settingsArrived = true;
+          markReadyIfSettings();
+        }
+      }, 4000);
     } catch (e) {
       set({ status: 'error', error: e instanceof Error ? e.message : String(e) });
     }

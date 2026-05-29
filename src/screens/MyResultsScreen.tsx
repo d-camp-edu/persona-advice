@@ -11,6 +11,7 @@ import type { RxSession, SurveyResponse } from '../types';
 interface ResultCard {
   doctorName: string;
   hospitalName: string;
+  department: string;
   sessionCount: number;
   patientNames: string[];
   prescriptionCount: number;
@@ -42,7 +43,7 @@ function buildCards(
 
   const grouped = new Map<string, RxSession[]>();
   for (const s of mySessions) {
-    const key = `${s.doctorName}__${s.hospitalName}`;
+    const key = `${s.doctorName}__${s.hospitalName}__${s.department ?? ''}`;
     if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key)!.push(s);
   }
@@ -53,14 +54,14 @@ function buildCards(
     const svFv = sv.loginFieldValues;
     const matches = myFieldEntries.every(([k, v]) => svFv[k] === v);
     if (!matches) continue;
-    const key = `${sv.doctorName}__${sv.hospitalName}`;
+    const key = `${sv.doctorName}__${sv.hospitalName}__${sv.department ?? ''}`;
     if (!surveyMap.has(key)) surveyMap.set(key, []);
     surveyMap.get(key)!.push(sv);
   }
 
   const cards: ResultCard[] = [];
   for (const [key, sess] of grouped.entries()) {
-    const [doctorName, hospitalName] = key.split('__');
+    const [doctorName, hospitalName, department] = key.split('__');
     const patientSet = new Set<string>();
     let prescriptionCount = 0;
     let lastActivity = '';
@@ -76,6 +77,7 @@ function buildCards(
     cards.push({
       doctorName,
       hospitalName,
+      department,
       sessionCount: sess.length,
       patientNames: [...patientSet],
       prescriptionCount,
@@ -213,7 +215,10 @@ function ResultCardView({ card }: { card: ResultCard }) {
       <div className="bg-indigo-600 px-4 py-3">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs text-indigo-200">{card.hospitalName}</p>
+            <p className="text-xs text-indigo-200">
+              {card.hospitalName}
+              {card.department && ` · ${card.department}`}
+            </p>
             <p className="text-base font-bold text-white">{card.doctorName} 선생님</p>
           </div>
           <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs text-white">

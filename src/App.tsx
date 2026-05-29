@@ -22,8 +22,9 @@ export default function App() {
 
   if (status === 'loading' || status === 'idle') {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-white text-sm text-gray-500">
-        로딩 중…
+      <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-white text-sm text-gray-500">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-500" />
+        <p>설정을 불러오는 중…</p>
       </div>
     );
   }

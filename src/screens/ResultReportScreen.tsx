@@ -12,6 +12,7 @@ export default function ResultReportScreen() {
   const lastResult = useSessionStore((s) => s.lastResult);
   const hospitalName = useSessionStore((s) => s.hospitalName);
   const doctorName = useSessionStore((s) => s.doctorName);
+  const department = useSessionStore((s) => s.department);
   const resetToSelect = useSessionStore((s) => s.resetToSelect);
   const resetToLogin = useSessionStore((s) => s.resetToLogin);
 
@@ -67,6 +68,7 @@ export default function ResultReportScreen() {
             <ClipboardList size={12} />
             <span>
               {doctorName} 선생님 · {hospitalName}
+              {department && ` ${department}`}
             </span>
           </div>
           <div className="flex items-baseline justify-between gap-2">

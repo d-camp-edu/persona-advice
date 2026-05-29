@@ -27,6 +27,7 @@ interface SessionState {
   hospitalName: string;
   doctorName: string;
   institutionType: InstitutionType;
+  department: string;
   sessionKey: string;
   sessionDocId: string;
   sessionCreatedAt: string;
@@ -41,7 +42,11 @@ interface SessionState {
   lastResult: PrescriptionResult | null;
   loginPending: boolean;
 
-  login: (fieldValues: Record<string, string>, institutionType: InstitutionType) => Promise<void>;
+  login: (
+    fieldValues: Record<string, string>,
+    institutionType: InstitutionType,
+    department: string,
+  ) => Promise<void>;
   completeSurvey: (answers: Record<string, string | string[]>) => Promise<void>;
   goMyResults: () => void;
   selectPatient: (id: string) => void;
@@ -64,6 +69,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   hospitalName: '',
   doctorName: '',
   institutionType: '병원',
+  department: '',
   sessionKey: '',
   sessionDocId: '',
   sessionCreatedAt: '',
@@ -78,9 +84,10 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   lastResult: null,
   loginPending: false,
 
-  login: async (fieldValues, institutionType) => {
+  login: async (fieldValues, institutionType, department) => {
     const h = (fieldValues['hospital'] ?? '').trim();
     const d = (fieldValues['doctor'] ?? '').trim();
+    const dept = institutionType === '병원' ? (department ?? '').trim() : '';
     if (!h || !d) return;
     if (get().loginPending) return;
     const key = makeSessionKey(h, d);
@@ -124,6 +131,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       hospitalName: h,
       doctorName: d,
       institutionType,
+      department: dept,
       sessionKey: key,
       sessionDocId,
       sessionCreatedAt,
@@ -138,11 +146,13 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   },
 
   completeSurvey: async (answers) => {
-    const { sessionDocId, doctorName, hospitalName, loginFieldValues } = get();
+    const { sessionDocId, doctorName, hospitalName, department, institutionType, loginFieldValues } = get();
     const response: Omit<SurveyResponse, 'id'> = {
       sessionDocId,
       doctorName,
       hospitalName,
+      department,
+      institutionType,
       answeredAt: new Date().toISOString(),
       answers,
       loginFieldValues,
@@ -200,6 +210,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       sessionPrescriptions,
       hospitalName,
       doctorName,
+      department,
+      institutionType,
       sessionKey,
       sessionDocId,
       sessionCreatedAt,
@@ -270,6 +282,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         id: sessionDocId,
         hospitalName,
         doctorName,
+        department,
+        institutionType,
         sessionKey,
         createdAt: sessionCreatedAt || new Date().toISOString(),
         prescriptions: nextPrescriptions,
@@ -299,6 +313,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       hospitalName: '',
       doctorName: '',
       institutionType: '병원',
+      department: '',
       sessionKey: '',
       sessionDocId: '',
       sessionCreatedAt: '',

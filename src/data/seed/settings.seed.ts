@@ -45,4 +45,13 @@ export const seedSettings: GlobalSettings = {
   comorbidities: seedComorbidities,
   adminPassword: '1024',
   allowSessionCarryover: false,
+
+  hospitalDepartments: [
+    '내분비내과',
+    '순환기내과',
+    '신장내과',
+    '가정의학과',
+    '내과',
+    '소화기내과',
+  ],
 };

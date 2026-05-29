@@ -99,6 +99,24 @@ export default function SettingsTab() {
     set('loginFields', fields);
   };
 
+  const departments = draft.hospitalDepartments ?? [];
+
+  const updateDepartment = (idx: number, value: string) => {
+    const next = [...departments];
+    next[idx] = value;
+    set('hospitalDepartments', next);
+  };
+
+  const addDepartment = () => {
+    set('hospitalDepartments', [...departments, '']);
+  };
+
+  const removeDepartment = (idx: number) => {
+    const next = [...departments];
+    next.splice(idx, 1);
+    set('hospitalDepartments', next);
+  };
+
   return (
     <div>
       {/* 로그인 화면 */}
@@ -247,6 +265,46 @@ export default function SettingsTab() {
         >
           <Plus size={14} />
           항목 추가
+        </button>
+      </Section>
+
+      {/* 병원 분과 관리 */}
+      <Section title="병원 분과 관리">
+        <p className="mb-3 text-xs text-gray-500">
+          시작 화면에서 <strong className="text-gray-700">병원</strong>을 선택했을 때
+          노출되는 분과 옵션입니다. <strong className="text-gray-700">의원</strong> 선택 시에는
+          숨겨집니다. 비워두면 분과 입력 칸은 빈 입력창으로만 표시됩니다.
+        </p>
+        {departments.length === 0 && (
+          <p className="mb-3 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-400">
+            등록된 분과가 없습니다.
+          </p>
+        )}
+        {departments.map((dept, idx) => (
+          <div key={idx} className="mb-2 flex gap-2">
+            <input
+              className={`${inpSm} flex-1`}
+              value={dept}
+              onChange={(e) => updateDepartment(idx, e.target.value)}
+              placeholder="예: 내분비내과"
+            />
+            <button
+              type="button"
+              onClick={() => removeDepartment(idx)}
+              aria-label="분과 삭제"
+              className="flex items-center justify-center rounded border border-red-100 px-2 text-red-400 hover:bg-red-50"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={addDepartment}
+          className="mt-1 flex items-center gap-1.5 rounded-lg border border-dashed border-indigo-300 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50"
+        >
+          <Plus size={14} />
+          분과 추가
         </button>
       </Section>
 
