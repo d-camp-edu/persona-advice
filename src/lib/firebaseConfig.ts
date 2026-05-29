@@ -22,3 +22,6 @@ export const APP_ID = 'persona-rx';
 
 export const isFirebaseConfigured = (): boolean =>
   Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId);
+
+export const isStorageConfigured = (): boolean =>
+  Boolean(isFirebaseConfigured() && firebaseConfig.storageBucket);

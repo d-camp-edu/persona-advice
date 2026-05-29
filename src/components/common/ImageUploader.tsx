@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Upload, Loader2, X } from 'lucide-react';
 import { uploadFile } from '../../lib/storageApi';
-import { isFirebaseConfigured } from '../../lib/firebase';
+import { isStorageConfigured } from '../../lib/firebase';
 
 interface ImageUploaderProps {
   value: string;
@@ -22,7 +22,7 @@ export default function ImageUploader({
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  const firebaseReady = isFirebaseConfigured();
+  const firebaseReady = isStorageConfigured();
 
   const handleFile = async (file: File) => {
     setError('');
@@ -106,7 +106,7 @@ export default function ImageUploader({
             </>
           ) : (
             <div>
-              <p className="mb-1 text-[10px] text-amber-600">Firebase 미구성 — URL 직접 입력</p>
+              <p className="mb-1 text-[10px] text-amber-600">Storage 미구성 (VITE_FIREBASE_STORAGE_BUCKET 필요) — URL 직접 입력</p>
               <input
                 type="text"
                 className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs outline-none focus:border-indigo-400"
