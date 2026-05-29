@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import type { Gift } from '../../types';
 import type { InstitutionType } from '../../store/useSessionStore';
@@ -149,7 +150,7 @@ export default function GiftRoulette({ gifts, institutionType, onClose }: Props)
   const viewportH = VISIBLE * ITEM_H;
   const isKwang = winner === null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800">
       {/* 닫기 */}
       <button
@@ -235,6 +236,7 @@ export default function GiftRoulette({ gifts, institutionType, onClose }: Props)
       </button>
 
       <p className="mt-3 text-xs text-white/40">{institutionType} 기준 확률 적용 중</p>
-    </div>
+    </div>,
+    document.body,
   );
 }

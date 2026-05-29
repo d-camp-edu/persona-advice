@@ -2,18 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/*
- * 반응형 비율 — 디자인 기준 폭 640px(모바일).
- * 뷰포트 폭에 따라 root font-size를 키워 Tailwind의 rem 기반 사이즈가
- * 통째로 비례 스케일된다. 폰 1×, 10인치 태블릿 1.4~1.8×, 데스크톱에서는 상한 캡.
- *  - 최소 15px: 좁은 폰에서도 가독성 유지
- *  - 2.6vw: 640px 뷰포트일 때 16.6px (≈1×)
- *  - 최대 28px: 거대한 모니터에서 글자가 비현실적으로 커지는 것 방지
- */
-html {
-  font-size: clamp(15px, 2.6vw, 28px);
-}
-
 html,
 body,
 #root {

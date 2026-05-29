@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, ChevronLeft, X } from 'lucide-react';
 import type { MedCategory, Medication } from '../../types';
 
@@ -75,7 +76,7 @@ export default function MedSelector({
       ? '전체 약제'
       : categories.find((c) => c.id === selectedCat)?.name ?? '';
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/40">
       <div className="w-full max-w-mobile rounded-t-2xl bg-white shadow-xl">
         <header className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
@@ -188,6 +189,7 @@ export default function MedSelector({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
