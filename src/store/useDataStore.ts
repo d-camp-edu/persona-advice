@@ -95,8 +95,10 @@ export const useDataStore = create<DataState>((set, get) => ({
       };
 
       subs.push(
+        // 환자는 빈 배열도 그대로 반영한다. Firebase가 구성된 경우에만 구독하므로
+        // 빈 스냅샷 = "DB에 환자가 실제로 0명"이라는 뜻이라 시드로 되돌리지 않는다.
+        // (약제·카테고리 등은 시뮬레이터 동작을 위해 빈 컬렉션이면 시드 폴백 유지)
         subscribeCollection<Patient>('patients', (items) => {
-          if (items.length === 0) return;
           set({ patients: items, isUsingSeedFallback: false });
         }),
       );
