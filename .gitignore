@@ -6,6 +6,7 @@ dist-ssr
 .env.local
 .vite
 coverage
+tsconfig.tsbuildinfo
 
 # editor
 .vscode/*
