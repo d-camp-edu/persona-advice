@@ -48,21 +48,22 @@ export default function LoginScreen() {
 
   return (
     <div
-      className="relative flex h-full w-full flex-col items-center justify-center px-6"
+      className="relative flex h-full w-full flex-col items-center justify-center px-6 py-6"
       style={{
         background: `linear-gradient(135deg, ${settings.loginBgStart}, ${settings.loginBgEnd})`,
       }}
     >
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm rounded-2xl bg-white/95 p-6 shadow-2xl backdrop-blur"
+        className="w-full max-w-sm overflow-hidden rounded-2xl bg-white/95 shadow-2xl backdrop-blur lg:flex lg:max-h-[90vh] lg:w-full lg:max-w-4xl"
       >
-        <div className="mb-6 text-center">
+        {/* 브랜딩 패널 — 가로 모드에서 왼쪽 */}
+        <div className="p-6 pb-0 text-center lg:flex lg:w-[42%] lg:flex-col lg:items-center lg:justify-center lg:bg-gradient-to-br lg:from-indigo-50 lg:to-white lg:p-8 lg:pb-8">
           {settings.loginLogoUrl && (
             <img
               src={settings.loginLogoUrl}
               alt=""
-              className="mx-auto mb-4 h-32 w-auto max-w-[220px] object-contain"
+              className="mx-auto mb-4 h-32 w-auto max-w-[220px] object-contain lg:h-40"
             />
           )}
           <h1 className="flex items-center justify-center gap-2 text-2xl font-bold text-gray-900">
@@ -74,6 +75,8 @@ export default function LoginScreen() {
           <p className="mt-1 text-sm text-gray-500">{settings.loginSubTitle}</p>
         </div>
 
+        {/* 입력 패널 — 가로 모드에서 오른쪽 (넘치면 내부 스크롤) */}
+        <div className="p-6 pt-6 lg:flex-1 lg:overflow-y-auto lg:p-8">
         {fields.map((field, i) => (
           <div key={field.id}>
             <label className={`block ${i < fields.length - 1 ? 'mb-3' : 'mb-5'}`}>
@@ -181,6 +184,7 @@ export default function LoginScreen() {
           <BarChart2 size={15} />
           내가 한 자문 디테일 결과 조회
         </button>
+        </div>
       </form>
 
       <button

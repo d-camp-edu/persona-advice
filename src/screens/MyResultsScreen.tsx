@@ -143,8 +143,8 @@ export default function MyResultsScreen() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-8">
-        <div className="rounded-2xl bg-white/95 p-5 shadow-2xl backdrop-blur mb-4">
+      <div className="flex-1 overflow-y-auto px-4 pb-8 lg:mx-auto lg:w-full lg:max-w-5xl">
+        <div className="rounded-2xl bg-white/95 p-5 shadow-2xl backdrop-blur mb-4 lg:mx-auto lg:max-w-xl">
           {loginFields
             .slice()
             .sort((a, b) => a.order - b.order)
@@ -189,7 +189,7 @@ export default function MyResultsScreen() {
                 조회된 결과가 없습니다.
               </div>
             )}
-            <div className="space-y-3">
+            <div className="space-y-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0">
               {cards.map((card, i) => (
                 <ResultCardView key={i} card={card} />
               ))}

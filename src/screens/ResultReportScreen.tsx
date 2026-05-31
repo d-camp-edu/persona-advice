@@ -63,8 +63,9 @@ export default function ResultReportScreen() {
         <h1 className="flex-1 truncate text-sm font-semibold text-gray-700">처방 결과 리포트</h1>
       </header>
 
-      <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4 pb-24">
-        <section className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+      <div className="flex-1 overflow-y-auto px-4 py-4 pb-24">
+        <div className="space-y-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0">
+        <section className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm lg:col-span-2">
           <div className="mb-1.5 flex items-center gap-1.5 text-[11px] text-gray-500">
             <ClipboardList size={12} />
             <span>
@@ -186,6 +187,7 @@ export default function ResultReportScreen() {
             <p className="mt-1 text-[11px] text-red-500">순응도 나쁨 — 혈당 상승</p>
           )}
         </Section>
+        </div>
       </div>
 
       <div className="sticky bottom-0 flex flex-col gap-2 border-t border-gray-100 bg-white px-4 pt-3 pb-safe">

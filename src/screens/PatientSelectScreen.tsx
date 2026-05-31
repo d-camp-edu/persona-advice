@@ -57,7 +57,7 @@ export default function PatientSelectScreen() {
             해당 조건의 환자가 없습니다.
           </p>
         ) : (
-          <ul className="flex flex-col gap-3 pb-6">
+          <ul className="grid grid-cols-1 gap-3 pb-6 lg:grid-cols-3">
             {filtered.map((p) => (
               <li key={p.id}>
                 <PatientCard

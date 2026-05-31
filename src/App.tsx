@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useDataStore } from './store/useDataStore';
 import { useSessionStore } from './store/useSessionStore';
 import LoginScreen from './screens/LoginScreen';
@@ -9,34 +9,12 @@ import ResultReportScreen from './screens/ResultReportScreen';
 import AdminScreen from './screens/AdminScreen';
 import MyResultsScreen from './screens/MyResultsScreen';
 
-const DESIGN_WIDTH = 640;
-const MAX_SCALE = 2.5;
-
-function useFitScale() {
-  const [vp, setVp] = useState(() => ({
-    vw: typeof window !== 'undefined' ? window.innerWidth : DESIGN_WIDTH,
-    vh: typeof window !== 'undefined' ? window.innerHeight : 900,
-  }));
-  useEffect(() => {
-    const update = () => setVp({ vw: window.innerWidth, vh: window.innerHeight });
-    window.addEventListener('resize', update);
-    window.addEventListener('orientationchange', update);
-    return () => {
-      window.removeEventListener('resize', update);
-      window.removeEventListener('orientationchange', update);
-    };
-  }, []);
-  const scale = Math.min(vp.vw / DESIGN_WIDTH, MAX_SCALE);
-  return { scale, vw: vp.vw, vh: vp.vh };
-}
-
 export default function App() {
   const status = useDataStore((s) => s.status);
   const error = useDataStore((s) => s.error);
   const bootstrap = useDataStore((s) => s.bootstrap);
 
   const phase = useSessionStore((s) => s.phase);
-  const { scale, vh } = useFitScale();
 
   useEffect(() => {
     void bootstrap();
@@ -74,35 +52,13 @@ export default function App() {
     );
   })();
 
-  // 모바일 640px 디자인을 뷰포트 폭에 맞춰 transform: scale로 균일 확대/축소.
-  // - 폰: 1× 이하로 축소되어 가로 오버플로우 없음
-  // - 태블릿/노트북: 1.2~2.5× 균일 확대, 여백 없이 화면 가득
-  // - 1600px 이상 모니터: 2.5× 캡 (글자가 비현실적으로 커지는 것 방지)
-  // 모달(BrochureViewer, GiftRoulette, MedSelector)은 createPortal로
-  // document.body에 그려 transform 영향 밖에서 진짜 viewport를 덮는다.
-  const canvasHeight = vh / scale;
-
+  // 실제 뷰포트 크기로 그대로 렌더링한다 (transform: scale 사용 안 함).
+  // - 폰/태블릿 세로: max-w-[640px] 모바일 단일 컬럼 디자인
+  // - 태블릿 가로(≥1024px, lg:): 각 화면이 가로 폭을 활용하도록 2단으로 재배치
+  // 각 화면은 h-full 로 컨테이너 높이를 채우고, 넘치는 부분만 내부 스크롤한다.
   return (
-    <div
-      style={{
-        width: '100vw',
-        height: '100vh',
-        overflow: 'hidden',
-        background: 'white',
-        display: 'flex',
-        justifyContent: 'center',
-      }}
-    >
-      <div
-        style={{
-          width: `${DESIGN_WIDTH}px`,
-          height: `${canvasHeight}px`,
-          transform: `scale(${scale})`,
-          transformOrigin: 'top center',
-          flexShrink: 0,
-          background: 'white',
-        }}
-      >
+    <div className="h-full w-full overflow-hidden bg-[#f5f5f7]">
+      <div className="mx-auto h-full w-full max-w-[640px] lg:max-w-[1600px]">
         {canvas}
       </div>
     </div>

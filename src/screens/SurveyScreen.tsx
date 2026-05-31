@@ -86,7 +86,7 @@ export default function SurveyScreen() {
       {/* Question card */}
       <div className="flex-1 overflow-y-auto px-6 pb-6">
         {current && (
-          <div className="rounded-2xl bg-white/95 p-6 shadow-2xl backdrop-blur">
+          <div className="rounded-2xl bg-white/95 p-6 shadow-2xl backdrop-blur lg:mx-auto lg:max-w-3xl">
             <p className="mb-1 text-xs font-semibold text-indigo-500 uppercase tracking-wide">
               Q{step + 1}
               {current.required && <span className="ml-1 text-red-400">*</span>}
@@ -97,7 +97,7 @@ export default function SurveyScreen() {
 
             {/* Single choice */}
             {current.type === 'single' && (
-              <div className="flex flex-col gap-2">
+              <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
                 {current.options.map((opt) => {
                   const selected = getAnswer(current) === opt;
                   return (
@@ -129,7 +129,7 @@ export default function SurveyScreen() {
 
             {/* Multi choice */}
             {current.type === 'multi' && (
-              <div className="flex flex-col gap-2">
+              <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
                 {current.options.map((opt) => {
                   const selected = ((getAnswer(current) as string[]) ?? []).includes(opt);
                   return (
@@ -176,7 +176,7 @@ export default function SurveyScreen() {
       </div>
 
       {/* Navigation buttons */}
-      <div className="flex gap-3 px-6 pb-8 pt-4">
+      <div className="flex gap-3 px-6 pb-8 pt-4 lg:mx-auto lg:w-full lg:max-w-3xl">
         {step > 0 && (
           <button
             type="button"

@@ -97,40 +97,55 @@ export default function PrescribeScreen() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
-        {rxPhase === 'menu' && (
-          <MenuPhase
-            onPrescribe={() => setRxPhase('prescribe')}
-            onChart={() => setRxPhase('chart')}
-          />
-        )}
-
-        {rxPhase === 'chart' && (
-          <ChartPhaseView
-            onBack={() => setRxPhase('menu')}
-            content={
+        <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
+          {/* 가로 모드 전용: 차트를 왼쪽에 항상 표시 */}
+          <div className="hidden lg:block">
+            <div className="rounded-2xl border border-gray-200 bg-white p-4">
               <PatientChart
                 patient={patient}
                 currentHba1c={currentHba1c}
                 medications={medications}
               />
-            }
-          />
-        )}
+            </div>
+          </div>
 
-        {rxPhase === 'prescribe' && (
-          <PrescribePhaseView
-            slots={slots}
-            medications={medications}
-            diagCodes={diagCodes}
-            currentEgfr={currentEgfr}
-            onToggleDiag={toggleDiag}
-            onChangeSlot={(idx) => setSelectorSlot(idx)}
-            onCancel={handleCancel}
-            onConfirm={handleConfirm}
-            canConfirm={canConfirm}
-            needsDiag={needsDiag}
-          />
-        )}
+          <div>
+            {rxPhase === 'menu' && (
+              <MenuPhase
+                onPrescribe={() => setRxPhase('prescribe')}
+                onChart={() => setRxPhase('chart')}
+              />
+            )}
+
+            {rxPhase === 'chart' && (
+              <ChartPhaseView
+                onBack={() => setRxPhase('menu')}
+                content={
+                  <PatientChart
+                    patient={patient}
+                    currentHba1c={currentHba1c}
+                    medications={medications}
+                  />
+                }
+              />
+            )}
+
+            {rxPhase === 'prescribe' && (
+              <PrescribePhaseView
+                slots={slots}
+                medications={medications}
+                diagCodes={diagCodes}
+                currentEgfr={currentEgfr}
+                onToggleDiag={toggleDiag}
+                onChangeSlot={(idx) => setSelectorSlot(idx)}
+                onCancel={handleCancel}
+                onConfirm={handleConfirm}
+                canConfirm={canConfirm}
+                needsDiag={needsDiag}
+              />
+            )}
+          </div>
+        </div>
       </div>
 
       <MedSelector
@@ -168,7 +183,7 @@ function MenuPhase({ onPrescribe, onChart }: { onPrescribe: () => void; onChart:
       <button
         type="button"
         onClick={onChart}
-        className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white py-5 text-base font-semibold text-gray-800 shadow-sm transition active:scale-[0.99] hover:bg-gray-50"
+        className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white py-5 text-base font-semibold text-gray-800 shadow-sm transition active:scale-[0.99] hover:bg-gray-50 lg:hidden"
       >
         <FileText size={20} />
         차트 보기
