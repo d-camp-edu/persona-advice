@@ -15,6 +15,12 @@ export interface CalculatePrescriptionInput {
   patient: Patient;
   current: CurrentState;
   slots: (Medication | null)[];
+  /**
+   * 환자가 이미 복용 중인 기준 처방(재진/리핏 prevDrugs). 효과 중복 적용을 막기 위해
+   * 현재 슬롯 효과에서 이 기준선 효과를 차감해 "순 변화량"만 반영한다.
+   * 미지정/빈 배열이면 기존 동작(전체 효과 적용)과 동일하다.
+   */
+  baselineSlots?: (Medication | null)[];
   diagCodes: string[];
   settings: GlobalSettings;
   exemptions: SideEffectExemption[];
@@ -111,6 +117,30 @@ export function calculatePrescription(input: CalculatePrescriptionInput): Prescr
     totals.h += settings.packagingBonusEffect;
   }
 
+  // 재진/리핏 기준 처방(이미 복용 중)의 효과는 중복 적용하지 않도록 차감 → 순 변화량만 반영.
+  // 같은 처방을 그대로 확정하면 모든 지표 변화가 0이 된다.
+  const baselineMeds = (input.baselineSlots ?? []).filter(
+    (m): m is Medication => m !== null,
+  );
+  if (baselineMeds.length > 0) {
+    const base = sumBaselineTotals(baselineMeds, settings);
+    totals.h -= base.h;
+    totals.w -= base.w;
+    totals.l -= base.l;
+    totals.n -= base.n;
+    totals.b -= base.b;
+    totals.nt -= base.nt;
+    totals.eg -= base.eg;
+    totals.ua -= base.ua;
+    for (const def of customDefs) {
+      const baseDelta = baselineMeds.reduce(
+        (sum, m) => sum + ((m.customEffects ?? {})[def.id] ?? 0),
+        0,
+      );
+      customTotals[def.id] = (customTotals[def.id] ?? 0) - baseDelta;
+    }
+  }
+
   const isPoorAdherence =
     patient.adherence === '나쁨' && !isPackagingBonus && drugSelected.length > 0;
   if (isPoorAdherence) {
@@ -205,6 +235,27 @@ export function calculatePrescription(input: CalculatePrescriptionInput): Prescr
       customMetrics: nextCustomMetrics,
     },
   };
+}
+
+/**
+ * 기준 처방(이미 복용 중) 약제들의 효과 합산. 부작용(rng)은 적용하지 않는 결정적 계산.
+ * 병포장 보너스는 현재 처방과 동일 조건으로 포함해, 동일 처방 차감 시 정확히 상쇄되게 한다.
+ */
+function sumBaselineTotals(meds: Medication[], settings: GlobalSettings): Totals {
+  const t: Totals = { h: 0, w: 0, l: 0, n: 0, b: 0, nt: 0, eg: 0, ua: 0 };
+  for (const med of meds) {
+    t.h += med.isNotDrug ? 0 : med.effect;
+    t.w += med.effectWeight;
+    t.l += med.effectLvef;
+    t.b += med.effectBnp;
+    t.nt += med.effectNtprobnp;
+    t.eg += med.effectEgfr;
+    t.ua += med.effectUacr;
+  }
+  const drugs = meds.filter((m) => !m.isNotDrug);
+  const allBottle = drugs.length > 0 && drugs.every((m) => m.pkg === 'bottle');
+  if (allBottle) t.h += settings.packagingBonusEffect;
+  return t;
 }
 
 function collectExemptedClassIds(

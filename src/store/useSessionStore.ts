@@ -20,6 +20,18 @@ type Slots = [Slot, Slot, Slot, Slot, Slot];
 
 const emptySlots = (): Slots => [null, null, null, null, null];
 
+/** 환자가 현재 복용 중인 약(prevDrugs medId 배열)을 5칸 처방 슬롯으로 변환 */
+const slotsFromPrevDrugs = (prevDrugs?: string[]): Slots => {
+  const s = emptySlots();
+  if (Array.isArray(prevDrugs)) {
+    for (let i = 0; i < 5; i += 1) {
+      const id = prevDrugs[i];
+      s[i] = id && id.length > 0 ? id : null;
+    }
+  }
+  return s;
+};
+
 interface SessionState {
   phase: Phase;
   rxPhase: RxPhase;
@@ -166,9 +178,11 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   },
 
   selectPatient: (id) => {
+    // 재진/리핏: 환자가 현재 복용 중인 약(prevDrugs)을 처방 슬롯에 미리 채워준다.
+    const patient = useDataStore.getState().patients.find((p) => p.id === id);
     set({
       currentPatientId: id,
-      slots: emptySlots(),
+      slots: slotsFromPrevDrugs(patient?.prevDrugs),
       diagCodes: [],
       rxPhase: 'menu',
       phase: 'rx',
@@ -225,6 +239,11 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       id ? data.medications.find((m) => m.id === id) ?? null : null,
     );
 
+    // 기준 처방(현재 복용 중) — 효과 중복 적용 방지용
+    const baselineMeds = slotsFromPrevDrugs(patient.prevDrugs).map((id) =>
+      id ? data.medications.find((m) => m.id === id) ?? null : null,
+    );
+
     const current = getPatientCurrentState(patient, sessionPrescriptions, data.medications, data.patientMetricDefs);
     const pastSideEffectCounts = countPastSideEffects(
       sessionPrescriptions,
@@ -236,6 +255,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       patient,
       current,
       slots: slotMeds,
+      baselineSlots: baselineMeds,
       diagCodes,
       settings: data.settings,
       exemptions: data.sideEffectExemptions,

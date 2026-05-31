@@ -57,6 +57,7 @@ function PatientEditor({
 }) {
   const [draft, setDraft] = useState<Patient>(() => structuredClone(patient));
   const [saving, setSaving] = useState(false);
+  const medications = useDataStore((s) => s.medications);
 
   const set = <K extends keyof Patient>(k: K, v: Patient[K]) =>
     setDraft((d) => ({ ...d, [k]: v }));
@@ -254,13 +255,43 @@ function PatientEditor({
         </>
       )}
 
-      {/* 이전 복용약 */}
-      <label className="mb-0.5 block text-xs text-gray-500">이전 복용약 (쉼표 구분)</label>
-      <input
-        className={`${inp} mb-2`}
-        value={draft.prevDrugs.join(', ')}
-        onChange={(e) => set('prevDrugs', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))}
-      />
+      {/* 현재 복용 중인 처방 슬롯 (재진/리핏: 환자 선택 시 미리 채워짐) */}
+      <p className="mb-1 text-xs font-semibold text-gray-600">현재 복용 중인 처방 (처방 슬롯)</p>
+      <p className="mb-2 text-[11px] leading-snug text-gray-400">
+        재진·리핏 환자가 현재 복용 중인 약입니다. 환자 선택 시 처방 슬롯에 자동으로 채워지며,
+        위 '초기 HbA1c'는 이 약을 복용 중인 상태의 혈당으로 간주됩니다. (같은 처방을 그대로 확정하면 수치 변화 없음)
+      </p>
+      <div className="mb-3 space-y-1.5">
+        {Array.from({ length: 5 }, (_, i) => {
+          const medId = draft.prevDrugs[i] ?? '';
+          const label = i < 3 ? `슬롯 ${i + 1} (급여)` : `슬롯 ${i + 1} (본인부담)`;
+          return (
+            <div key={i} className="flex items-center gap-2">
+              <span className="w-24 shrink-0 text-xs text-gray-500">{label}</span>
+              <select
+                className={inp}
+                value={medId}
+                onChange={(e) => {
+                  const next = Array.from({ length: 5 }, (_, j) => draft.prevDrugs[j] ?? '');
+                  next[i] = e.target.value;
+                  set('prevDrugs', next);
+                }}
+              >
+                <option value="">— 비어 있음 —</option>
+                {medications
+                  .slice()
+                  .sort((a, b) => a.order - b.order)
+                  .map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          );
+        })}
+      </div>
+
       <label className="mb-0.5 block text-xs text-gray-500">이전 치료 요약</label>
       <input className={`${inp} mb-3`} value={draft.prevTreatment} onChange={(e) => set('prevTreatment', e.target.value)} />
 

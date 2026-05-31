@@ -74,6 +74,25 @@ export default function SettingsTab() {
     set('comorbidities', next);
   };
 
+  const addComorb = () => {
+    set('comorbidities', [
+      ...draft.comorbidities,
+      { name: '새 구분', goodMsg: '', badMsg: '', color: '#6366f1' },
+    ]);
+  };
+
+  const removeComorb = (idx: number) => {
+    if (
+      !confirm(
+        '이 환자 구분을 삭제하시겠습니까?\n(이 구분으로 분류된 환자는 해당 태그가 더 이상 매칭되지 않습니다.)',
+      )
+    )
+      return;
+    const next = [...draft.comorbidities];
+    next.splice(idx, 1);
+    set('comorbidities', next);
+  };
+
   const addLoginField = () => {
     const fields = draft.loginFields ?? [];
     const maxOrder = fields.length > 0 ? Math.max(...fields.map((f) => f.order)) : 0;
@@ -374,11 +393,31 @@ export default function SettingsTab() {
         ))}
       </Section>
 
-      {/* 공병증 */}
-      <Section title="공병증 메시지">
+      {/* 환자 구분 (공병증) */}
+      <Section title="환자 구분 (공병증)">
+        <p className="mb-3 text-xs text-gray-500">
+          환자 선택 화면의 <strong className="text-gray-700">필터 탭</strong>과 환자 카드에 표시되는 구분입니다.
+          추가·수정·삭제할 수 있습니다. <strong className="text-gray-700">구분 이름</strong>은 환자 관리 탭의
+          공병증 체크 항목과 동일하게 사용되므로, 이름을 바꾸면 기존 환자에 적용된 태그와 더 이상 매칭되지 않을 수 있습니다.
+        </p>
         {draft.comorbidities.map((c, i) => (
-          <div key={c.name} className="mb-4 border-b border-gray-100 pb-3 last:border-0 last:pb-0">
-            <p className="mb-1.5 text-xs font-semibold text-gray-700">{c.name}</p>
+          <div key={i} className="mb-4 rounded-lg border border-gray-100 bg-gray-50 p-3 last:mb-0">
+            <div className="mb-2 flex items-center gap-2">
+              <input
+                className={`${inpSm} flex-1 font-semibold`}
+                value={c.name}
+                onChange={(e) => updateComorb(i, 'name', e.target.value)}
+                placeholder="구분 이름 (예: 심부전)"
+              />
+              <button
+                type="button"
+                onClick={() => removeComorb(i)}
+                aria-label="구분 삭제"
+                className="flex items-center justify-center rounded border border-red-100 px-2 py-1.5 text-red-400 hover:bg-red-50"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
             <Field label="호전 메시지">
               <input className={inp} value={c.goodMsg} onChange={(e) => updateComorb(i, 'goodMsg', e.target.value)} />
             </Field>
@@ -393,6 +432,14 @@ export default function SettingsTab() {
             </Field>
           </div>
         ))}
+        <button
+          type="button"
+          onClick={addComorb}
+          className="flex items-center gap-1.5 rounded-lg border border-dashed border-indigo-300 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50"
+        >
+          <Plus size={14} />
+          환자 구분 추가
+        </button>
       </Section>
 
       {/* 시스템 */}
