@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronRight, ChevronLeft, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { useDataStore } from '../store/useDataStore';
 import { useSessionStore } from '../store/useSessionStore';
+import { surveyQuestionsForPatient } from '../lib/surveyScope';
 import type { SurveyQuestion } from '../types';
 
 export default function SurveyScreen() {
@@ -13,9 +14,10 @@ export default function SurveyScreen() {
   const resetToSelect = useSessionStore((s) => s.resetToSelect);
   const settings = useDataStore((s) => s.settings);
 
-  const patientName = patients.find((p) => p.id === currentPatientId)?.name ?? '';
+  const currentPatient = patients.find((p) => p.id === currentPatientId);
+  const patientName = currentPatient?.name ?? '';
 
-  const sorted = [...questions].sort((a, b) => a.order - b.order);
+  const sorted = surveyQuestionsForPatient(questions, currentPatient?.comorbidities ?? []);
 
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});

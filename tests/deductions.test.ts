@@ -97,6 +97,47 @@ describe('checkDeductions — E11 4규칙', () => {
   });
 });
 
+describe('checkDeductions — 추가 병용 기준 (기존 환자)', () => {
+  // seed: dualTherapyThreshold 7.5(초진), addOnTherapyThreshold 7.0(기존)
+  it('초진(baseline 없음): 메트+DPP-4i, HbA1c 7.2 → 초기 2제 기준(7.5) 미달 삭감', () => {
+    const res = checkDeductions(
+      [med('m_2'), med('m_3')],
+      ['E11'],
+      7.2,
+      NO_RULES,
+      NO_ALLOW,
+      settings,
+    );
+    expect(res).toContain('초기 급여 2제 병용 기준 미달 삭감!');
+  });
+
+  it('기존 환자(baseline 메트): 메트+DPP-4i, HbA1c 7.2 → 추가 병용 기준(7.0) 충족, 삭감 없음', () => {
+    const res = checkDeductions(
+      [med('m_2'), med('m_3')],
+      ['E11'],
+      7.2,
+      NO_RULES,
+      NO_ALLOW,
+      settings,
+      [med('m_2')],
+    );
+    expect(res.filter((r) => r.includes('삭감'))).toEqual([]);
+  });
+
+  it('기존 환자라도 HbA1c 6.8(<7.0)이면 추가 병용 기준 미달 삭감', () => {
+    const res = checkDeductions(
+      [med('m_2'), med('m_3')],
+      ['E11'],
+      6.8,
+      NO_RULES,
+      NO_ALLOW,
+      settings,
+      [med('m_2')],
+    );
+    expect(res).toContain('추가 병용 기준 미달 삭감!');
+  });
+});
+
 describe('checkDeductions — 검사 제외 약제', () => {
   it('isNotDrug, isInsuranceException, 슬롯 4-5는 호출자가 거른다 (입력에 없으면 검사 안 함)', () => {
     // 빈 입력

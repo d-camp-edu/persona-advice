@@ -20,10 +20,12 @@ function newQuestion(): SurveyQuestion {
 
 function QuestionEditor({
   question,
+  comorbNames,
   onSave,
   onDelete,
 }: {
   question: SurveyQuestion;
+  comorbNames: string[];
   onSave: (q: SurveyQuestion) => Promise<void>;
   onDelete: () => void;
 }) {
@@ -52,6 +54,14 @@ function QuestionEditor({
 
   const removeOption = (i: number) => {
     set('options', draft.options.filter((_, idx) => idx !== i));
+  };
+
+  const toggleScope = (name: string) => {
+    const cur = draft.comorbidityScope ?? [];
+    set(
+      'comorbidityScope',
+      cur.includes(name) ? cur.filter((c) => c !== name) : [...cur, name],
+    );
   };
 
   const updateOption = (i: number, val: string) => {
@@ -105,6 +115,38 @@ function QuestionEditor({
         />
         필수 질문
       </label>
+
+      {/* 노출 환자구분(공병증) */}
+      <div className="mt-3">
+        <p className="mb-1 text-xs font-semibold text-gray-600">노출 환자구분 (공병증)</p>
+        <p className="mb-2 text-[11px] leading-snug text-gray-400">
+          선택한 공병증을 가진 환자에게만 이 질문을 노출합니다. 아무것도 선택하지 않으면
+          <strong className="text-gray-500"> 모든 환자에게 공통</strong>으로 노출됩니다.
+        </p>
+        {comorbNames.length === 0 ? (
+          <p className="text-[11px] text-gray-400">등록된 환자구분이 없습니다. (설정 탭에서 추가)</p>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {comorbNames.map((name) => {
+              const active = (draft.comorbidityScope ?? []).includes(name);
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => toggleScope(name)}
+                  className={`rounded-full border px-2.5 py-1 text-xs transition ${
+                    active
+                      ? 'border-indigo-500 bg-indigo-50 font-semibold text-indigo-700'
+                      : 'border-gray-200 bg-white text-gray-500 hover:border-indigo-200'
+                  }`}
+                >
+                  {name}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Options (not shown for text type) */}
       {draft.type !== 'text' && (
@@ -174,6 +216,7 @@ function QuestionEditor({
 
 export default function SurveyTab() {
   const questions = useDataStore((s) => s.surveyQuestions);
+  const comorbNames = useDataStore((s) => s.settings.comorbidities.map((c) => c.name));
   const [expanded, setExpanded] = useState<string | null>(null);
   const [flash, setFlash] = useState('');
 
@@ -254,6 +297,17 @@ export default function SurveyTab() {
                 {q.required && (
                   <span className="flex-shrink-0 text-xs text-red-400">*필수</span>
                 )}
+                <span
+                  className={`flex-shrink-0 rounded-full px-2 py-0.5 text-xs ${
+                    q.comorbidityScope && q.comorbidityScope.length > 0
+                      ? 'bg-amber-50 text-amber-600'
+                      : 'bg-emerald-50 text-emerald-600'
+                  }`}
+                >
+                  {q.comorbidityScope && q.comorbidityScope.length > 0
+                    ? q.comorbidityScope.join('·')
+                    : '공통'}
+                </span>
               </div>
               {expanded === q.id ? (
                 <ChevronUp className="h-4 w-4 flex-shrink-0 text-gray-400" />
@@ -264,6 +318,7 @@ export default function SurveyTab() {
             {expanded === q.id && (
               <QuestionEditor
                 question={q}
+                comorbNames={comorbNames}
                 onSave={handleSave}
                 onDelete={() => void handleDelete(q.id)}
               />

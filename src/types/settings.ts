@@ -22,7 +22,10 @@ export interface GlobalSettings {
 
   packagingBonusEffect: number;
   initialMetforminThreshold: number;
+  /** 초진(신규) 환자에서 2제 병용을 급여로 시작할 수 있는 HbA1c 하한 (기본 7.5) */
   dualTherapyThreshold: number;
+  /** 이미 처방받던 환자에 약제를 추가 병용할 때 허용되는 HbA1c 하한 (기본 7.0) */
+  addOnTherapyThreshold: number;
   sglt2EgfrLimit: number;
 
   hfLvefMax: number;

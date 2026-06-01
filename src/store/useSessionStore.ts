@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { makeSessionDocId, makeSessionKey } from '../lib/sessionKey';
 import { getPatientCurrentState } from '../lib/patientState';
+import { surveyQuestionsForPatient } from '../lib/surveyScope';
 import { calculatePrescription } from '../lib/prescription';
 import { checkDeductions } from '../lib/deductions';
 import { checkNonDmCoverage } from '../lib/nonDmCoverage';
@@ -194,8 +195,12 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   selectPatient: (id) => {
     // 재진/리핏: 환자가 현재 복용 중인 약(prevDrugs)을 처방 슬롯에 미리 채워준다.
     const patient = useDataStore.getState().patients.find((p) => p.id === id);
-    // 서베이 질문이 있으면 시뮬레이션 전에 환자별 서베이를 먼저 진행한다.
-    const hasSurvey = useDataStore.getState().surveyQuestions.length > 0;
+    // 이 환자의 공병증에 해당하는 서베이 질문이 있으면 시뮬레이션 전에 먼저 진행한다.
+    const applicable = surveyQuestionsForPatient(
+      useDataStore.getState().surveyQuestions,
+      patient?.comorbidities ?? [],
+    );
+    const hasSurvey = applicable.length > 0;
     set({
       currentPatientId: id,
       slots: slotsFromPrevDrugs(patient?.prevDrugs),
@@ -334,6 +339,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       data.deductionRules,
       data.allowedCombinations,
       data.settings,
+      baselineMeds.filter((m): m is Medication => m != null),
     );
     result.prescription.deductionReasons = [...deductionReasons, ...nonDmReasons];
 

@@ -336,13 +336,20 @@ export default function SettingsTab() {
           <Field label="초기 메트포르민 기준 HbA1c">
             <input type="number" step="0.1" className={inp} value={draft.initialMetforminThreshold} onChange={(e) => set('initialMetforminThreshold', +e.target.value)} />
           </Field>
-          <Field label="2제 병용 기준 HbA1c">
+          <Field label="2제 병용 기준 HbA1c (초진)">
             <input type="number" step="0.1" className={inp} value={draft.dualTherapyThreshold} onChange={(e) => set('dualTherapyThreshold', +e.target.value)} />
+          </Field>
+          <Field label="추가 병용 기준 HbA1c (기존 환자)">
+            <input type="number" step="0.1" className={inp} value={draft.addOnTherapyThreshold ?? 7.0} onChange={(e) => set('addOnTherapyThreshold', +e.target.value)} />
           </Field>
           <Field label="SGLT-2i eGFR 하한">
             <input type="number" className={inp} value={draft.sglt2EgfrLimit} onChange={(e) => set('sglt2EgfrLimit', +e.target.value)} />
           </Field>
         </div>
+        <p className="mt-1 text-[11px] leading-snug text-gray-400">
+          초진(신규) 환자가 2제 병용을 급여로 시작하려면 <strong className="text-gray-500">초진 기준</strong> 이상이어야 합니다.
+          이미 약을 복용 중이던 환자에 약제를 추가할 때는 <strong className="text-gray-500">기존 환자 기준</strong>(더 낮게)을 적용해 삭감을 완화합니다.
+        </p>
         <p className="mb-2 text-xs font-medium text-gray-500">심부전(HF) 특례</p>
         <div className="grid grid-cols-2 gap-x-3">
           <Field label="LVEF 최대값">

@@ -5,6 +5,12 @@ export interface SurveyQuestion {
   type: 'single' | 'multi' | 'text';
   options: string[];
   required: boolean;
+  /**
+   * 이 질문을 노출할 환자구분(공병증) 이름 목록.
+   * 비어 있거나 undefined면 모든 환자에게 공통으로 노출한다.
+   * 값이 있으면 선택된 환자가 해당 공병증 중 하나라도 가질 때만 노출한다.
+   */
+  comorbidityScope?: string[];
 }
 
 export interface SurveyResponse {
