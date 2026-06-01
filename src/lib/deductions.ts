@@ -54,7 +54,7 @@ export function checkDeductions(
   for (const rule of allCombos) {
     const hits = rule.classIds.every((c) => distinctClasses.has(c));
     if (!hits) continue;
-    if (isExempted(rule.classIds, allowed)) continue;
+    if (isExempted(rule.classIds, distinctClasses, allowed)) continue;
     reasons.push(rule.message);
   }
 
@@ -87,11 +87,26 @@ export function checkDeductions(
   return reasons;
 }
 
-function isExempted(ruleClassIds: string[], allowed: AllowedCombination[]): boolean {
-  const sortedRule = [...ruleClassIds].sort();
+/**
+ * 병용 금지 규칙(ruleClassIds)이 허용 조합으로 면제되는지 검사.
+ *
+ * 면제 조건: 등록된 허용 조합 A 중 하나라도
+ *   ① 금지 규칙이 A 안에 들어 있고(ruleClassIds ⊆ A),
+ *   ② A의 모든 약제 계열이 실제 처방에 전부 포함되어 있을 때(A ⊆ prescribedClasses).
+ *
+ * 예) 허용 조합 [메트, SGLT-2i, DPP-4i]를 등록하고 그 3종을 함께 처방하면,
+ *     [SGLT-2i, DPP-4i] 같은 부분 집합 금지 규칙도 면제된다.
+ *     (반대로 허용 조합에 없는 다른 계열까지 처방하면 면제되지 않는다.)
+ */
+function isExempted(
+  ruleClassIds: string[],
+  prescribedClasses: Set<string>,
+  allowed: AllowedCombination[],
+): boolean {
   return allowed.some((a) => {
-    if (a.classIds.length !== sortedRule.length) return false;
-    const sorted = [...a.classIds].sort();
-    return sorted.every((c, i) => c === sortedRule[i]);
+    const allowedSet = new Set(a.classIds);
+    const ruleWithinAllowed = ruleClassIds.every((c) => allowedSet.has(c));
+    if (!ruleWithinAllowed) return false;
+    return a.classIds.every((c) => prescribedClasses.has(c));
   });
 }

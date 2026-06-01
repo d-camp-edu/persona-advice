@@ -121,7 +121,8 @@ export default function AllowedTab() {
   return (
     <div>
       <p className="mb-3 text-xs text-gray-500">
-        삭감 규칙 예외 조합입니다. 여기에 등록된 계열 조합은 삭감 검사에서 면제됩니다.
+        삭감 규칙 예외 조합입니다. 여기에 등록된 <strong className="text-gray-700">계열 조합 전체가
+        처방에 포함</strong>되어 있으면, 그 안에 들어 있는 병용 금지 규칙(부분 집합 포함)은 삭감 검사에서 면제됩니다.
       </p>
       <button
         type="button"

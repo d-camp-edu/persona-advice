@@ -47,6 +47,38 @@ describe('checkDeductions — DPP-4i + GLP-1 RA 병용 금지', () => {
     );
     expect(res).not.toContain('DPP-4i와 GLP-1 RA 병용 삭감!');
   });
+
+  it('상위 집합 허용 조합: [메트+SGLT2i+DPP4i] 등록 시 부분 집합 [SGLT2i+DPP4i] 삭감 규칙 면제', () => {
+    const rules: DeductionRule[] = [
+      { id: 'r1', name: 'SGLT2i+DPP4i 금지', classIds: ['dc_sglt2', 'dc_dpp4'], message: 'SGLT2i+DPP4i 병용 삭감!', enabled: true },
+    ];
+    const allow: AllowedCombination[] = [
+      { id: 'ac1', name: '3제 허용', classIds: ['dc_met', 'dc_sglt2', 'dc_dpp4'], note: '' },
+    ];
+    // 메트(m_2) + SGLT-2i(m_8) + DPP-4i(m_3) 함께 처방 → 허용 조합 전체 포함
+    const res = checkDeductions([med('m_2'), med('m_8'), med('m_3')], [], 7.0, rules, allow, settings);
+    expect(res).not.toContain('SGLT2i+DPP4i 병용 삭감!');
+  });
+
+  it('허용 조합 없으면 [SGLT2i+DPP4i] 삭감 규칙은 그대로 발동', () => {
+    const rules: DeductionRule[] = [
+      { id: 'r1', name: 'SGLT2i+DPP4i 금지', classIds: ['dc_sglt2', 'dc_dpp4'], message: 'SGLT2i+DPP4i 병용 삭감!', enabled: true },
+    ];
+    const res = checkDeductions([med('m_2'), med('m_8'), med('m_3')], [], 7.0, rules, NO_ALLOW, settings);
+    expect(res).toContain('SGLT2i+DPP4i 병용 삭감!');
+  });
+
+  it('처방이 허용 조합을 다 포함하지 않으면 면제 안 됨 (허용에 없는 GLP-1 RA 추가)', () => {
+    const rules: DeductionRule[] = [
+      { id: 'r1', name: 'SGLT2i+DPP4i 금지', classIds: ['dc_sglt2', 'dc_dpp4'], message: 'SGLT2i+DPP4i 병용 삭감!', enabled: true },
+    ];
+    const allow: AllowedCombination[] = [
+      { id: 'ac1', name: '3제 허용', classIds: ['dc_met', 'dc_sglt2', 'dc_dpp4'], note: '' },
+    ];
+    // SGLT-2i(m_8) + DPP-4i(m_3) + GLP-1 RA(m_53) — 허용 조합(메트 포함 3종)을 충족하지 못함
+    const res = checkDeductions([med('m_8'), med('m_3'), med('m_53')], [], 7.0, rules, allow, settings);
+    expect(res).toContain('SGLT2i+DPP4i 병용 삭감!');
+  });
 });
 
 describe('checkDeductions — E11 4규칙', () => {
