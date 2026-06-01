@@ -342,10 +342,17 @@ export default function SettingsTab() {
           <Field label="추가 병용 기준 HbA1c (기존 환자)">
             <input type="number" step="0.1" className={inp} value={draft.addOnTherapyThreshold ?? 7.0} onChange={(e) => set('addOnTherapyThreshold', +e.target.value)} />
           </Field>
+          <Field label="급여 최대 병용 계열 수 (초과 시 삭감)">
+            <input type="number" min="1" className={inp} value={draft.maxInsuranceClasses ?? 3} onChange={(e) => set('maxInsuranceClasses', +e.target.value)} />
+          </Field>
           <Field label="SGLT-2i eGFR 하한">
             <input type="number" className={inp} value={draft.sglt2EgfrLimit} onChange={(e) => set('sglt2EgfrLimit', +e.target.value)} />
           </Field>
         </div>
+        <p className="mt-1 text-[11px] leading-snug text-gray-400">
+          급여 병용 계열이 <strong className="text-gray-500">최대 병용 계열 수</strong>를 초과하면(기본 3제 초과 = 4제 이상) 삭감됩니다.
+          또한 복합제 포함 <strong className="text-gray-500">동일 계열이 중복</strong>되면 삭감됩니다.
+        </p>
         <p className="mt-1 text-[11px] leading-snug text-gray-400">
           초진(신규) 환자가 2제 병용을 급여로 시작하려면 <strong className="text-gray-500">초진 기준</strong> 이상이어야 합니다.
           이미 약을 복용 중이던 환자에 약제를 추가할 때는 <strong className="text-gray-500">기존 환자 기준</strong>(더 낮게)을 적용해 삭감을 완화합니다.

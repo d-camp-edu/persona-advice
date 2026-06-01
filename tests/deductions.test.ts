@@ -212,6 +212,43 @@ describe('checkDeductions — 기존 병용 유지(치료 성공) 시 삭감 안
   });
 });
 
+describe('checkDeductions — 계열 수 초과 / 동일 계열 중복', () => {
+  it('4제 이상(메트+SGLT2i+DPP4i+TZD) 병용 시 삭감', () => {
+    const res = checkDeductions(
+      [med('m_2'), med('m_8'), med('m_3'), med('m_14')],
+      [],
+      8.0,
+      NO_RULES,
+      NO_ALLOW,
+      settings,
+    );
+    expect(res).toContain('급여 3제 초과 병용 삭감!');
+  });
+
+  it('3제 이하면 계열 수 초과 삭감 없음', () => {
+    const res = checkDeductions(
+      [med('m_2'), med('m_8'), med('m_3')],
+      [],
+      8.0,
+      NO_RULES,
+      NO_ALLOW,
+      settings,
+    );
+    expect(res).not.toContain('급여 3제 초과 병용 삭감!');
+  });
+
+  it('복합제(메트+DPP-4i)와 단일 메트포르민 병용 → 동일 계열 중복 삭감', () => {
+    // m_15 = 자누메트(dc_dpp4 + dc_met), m_2 = 메트포르민(dc_met)
+    const res = checkDeductions([med('m_15'), med('m_2')], [], 8.0, NO_RULES, NO_ALLOW, settings);
+    expect(res).toContain('동일 계열 중복 처방 삭감!');
+  });
+
+  it('계열이 겹치지 않으면 중복 삭감 없음', () => {
+    const res = checkDeductions([med('m_2'), med('m_8')], [], 8.0, NO_RULES, NO_ALLOW, settings);
+    expect(res).not.toContain('동일 계열 중복 처방 삭감!');
+  });
+});
+
 describe('checkDeductions — 검사 제외 약제', () => {
   it('isNotDrug, isInsuranceException, 슬롯 4-5는 호출자가 거른다 (입력에 없으면 검사 안 함)', () => {
     // 빈 입력

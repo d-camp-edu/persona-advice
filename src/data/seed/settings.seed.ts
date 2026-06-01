@@ -27,6 +27,7 @@ export const seedSettings: GlobalSettings = {
   initialMetforminThreshold: 6.5,
   dualTherapyThreshold: 7.5,
   addOnTherapyThreshold: 7.0,
+  maxInsuranceClasses: 3,
   sglt2EgfrLimit: 25,
 
   hfLvefMax: 40,

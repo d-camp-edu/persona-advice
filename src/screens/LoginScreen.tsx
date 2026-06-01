@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Settings, BarChart2, RotateCcw } from 'lucide-react';
 import { useDataStore } from '../store/useDataStore';
 import { useSessionStore, type InstitutionType } from '../store/useSessionStore';
+import { APP_VERSION } from '../version';
 
 function loadLastLogin(): Record<string, string> | null {
   try {
@@ -53,6 +54,9 @@ export default function LoginScreen() {
         background: `linear-gradient(135deg, ${settings.loginBgStart}, ${settings.loginBgEnd})`,
       }}
     >
+      <span className="absolute left-4 top-4 z-10 select-none rounded-full bg-white/20 px-2.5 py-1 text-xs font-semibold text-white/90 backdrop-blur">
+        v{APP_VERSION}
+      </span>
       <div className="flex min-h-full w-full flex-col items-center justify-center px-6 py-6">
       <form
         onSubmit={handleSubmit}

@@ -26,6 +26,8 @@ export interface GlobalSettings {
   dualTherapyThreshold: number;
   /** 이미 처방받던 환자에 약제를 추가 병용할 때 허용되는 HbA1c 하한 (기본 7.0) */
   addOnTherapyThreshold: number;
+  /** 급여로 병용 가능한 최대 약제 계열 수. 초과(예: 4제 이상)하면 삭감 (기본 3) */
+  maxInsuranceClasses: number;
   sglt2EgfrLimit: number;
 
   hfLvefMax: number;

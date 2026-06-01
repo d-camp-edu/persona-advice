@@ -43,10 +43,28 @@ export function checkDeductions(
   const eligible = slots.filter((m) => !m.isInsuranceException && !m.isNotDrug);
   if (eligible.length === 0) return [];
 
-  const distinctClasses = new Set<string>();
-  for (const m of eligible) for (const c of m.classes) distinctClasses.add(c);
+  // 계열 등장 횟수. 복합제(한 약제가 여러 계열)는 그 계열들을 각각 1회로 센다.
+  // 같은 계열이 둘 이상의 약제에서 나오면 중복 처방.
+  const classCounts = new Map<string, number>();
+  for (const m of eligible) {
+    for (const c of new Set(m.classes)) {
+      classCounts.set(c, (classCounts.get(c) ?? 0) + 1);
+    }
+  }
+  const distinctClasses = new Set(classCounts.keys());
 
   const reasons: string[] = [];
+
+  // 동일 계열 중복 처방 (단일제 + 같은 계열 복합제, 복합제 간 계열 겹침 등)
+  if ([...classCounts.values()].some((n) => n >= 2)) {
+    reasons.push('동일 계열 중복 처방 삭감!');
+  }
+
+  // 급여 병용 계열 수 초과 (기본 3제 초과 = 4제 이상)
+  const maxClasses = settings.maxInsuranceClasses ?? 3;
+  if (distinctClasses.size > maxClasses) {
+    reasons.push(`급여 ${maxClasses}제 초과 병용 삭감!`);
+  }
 
   // 병용 금지 조합 검사
   const adminCombos: ComboRule[] = rules
