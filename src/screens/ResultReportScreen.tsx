@@ -24,6 +24,8 @@ export default function ResultReportScreen() {
   const institutionType = useSessionStore((s) => s.institutionType);
   const [showBrochure, setShowBrochure] = useState(false);
   const [showRoulette, setShowRoulette] = useState(false);
+  // 환자당 룰렛 1회 제한: 한 번 돌리고 나면 이 환자 결과 화면에서는 더 못 돌린다.
+  const [rouletteUsed, setRouletteUsed] = useState(false);
 
   const patient = useMemo(
     () => (lastResult ? patients.find((p) => p.id === lastResult.prescription.patientId) : null),
@@ -206,10 +208,11 @@ export default function ResultReportScreen() {
           <button
             type="button"
             onClick={() => setShowRoulette(true)}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-amber-400 py-3 text-sm font-semibold text-amber-900 shadow-sm hover:bg-amber-300"
+            disabled={rouletteUsed}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-amber-400 py-3 text-sm font-semibold text-amber-900 shadow-sm hover:bg-amber-300 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
           >
             <GiftIcon size={15} />
-            룰렛 보상
+            {rouletteUsed ? '룰렛 참여 완료' : '룰렛 보상'}
           </button>
         </div>
         <div className="flex gap-2">
@@ -235,7 +238,7 @@ export default function ResultReportScreen() {
           url={patient.brochureUrl}
           onClose={() => {
             setShowBrochure(false);
-            if (gifts.length > 0) setShowRoulette(true);
+            if (gifts.length > 0 && !rouletteUsed) setShowRoulette(true);
           }}
         />
       )}
@@ -244,7 +247,10 @@ export default function ResultReportScreen() {
         <GiftRoulette
           gifts={gifts}
           institutionType={institutionType}
-          onResult={logGiftSpin}
+          onResult={(g) => {
+            logGiftSpin(g);
+            setRouletteUsed(true);
+          }}
           onClose={() => setShowRoulette(false)}
         />
       )}

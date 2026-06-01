@@ -33,9 +33,12 @@ function pickWinner(gifts: Gift[], institutionType: InstitutionType): Gift | nul
 function buildStrip(gifts: Gift[], institutionType: InstitutionType): { items: RouletteItem[]; winnerIdx: number } {
   const winner = pickWinner(gifts, institutionType);
 
-  // pool for random items
-  const pool: (Gift | null)[] = [...gifts, null]; // null = 꽝
-  const rand = () => pool[Math.floor(Math.random() * pool.length)];
+  // 스트립에 흘러가는 "장식용" 아이템: 실제 당첨 확률과 무관하게 보이는 비율은 선물:꽝 = 반반.
+  // (당첨 결과는 winner = pickWinner 로 이미 확률대로 결정됨)
+  const rand = (): Gift | null => {
+    if (gifts.length === 0) return null;
+    return Math.random() < 0.5 ? null : gifts[Math.floor(Math.random() * gifts.length)];
+  };
 
   const items: RouletteItem[] = [];
   for (let i = 0; i < PRE_COUNT; i++) {
@@ -225,21 +228,29 @@ export default function GiftRoulette({ gifts, institutionType, onClose, onResult
         </div>
       )}
 
-      {/* Spin button */}
-      <button
-        type="button"
-        onClick={spin}
-        disabled={phase === 'spinning'}
-        className={`mt-8 rounded-full px-10 py-4 text-base font-bold shadow-xl transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
-          phase === 'done'
-            ? 'bg-white/20 text-white hover:bg-white/30'
-            : 'bg-amber-400 text-amber-900 hover:bg-amber-300'
-        }`}
-      >
-        {phase === 'idle' ? '룰렛 돌리기' : phase === 'spinning' ? '돌리는 중…' : '다시 돌리기'}
-      </button>
+      {/* 룰렛은 환자당 1회만 — done 이후엔 다시 돌리지 않고 확인(닫기)만 노출 */}
+      {phase === 'done' ? (
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-8 rounded-full bg-white px-10 py-4 text-base font-bold text-indigo-700 shadow-xl transition active:scale-95 hover:bg-white/90"
+        >
+          확인
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={spin}
+          disabled={phase === 'spinning'}
+          className="mt-8 rounded-full bg-amber-400 px-10 py-4 text-base font-bold text-amber-900 shadow-xl transition active:scale-95 hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {phase === 'idle' ? '룰렛 돌리기' : '돌리는 중…'}
+        </button>
+      )}
 
-      <p className="mt-3 text-xs text-white/40">{institutionType} 기준 확률 적용 중</p>
+      <p className="mt-3 text-xs text-white/40">
+        {phase === 'done' ? '환자당 1회만 참여할 수 있습니다' : `${institutionType} 기준 확률 적용 중`}
+      </p>
     </div>,
     document.body,
   );
