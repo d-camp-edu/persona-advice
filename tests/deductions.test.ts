@@ -143,7 +143,7 @@ describe('checkDeductions — 추가 병용 기준 (기존 환자)', () => {
     expect(res).toContain('초기 급여 2제 병용 기준 미달 삭감!');
   });
 
-  it('기존 환자(baseline 메트): 메트+DPP-4i, HbA1c 7.2 → 추가 병용 기준(7.0) 충족, 삭감 없음', () => {
+  it('기존 환자(메트 1제 복용 중): 메트+DPP-4i로 증량, HbA1c 7.2 → 추가 병용 기준(7.0) 충족, 삭감 없음', () => {
     const res = checkDeductions(
       [med('m_2'), med('m_3')],
       ['E11'],
@@ -151,12 +151,12 @@ describe('checkDeductions — 추가 병용 기준 (기존 환자)', () => {
       NO_RULES,
       NO_ALLOW,
       settings,
-      [med('m_2')],
+      1, // 직전 1제(메트) 복용 중 → 2제로 증량
     );
     expect(res.filter((r) => r.includes('삭감'))).toEqual([]);
   });
 
-  it('기존 환자라도 HbA1c 6.8(<7.0)이면 추가 병용 기준 미달 삭감', () => {
+  it('기존 환자(메트 1제)에서 2제로 증량 시 HbA1c 6.8(<7.0)이면 추가 병용 기준 미달 삭감', () => {
     const res = checkDeductions(
       [med('m_2'), med('m_3')],
       ['E11'],
@@ -164,9 +164,51 @@ describe('checkDeductions — 추가 병용 기준 (기존 환자)', () => {
       NO_RULES,
       NO_ALLOW,
       settings,
-      [med('m_2')],
+      1,
     );
     expect(res).toContain('추가 병용 기준 미달 삭감!');
+  });
+});
+
+describe('checkDeductions — 기존 병용 유지(치료 성공) 시 삭감 안 함', () => {
+  it('이미 2제(메트+DPP-4i) 복용 중 → 같은 2제 유지, HbA1c 6.3으로 정상화돼도 삭감 없음', () => {
+    const res = checkDeductions(
+      [med('m_2'), med('m_3')],
+      ['E11'],
+      6.3,
+      NO_RULES,
+      NO_ALLOW,
+      settings,
+      2, // 직전에도 2제 병용 중 → 증량 아님(유지)
+    );
+    expect(res.filter((r) => r.includes('삭감'))).toEqual([]);
+  });
+
+  it('이미 2제 복용 중 유지, HbA1c 6.0(<6.5)이어도 신규 처방 기준 미적용 → 삭감 없음', () => {
+    const res = checkDeductions(
+      [med('m_2'), med('m_8')],
+      ['E11'],
+      6.0,
+      NO_RULES,
+      NO_ALLOW,
+      settings,
+      2,
+    );
+    expect(res.filter((r) => r.includes('삭감'))).toEqual([]);
+  });
+
+  it('초진(직전 0제)에서 동일 처방·동일 HbA1c는 신규 처방이므로 삭감 발동(대조군)', () => {
+    const res = checkDeductions(
+      [med('m_2'), med('m_3')],
+      ['E11'],
+      6.3,
+      NO_RULES,
+      NO_ALLOW,
+      settings,
+      0,
+    );
+    // 6.3 < 6.5 → 초기 처방 기준 삭감
+    expect(res).toContain('당뇨(E11) 초기 HbA1c 6.5% 미만 처방 삭감!');
   });
 });
 

@@ -24,9 +24,12 @@ const BUILT_IN_COMBO_RULES: ComboRule[] = [
  *   `allowed`에 동일 클래스 집합이 등록돼 있으면 해당 규칙은 면제.
  * - E11 상병이 들어있으면 4가지 sub-rule 추가 검사.
  *
- * `baselineSlots`는 이 처방 직전 환자가 이미 복용 중이던 약(prevDrugs)이다.
- * 급여 대상 당뇨약이 하나라도 있으면 "이미 처방받던 환자"로 보고 2제 병용 기준을
- * 초진 기준(dualTherapyThreshold)이 아닌 추가 병용 기준(addOnTherapyThreshold)으로 적용한다.
+ * `priorClassCount`는 이 처방 직전 환자가 이미 복용 중이던 보험 약제의 계열 수다.
+ * - 0보다 크면 "이미 처방받던 환자"로 보고 2제 병용 기준을 초진 기준(dualTherapyThreshold)이
+ *   아닌 추가 병용 기준(addOnTherapyThreshold)으로 적용한다.
+ * - HbA1c 기반 신규 처방 기준(6.5% 미만 / 2제 병용 기준)은 계열 수가 직전보다 늘어나는
+ *   "신규·증량" 처방에만 적용한다. 기존 병용을 그대로 유지(계열 수 동일/감소)하는데
+ *   치료가 잘 돼 HbA1c가 목표로 내려온 경우는 삭감 사유가 아니다.
  */
 export function checkDeductions(
   slots: Medication[],
@@ -35,7 +38,7 @@ export function checkDeductions(
   rules: DeductionRule[],
   allowed: AllowedCombination[],
   settings: GlobalSettings,
-  baselineSlots: Medication[] = [],
+  priorClassCount = 0,
 ): string[] {
   const eligible = slots.filter((m) => !m.isInsuranceException && !m.isNotDrug);
   if (eligible.length === 0) return [];
@@ -64,16 +67,18 @@ export function checkDeductions(
     const classCount = distinctClasses.size;
 
     // 이미 급여 대상 당뇨약을 복용 중이면 추가 병용 기준을, 아니면 초진 2제 기준을 적용.
-    const onTherapy = baselineSlots.some((m) => !m.isInsuranceException && !m.isNotDrug);
+    const onTherapy = priorClassCount > 0;
     const dualThreshold = onTherapy
       ? settings.addOnTherapyThreshold ?? settings.dualTherapyThreshold
       : settings.dualTherapyThreshold;
+    // 직전보다 계열 수가 늘어나는 신규·증량 처방인지. 유지/감량이면 HbA1c 기준 삭감 미적용.
+    const escalating = classCount > priorClassCount;
 
-    if (currentHba1c < 6.5) {
+    if (escalating && currentHba1c < 6.5) {
       reasons.push('당뇨(E11) 초기 HbA1c 6.5% 미만 처방 삭감!');
     } else if (classCount === 1 && !includesMet) {
       reasons.push('1차 메트포르민 미사용 삭감!');
-    } else if (classCount >= 2 && currentHba1c < dualThreshold) {
+    } else if (escalating && classCount >= 2 && currentHba1c < dualThreshold) {
       reasons.push(
         onTherapy
           ? '추가 병용 기준 미달 삭감!'

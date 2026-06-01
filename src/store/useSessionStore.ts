@@ -332,6 +332,18 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       insuranceSlotMeds.push(med);
     }
 
+    // 이 처방 직전 환자가 실제로 복용 중이던 보험 약제의 계열 수.
+    // 같은 시연 세션에 직전 처방이 있으면 그 보험 슬롯 약제를, 없으면 prevDrugs를 기준으로 한다.
+    // 유지/감량 처방을 신규 병용으로 오인해 삭감하지 않도록 쓰인다.
+    const priorRx = [...sessionPrescriptions].reverse().find((p) => p.patientId === patient.id);
+    const priorMeds: Medication[] = priorRx
+      ? priorRx.prescribedDrugs
+          .filter((d) => !d.isSelfPay && d.slot < 4)
+          .map((d) => data.medications.find((m) => m.id === d.id))
+          .filter((m): m is Medication => m != null)
+      : baselineMeds.filter((m): m is Medication => m != null);
+    const priorClassCount = countInsuranceClasses(priorMeds);
+
     const deductionReasons = checkDeductions(
       insuranceSlotMeds,
       diagCodes,
@@ -339,7 +351,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       data.deductionRules,
       data.allowedCombinations,
       data.settings,
-      baselineMeds.filter((m): m is Medication => m != null),
+      priorClassCount,
     );
     result.prescription.deductionReasons = [...deductionReasons, ...nonDmReasons];
 
@@ -406,6 +418,16 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   exitAdmin: () => set({ phase: 'login' }),
   goMyResults: () => set({ phase: 'myresults' }),
 }));
+
+/** 보험 삭감 검사 대상(isInsuranceException·isNotDrug 제외) 약제의 서로 다른 계열 수 */
+function countInsuranceClasses(meds: Medication[]): number {
+  const classes = new Set<string>();
+  for (const m of meds) {
+    if (m.isInsuranceException || m.isNotDrug) continue;
+    for (const c of m.classes) classes.add(c);
+  }
+  return classes.size;
+}
 
 function countPastSideEffects(
   prescriptions: Prescription[],
