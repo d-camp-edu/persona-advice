@@ -94,9 +94,11 @@ interface Props {
   gifts: Gift[];
   institutionType: InstitutionType;
   onClose: () => void;
+  /** 룰렛 1회가 끝났을 때 결과(당첨 선물 또는 null=꽝)를 알려준다. 로깅용. */
+  onResult?: (gift: Gift | null) => void;
 }
 
-export default function GiftRoulette({ gifts, institutionType, onClose }: Props) {
+export default function GiftRoulette({ gifts, institutionType, onClose, onResult }: Props) {
   const [phase, setPhase] = useState<'idle' | 'spinning' | 'done'>('idle');
   const [items, setItems] = useState<RouletteItem[]>([]);
   const [winnerIdx, setWinnerIdx] = useState(0);
@@ -133,7 +135,9 @@ export default function GiftRoulette({ gifts, institutionType, onClose }: Props)
 
         const t2 = setTimeout(() => {
           setPhase('done');
-          setWinner(strip[wIdx].gift ?? null);
+          const result = strip[wIdx].gift ?? null;
+          setWinner(result);
+          onResult?.(result);
         }, 2500);
         rafRef.current = t2 as unknown as number;
       }, 1700);

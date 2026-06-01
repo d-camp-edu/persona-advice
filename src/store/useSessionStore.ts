@@ -6,7 +6,8 @@ import { checkDeductions } from '../lib/deductions';
 import { checkNonDmCoverage } from '../lib/nonDmCoverage';
 import { loadLatestRxSession, saveRxSession } from '../lib/sessionRepo';
 import { saveDoc } from '../lib/firestoreApi';
-import type { Medication, Prescription, PrescriptionResult, RxSession, SurveyResponse } from '../types';
+import { saveGiftLog } from '../lib/logsRepo';
+import type { Gift, GiftLog, Medication, Prescription, PrescriptionResult, RxSession, SurveyResponse } from '../types';
 import { useDataStore } from './useDataStore';
 
 export type Phase = 'login' | 'survey' | 'select' | 'rx' | 'result' | 'admin' | 'myresults';
@@ -62,6 +63,7 @@ interface SessionState {
   completeSurvey: (answers: Record<string, string | string[]>) => Promise<void>;
   goMyResults: () => void;
   selectPatient: (id: string) => void;
+  logGiftSpin: (gift: Gift | null) => void;
   setComorbFilter: (filter: ComorbFilter) => void;
   setSlot: (idx: number, medId: string | null) => void;
   clearSlot: (idx: number) => void;
@@ -130,15 +132,13 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       sessionCreatedAt = new Date(now).toISOString();
     }
 
-    const surveyQuestions = useDataStore.getState().surveyQuestions;
-    const nextPhase: Phase = surveyQuestions.length > 0 ? 'survey' : 'select';
-
     try {
       localStorage.setItem('persona_rx_last_login', JSON.stringify(fieldValues));
     } catch {
       // ignore storage errors
     }
 
+    // 서베이는 더 이상 로그인 직후에 하지 않는다. 환자를 선택할 때마다 진행한다.
     set({
       hospitalName: h,
       doctorName: d,
@@ -149,7 +149,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       sessionCreatedAt,
       sessionPrescriptions,
       loginFieldValues: fieldValues,
-      phase: nextPhase,
+      phase: 'select',
       comorbFilter: '전체',
       currentPatientId: null,
       loginPending: false,
@@ -157,36 +157,85 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     });
   },
 
+  // 환자별 서베이 완료 → 처방 시뮬레이션(rx)으로 진입
   completeSurvey: async (answers) => {
-    const { sessionDocId, doctorName, hospitalName, department, institutionType, loginFieldValues } = get();
+    const {
+      sessionDocId,
+      doctorName,
+      hospitalName,
+      department,
+      institutionType,
+      loginFieldValues,
+      currentPatientId,
+    } = get();
+    const patient = useDataStore.getState().patients.find((p) => p.id === currentPatientId);
     const response: Omit<SurveyResponse, 'id'> = {
       sessionDocId,
       doctorName,
       hospitalName,
       department,
       institutionType,
+      patientId: currentPatientId ?? '',
+      patientName: patient?.name ?? '',
       answeredAt: new Date().toISOString(),
       answers,
       loginFieldValues,
     };
+    // 환자·시각마다 고유 문서로 저장 (세션당 1개가 아니라 환자별 다건)
+    const surveyDocId = `${sessionDocId}_${currentPatientId ?? 'none'}_${Date.now().toString(36)}`;
     try {
-      await saveDoc('surveyResponses', sessionDocId, response as unknown as Record<string, unknown>);
+      await saveDoc('surveyResponses', surveyDocId, response as unknown as Record<string, unknown>);
     } catch (e) {
       console.warn('[survey] save failed', e);
     }
-    set({ phase: 'select' });
+    set({ phase: 'rx', rxPhase: 'menu' });
   },
 
   selectPatient: (id) => {
     // 재진/리핏: 환자가 현재 복용 중인 약(prevDrugs)을 처방 슬롯에 미리 채워준다.
     const patient = useDataStore.getState().patients.find((p) => p.id === id);
+    // 서베이 질문이 있으면 시뮬레이션 전에 환자별 서베이를 먼저 진행한다.
+    const hasSurvey = useDataStore.getState().surveyQuestions.length > 0;
     set({
       currentPatientId: id,
       slots: slotsFromPrevDrugs(patient?.prevDrugs),
       diagCodes: [],
       rxPhase: 'menu',
-      phase: 'rx',
+      phase: hasSurvey ? 'survey' : 'rx',
       lastResult: null,
+    });
+  },
+
+  logGiftSpin: (gift) => {
+    const {
+      sessionDocId,
+      sessionKey,
+      hospitalName,
+      doctorName,
+      department,
+      institutionType,
+      currentPatientId,
+      loginFieldValues,
+    } = get();
+    const patient = useDataStore.getState().patients.find((p) => p.id === currentPatientId);
+    const log: GiftLog = {
+      id: `${sessionDocId}_${currentPatientId ?? 'none'}_${Date.now().toString(36)}`,
+      sessionDocId,
+      sessionKey,
+      hospitalName,
+      doctorName,
+      department,
+      institutionType,
+      patientId: currentPatientId ?? '',
+      patientName: patient?.name ?? '',
+      giftId: gift?.id ?? '',
+      giftName: gift?.name ?? '꽝',
+      isWin: gift != null,
+      spunAt: new Date().toISOString(),
+      loginFieldValues,
+    };
+    void saveGiftLog(log).catch((e) => {
+      console.warn('[gift] saveGiftLog failed', e);
     });
   },
 

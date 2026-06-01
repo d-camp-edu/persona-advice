@@ -5,6 +5,7 @@ import {
   seedMedCategories,
   seedDrugClasses,
   seedSettings,
+  seedGifts,
 } from './seed';
 
 export async function uploadPatients(): Promise<void> {
@@ -21,6 +22,10 @@ export async function uploadMedications(): Promise<void> {
 
 export async function uploadSettings(): Promise<void> {
   await saveDoc('settings', 'global', seedSettings as unknown as Record<string, unknown>);
+}
+
+export async function uploadGifts(): Promise<void> {
+  await batchUploadCollection('gifts', seedGifts);
 }
 
 export async function uploadAll(): Promise<void> {

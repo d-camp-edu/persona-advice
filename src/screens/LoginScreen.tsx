@@ -48,11 +48,12 @@ export default function LoginScreen() {
 
   return (
     <div
-      className="relative flex h-full w-full flex-col items-center justify-center px-6 py-6"
+      className="relative h-full w-full overflow-y-auto"
       style={{
         background: `linear-gradient(135deg, ${settings.loginBgStart}, ${settings.loginBgEnd})`,
       }}
     >
+      <div className="flex min-h-full w-full flex-col items-center justify-center px-6 py-6">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-sm overflow-hidden rounded-2xl bg-white/95 shadow-2xl backdrop-blur lg:flex lg:max-h-[90vh] lg:w-full lg:max-w-4xl"
@@ -186,6 +187,7 @@ export default function LoginScreen() {
         </button>
         </div>
       </form>
+      </div>
 
       <button
         type="button"

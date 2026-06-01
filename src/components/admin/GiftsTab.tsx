@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Trash2, Download } from 'lucide-react';
 import { useDataStore } from '../../store/useDataStore';
 import { saveDoc, removeDoc } from '../../lib/firestoreApi';
+import { uploadGifts } from '../../data/seedRunner';
 import ImageUploader from '../common/ImageUploader';
 import type { Gift } from '../../types';
 
@@ -168,6 +169,16 @@ export default function GiftsTab() {
     setExpanded(g.id);
   };
 
+  const handleSeed = async () => {
+    if (!confirm('기본 선물 목록을 등록하시겠습니까? (같은 id는 덮어씁니다)')) return;
+    try {
+      await uploadGifts();
+      showFlash('기본 선물 등록됨');
+    } catch {
+      showFlash('등록 실패 (Firebase 미구성 여부 확인)');
+    }
+  };
+
   return (
     <div>
       <div className="mb-3 flex items-center gap-2">
@@ -179,6 +190,16 @@ export default function GiftsTab() {
           <Plus className="h-3.5 w-3.5" />
           새 선물
         </button>
+        {gifts.length === 0 && (
+          <button
+            type="button"
+            onClick={() => void handleSeed()}
+            className="flex items-center gap-1 rounded-lg border border-indigo-300 px-3 py-2 text-xs font-semibold text-indigo-600 hover:bg-indigo-50"
+          >
+            <Download className="h-3.5 w-3.5" />
+            기본 선물 불러오기
+          </button>
+        )}
       </div>
 
       {/* 전체 확률 요약 */}

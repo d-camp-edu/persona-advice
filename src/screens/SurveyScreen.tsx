@@ -1,14 +1,19 @@
 import { useState } from 'react';
-import { ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react';
+import { ChevronRight, ChevronLeft, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { useDataStore } from '../store/useDataStore';
 import { useSessionStore } from '../store/useSessionStore';
 import type { SurveyQuestion } from '../types';
 
 export default function SurveyScreen() {
   const questions = useDataStore((s) => s.surveyQuestions);
+  const patients = useDataStore((s) => s.patients);
   const doctorName = useSessionStore((s) => s.doctorName);
+  const currentPatientId = useSessionStore((s) => s.currentPatientId);
   const completeSurvey = useSessionStore((s) => s.completeSurvey);
+  const resetToSelect = useSessionStore((s) => s.resetToSelect);
   const settings = useDataStore((s) => s.settings);
+
+  const patientName = patients.find((p) => p.id === currentPatientId)?.name ?? '';
 
   const sorted = [...questions].sort((a, b) => a.order - b.order);
 
@@ -68,8 +73,18 @@ export default function SurveyScreen() {
     >
       {/* Header */}
       <div className="px-6 pt-10 pb-4">
-        <p className="text-sm font-medium text-white/80 mb-1">{doctorName} 선생님</p>
-        <h1 className="text-xl font-bold text-white">아래 내용에 대해 서베이 부탁드립니다.</h1>
+        <button
+          type="button"
+          onClick={resetToSelect}
+          className="mb-3 flex items-center gap-1 rounded-full bg-white/15 py-1.5 pl-2 pr-3 text-xs font-medium text-white backdrop-blur transition hover:bg-white/25"
+        >
+          <ArrowLeft size={14} />
+          환자 선택으로
+        </button>
+        <p className="text-sm font-medium text-white/80 mb-1">
+          {doctorName} 선생님{patientName && ` · ${patientName} 환자`}
+        </p>
+        <h1 className="text-xl font-bold text-white">진료 전 서베이를 부탁드립니다.</h1>
       </div>
 
       {/* Progress bar */}

@@ -16,6 +16,7 @@ export default function ResultReportScreen() {
   const department = useSessionStore((s) => s.department);
   const resetToSelect = useSessionStore((s) => s.resetToSelect);
   const resetToLogin = useSessionStore((s) => s.resetToLogin);
+  const logGiftSpin = useSessionStore((s) => s.logGiftSpin);
 
   const patients = useDataStore((s) => s.patients);
   const patientMetricDefs = useDataStore((s) => s.patientMetricDefs);
@@ -202,16 +203,14 @@ export default function ResultReportScreen() {
               {getYouTubeId(patient.brochureUrl) ? '영상 보기' : '브로셔 확인'}
             </button>
           )}
-          {gifts.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowRoulette(true)}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-amber-400 py-3 text-sm font-semibold text-amber-900 shadow-sm hover:bg-amber-300"
-            >
-              <GiftIcon size={15} />
-              선물 받기
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setShowRoulette(true)}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-amber-400 py-3 text-sm font-semibold text-amber-900 shadow-sm hover:bg-amber-300"
+          >
+            <GiftIcon size={15} />
+            룰렛 보상
+          </button>
         </div>
         <div className="flex gap-2">
           <button
@@ -245,6 +244,7 @@ export default function ResultReportScreen() {
         <GiftRoulette
           gifts={gifts}
           institutionType={institutionType}
+          onResult={logGiftSpin}
           onClose={() => setShowRoulette(false)}
         />
       )}
