@@ -46,6 +46,15 @@ interface DataState {
   /** Firebase 미구성 또는 빈 컬렉션이라 시드를 그대로 보여주는 fallback 모드 */
   isUsingSeedFallback: boolean;
 
+  /**
+   * 각 폴백 컬렉션이 DB에서 "비어 있음(=시드를 화면에 띄우는 중)"인지 여부.
+   * true면 단일 문서 저장 시 시드 전체를 먼저 batch 업로드해야 한다.
+   * (그렇지 않으면 1개만 저장돼 나머지 60종이 통째로 사라진다)
+   */
+  medsEmpty: boolean;
+  medCategoriesEmpty: boolean;
+  drugClassesEmpty: boolean;
+
   bootstrap: () => Promise<void>;
   unsubscribeAll: () => void;
 
@@ -71,6 +80,9 @@ export const useDataStore = create<DataState>((set, get) => ({
   status: 'idle',
   error: null,
   isUsingSeedFallback: true,
+  medsEmpty: true,
+  medCategoriesEmpty: true,
+  drugClassesEmpty: true,
 
   bootstrap: async () => {
     const cur = get().status;
@@ -104,20 +116,29 @@ export const useDataStore = create<DataState>((set, get) => ({
       );
       subs.push(
         subscribeCollection<Medication>('medications', (items) => {
-          if (items.length === 0) return;
-          set({ medications: items, isUsingSeedFallback: false });
+          if (items.length === 0) {
+            set({ medsEmpty: true });
+            return;
+          }
+          set({ medications: items, isUsingSeedFallback: false, medsEmpty: false });
         }),
       );
       subs.push(
         subscribeCollection<MedCategory>('medCategories', (items) => {
-          if (items.length === 0) return;
-          set({ medCategories: items });
+          if (items.length === 0) {
+            set({ medCategoriesEmpty: true });
+            return;
+          }
+          set({ medCategories: items, medCategoriesEmpty: false });
         }),
       );
       subs.push(
         subscribeCollection<DrugClass>('drugClasses', (items) => {
-          if (items.length === 0) return;
-          set({ drugClasses: items });
+          if (items.length === 0) {
+            set({ drugClassesEmpty: true });
+            return;
+          }
+          set({ drugClasses: items, drugClassesEmpty: false });
         }),
       );
       subs.push(

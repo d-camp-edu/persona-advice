@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AlertTriangle, ChevronLeft, X } from 'lucide-react';
-import type { MedCategory, Medication } from '../../types';
+import { AlertTriangle, ChevronLeft, Star, X } from 'lucide-react';
+import type { DrugClass, MedCategory, Medication } from '../../types';
 
 const CAT_ALL = '__all__';
 
@@ -11,6 +11,7 @@ interface MedSelectorProps {
   currentMedId: string | null;
   medications: Medication[];
   categories: MedCategory[];
+  drugClasses: DrugClass[];
   currentEgfr: number;
   onClose: () => void;
   onPick: (slotIndex: number, medId: string) => void;
@@ -23,6 +24,7 @@ export default function MedSelector({
   currentMedId,
   medications,
   categories,
+  drugClasses,
   currentEgfr,
   onClose,
   onPick,
@@ -36,13 +38,29 @@ export default function MedSelector({
     [categories],
   );
 
+  const classOrder = useMemo(
+    () => new Map(drugClasses.map((d) => [d.id, d.order ?? 999])),
+    [drugClasses],
+  );
+
   const filteredMeds = useMemo(() => {
     const list =
       selectedCat === CAT_ALL
         ? medications
         : medications.filter((m) => m.categoryId === selectedCat);
-    return [...list].sort((a, b) => a.order - b.order);
-  }, [medications, selectedCat]);
+    const primaryOrder = (m: Medication) => {
+      if (!m.classes?.length) return 9999;
+      return Math.min(...m.classes.map((c) => classOrder.get(c) ?? 999));
+    };
+    // 아사(자사) 제품 우선 → 계열 순서 → 개별 순서
+    return [...list].sort((a, b) => {
+      const asa = Number(!!b.isAsaProduct) - Number(!!a.isAsaProduct);
+      if (asa !== 0) return asa;
+      const cls = primaryOrder(a) - primaryOrder(b);
+      if (cls !== 0) return cls;
+      return a.order - b.order;
+    });
+  }, [medications, selectedCat, classOrder]);
 
   if (!open) return null;
 
@@ -155,7 +173,12 @@ export default function MedSelector({
                         }`}
                       >
                         <span className="flex items-center justify-between gap-2">
-                          <span className="truncate font-medium text-gray-900">{m.name}</span>
+                          <span className="flex min-w-0 items-center gap-1">
+                            {m.isAsaProduct && (
+                              <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400" />
+                            )}
+                            <span className="truncate font-medium text-gray-900">{m.name}</span>
+                          </span>
                           {m.effect > 0 && (
                             <span className="shrink-0 text-xs text-gray-500">
                               HbA1c −{m.effect.toFixed(1)}

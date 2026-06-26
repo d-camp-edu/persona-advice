@@ -13,6 +13,7 @@ export default function PrescribeScreen() {
   const patients = useDataStore((s) => s.patients);
   const medications = useDataStore((s) => s.medications);
   const categories = useDataStore((s) => s.medCategories);
+  const drugClasses = useDataStore((s) => s.drugClasses);
   const settings = useDataStore((s) => s.settings);
 
   const currentPatientId = useSessionStore((s) => s.currentPatientId);
@@ -154,6 +155,7 @@ export default function PrescribeScreen() {
         currentMedId={selectorSlot != null ? slots[selectorSlot] : null}
         medications={medications}
         categories={categories}
+        drugClasses={drugClasses}
         currentEgfr={currentEgfr}
         onClose={() => setSelectorSlot(null)}
         onPick={(idx, medId) => {

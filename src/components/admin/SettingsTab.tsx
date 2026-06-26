@@ -4,6 +4,7 @@ import { useDataStore } from '../../store/useDataStore';
 import { saveDoc } from '../../lib/firestoreApi';
 import { uploadSettings } from '../../data/seedRunner';
 import ImageUploader from '../common/ImageUploader';
+import DrugClassManager from './DrugClassManager';
 import type { GlobalSettings, Comorbidity, LoginFieldDef } from '../../types';
 
 const inp =
@@ -455,6 +456,9 @@ export default function SettingsTab() {
           환자 구분 추가
         </button>
       </Section>
+
+      {/* 약물 계열 관리 */}
+      <DrugClassManager />
 
       {/* 시스템 */}
       <Section title="시스템">

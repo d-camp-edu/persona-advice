@@ -30,6 +30,9 @@ export interface Medication {
   isInsuranceException: boolean;
   allow2TQD: boolean;
 
+  /** 아사(자사) 제품 — 처방 슬롯 선택 시 목록 최상단에 노출 */
+  isAsaProduct?: boolean;
+
   order: number;
   customEffects?: Record<string, number>;
 }
@@ -44,6 +47,8 @@ export interface DrugClass {
   id: string;
   name: string;
   duplicatable: boolean;
+  /** 약제 관리 화면에서 카테고리 내 계열 그룹 정렬 순서 (설정에서 드래그로 조정) */
+  order: number;
 }
 
 export interface Comorbidity {

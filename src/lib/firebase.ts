@@ -1,5 +1,5 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import { initializeFirestore, type Firestore } from 'firebase/firestore';
 import { getAuth, signInAnonymously, onAuthStateChanged, type Auth } from 'firebase/auth';
 import { firebaseConfig, APP_ID, isFirebaseConfigured, isStorageConfigured } from './firebaseConfig';
 
@@ -17,7 +17,9 @@ export function initFirebase(): {
   }
   if (!appInstance) {
     appInstance = initializeApp(firebaseConfig);
-    dbInstance = getFirestore(appInstance);
+    // ignoreUndefinedProperties: 선택 필드(customEffects, brochureUrl 등)가 undefined여도
+    // setDoc이 throw하지 않도록 한다. (저장이 조용히 실패해 수정 내용이 날아가는 문제 방지)
+    dbInstance = initializeFirestore(appInstance, { ignoreUndefinedProperties: true });
     authInstance = getAuth(appInstance);
   }
   return { app: appInstance, db: dbInstance, auth: authInstance };
