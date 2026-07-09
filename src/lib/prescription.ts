@@ -21,6 +21,11 @@ export interface CalculatePrescriptionInput {
    * 미지정/빈 배열이면 기존 동작(전체 효과 적용)과 동일하다.
    */
   baselineSlots?: (Medication | null)[];
+  /**
+   * 슬롯별 BID(1일 2회) 여부. true인 슬롯의 약제는 효과가 2배로 적용된다.
+   * 미지정이면 전부 QD(1배)로 계산한다. isNotDrug(생활습관) 슬롯에는 영향 없음.
+   */
+  bidFlags?: boolean[];
   diagCodes: string[];
   settings: GlobalSettings;
   exemptions: SideEffectExemption[];
@@ -77,8 +82,10 @@ export function calculatePrescription(input: CalculatePrescriptionInput): Prescr
 
   const customDefs = patientMetricDefs.filter((d) => !d.isBuiltIn && d.enabled);
 
-  for (const { med } of selected) {
-    let eH = med.isNotDrug ? 0 : med.effect;
+  for (const { med, slotIndex } of selected) {
+    // BID면 약효 2배. 생활습관(isNotDrug)은 BID 개념이 없으므로 1배 고정.
+    const dose = !med.isNotDrug && input.bidFlags?.[slotIndex] ? 2 : 1;
+    let eH = med.isNotDrug ? 0 : med.effect * dose;
 
     if (!med.isNotDrug) {
       const causesGi = med.worseningComorb.includes('위장장애');
@@ -92,15 +99,16 @@ export function calculatePrescription(input: CalculatePrescriptionInput): Prescr
     }
 
     totals.h += eH;
-    totals.w += med.effectWeight;
-    totals.l += med.effectLvef;
-    totals.b += med.effectBnp;
-    totals.nt += med.effectNtprobnp;
-    totals.eg += med.effectEgfr;
-    totals.ua += med.effectUacr;
+    totals.w += med.effectWeight * dose;
+    totals.l += med.effectLvef * dose;
+    totals.b += med.effectBnp * dose;
+    totals.nt += med.effectNtprobnp * dose;
+    totals.eg += med.effectEgfr * dose;
+    totals.ua += med.effectUacr * dose;
 
     for (const def of customDefs) {
-      customTotals[def.id] = (customTotals[def.id] ?? 0) + ((med.customEffects ?? {})[def.id] ?? 0);
+      customTotals[def.id] =
+        (customTotals[def.id] ?? 0) + ((med.customEffects ?? {})[def.id] ?? 0) * dose;
     }
 
     for (const name of med.beneficialComorb) {
@@ -183,6 +191,7 @@ export function calculatePrescription(input: CalculatePrescriptionInput): Prescr
     name: med.name,
     classes: [...med.classes],
     isSelfPay: slotIndex >= 3,
+    bid: !med.isNotDrug && !!input.bidFlags?.[slotIndex],
   }));
 
   const ts = now();

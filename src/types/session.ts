@@ -4,6 +4,8 @@ export interface PrescribedDrug {
   name: string;
   classes: string[];
   isSelfPay: boolean;
+  /** BID(1일 2회) 처방 여부 — 효과 2배로 계산됨 */
+  bid?: boolean;
 }
 
 export type ComorbFeedbackType = 'good' | 'bad';

@@ -13,16 +13,17 @@ export default function PrescribeScreen() {
   const patients = useDataStore((s) => s.patients);
   const medications = useDataStore((s) => s.medications);
   const categories = useDataStore((s) => s.medCategories);
-  const drugClasses = useDataStore((s) => s.drugClasses);
   const settings = useDataStore((s) => s.settings);
 
   const currentPatientId = useSessionStore((s) => s.currentPatientId);
   const rxPhase = useSessionStore((s) => s.rxPhase);
   const setRxPhase = useSessionStore((s) => s.setRxPhase);
   const slots = useSessionStore((s) => s.slots);
+  const slotBids = useSessionStore((s) => s.slotBids);
   const diagCodes = useSessionStore((s) => s.diagCodes);
   const setSlot = useSessionStore((s) => s.setSlot);
   const clearSlot = useSessionStore((s) => s.clearSlot);
+  const toggleSlotBid = useSessionStore((s) => s.toggleSlotBid);
   const toggleDiag = useSessionStore((s) => s.toggleDiag);
   const resetToSelect = useSessionStore((s) => s.resetToSelect);
   const confirmPrescription = useSessionStore((s) => s.confirmPrescription);
@@ -134,11 +135,13 @@ export default function PrescribeScreen() {
             {rxPhase === 'prescribe' && (
               <PrescribePhaseView
                 slots={slots}
+                slotBids={slotBids}
                 medications={medications}
                 diagCodes={diagCodes}
                 currentEgfr={currentEgfr}
                 onToggleDiag={toggleDiag}
                 onChangeSlot={(idx) => setSelectorSlot(idx)}
+                onToggleBid={toggleSlotBid}
                 onCancel={handleCancel}
                 onConfirm={handleConfirm}
                 canConfirm={canConfirm}
@@ -155,7 +158,6 @@ export default function PrescribeScreen() {
         currentMedId={selectorSlot != null ? slots[selectorSlot] : null}
         medications={medications}
         categories={categories}
-        drugClasses={drugClasses}
         currentEgfr={currentEgfr}
         onClose={() => setSelectorSlot(null)}
         onPick={(idx, medId) => {
@@ -211,22 +213,26 @@ function ChartPhaseView({ content, onBack }: { content: React.ReactNode; onBack:
 
 function PrescribePhaseView({
   slots,
+  slotBids,
   medications,
   diagCodes,
   currentEgfr,
   onToggleDiag,
   onChangeSlot,
+  onToggleBid,
   onCancel,
   onConfirm,
   canConfirm,
   needsDiag,
 }: {
   slots: (string | null)[];
+  slotBids: boolean[];
   medications: ReturnType<typeof useDataStore.getState>['medications'];
   diagCodes: string[];
   currentEgfr: number;
   onToggleDiag: (code: string) => void;
   onChangeSlot: (idx: number) => void;
+  onToggleBid: (idx: number) => void;
   onCancel: () => void;
   onConfirm: () => void;
   canConfirm: boolean;
@@ -246,9 +252,11 @@ function PrescribePhaseView({
         <h2 className="mb-2 text-xs font-semibold text-gray-600">처방 약제 (5슬롯)</h2>
         <SlotList
           slots={slots}
+          slotBids={slotBids}
           medications={medications}
           currentEgfr={currentEgfr}
           onChangeSlot={onChangeSlot}
+          onToggleBid={onToggleBid}
         />
       </section>
 

@@ -19,8 +19,10 @@ export type ComorbFilter = string;
 
 type Slot = string | null;
 type Slots = [Slot, Slot, Slot, Slot, Slot];
+type Bids = [boolean, boolean, boolean, boolean, boolean];
 
 const emptySlots = (): Slots => [null, null, null, null, null];
+const emptyBids = (): Bids => [false, false, false, false, false];
 
 /** 환자가 현재 복용 중인 약(prevDrugs medId 배열)을 5칸 처방 슬롯으로 변환 */
 const slotsFromPrevDrugs = (prevDrugs?: string[]): Slots => {
@@ -49,6 +51,7 @@ interface SessionState {
 
   currentPatientId: string | null;
   slots: Slots;
+  slotBids: Bids;
   diagCodes: string[];
   comorbFilter: ComorbFilter;
 
@@ -68,6 +71,7 @@ interface SessionState {
   setComorbFilter: (filter: ComorbFilter) => void;
   setSlot: (idx: number, medId: string | null) => void;
   clearSlot: (idx: number) => void;
+  toggleSlotBid: (idx: number) => void;
   toggleDiag: (code: string) => void;
   setRxPhase: (p: RxPhase) => void;
   confirmPrescription: () => void;
@@ -92,6 +96,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
   currentPatientId: null,
   slots: emptySlots(),
+  slotBids: emptyBids(),
   diagCodes: [],
   comorbFilter: '전체',
 
@@ -204,6 +209,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     set({
       currentPatientId: id,
       slots: slotsFromPrevDrugs(patient?.prevDrugs),
+      slotBids: emptyBids(),
       diagCodes: [],
       rxPhase: 'menu',
       phase: hasSurvey ? 'survey' : 'rx',
@@ -257,7 +263,16 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     if (idx < 0 || idx > 4) return;
     const next = [...get().slots] as Slots;
     next[idx] = null;
-    set({ slots: next });
+    const bids = [...get().slotBids] as Bids;
+    bids[idx] = false;
+    set({ slots: next, slotBids: bids });
+  },
+
+  toggleSlotBid: (idx) => {
+    if (idx < 0 || idx > 4) return;
+    const bids = [...get().slotBids] as Bids;
+    bids[idx] = !bids[idx];
+    set({ slotBids: bids });
   },
 
   toggleDiag: (code) => {
@@ -274,6 +289,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     const {
       currentPatientId,
       slots,
+      slotBids,
       diagCodes,
       sessionPrescriptions,
       hospitalName,
@@ -310,6 +326,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       current,
       slots: slotMeds,
       baselineSlots: baselineMeds,
+      bidFlags: slotBids,
       diagCodes,
       settings: data.settings,
       exemptions: data.sideEffectExemptions,
@@ -388,6 +405,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       rxPhase: 'menu',
       currentPatientId: null,
       slots: emptySlots(),
+      slotBids: emptyBids(),
       diagCodes: [],
       lastResult: null,
     });
@@ -407,6 +425,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       loginFieldValues: {},
       currentPatientId: null,
       slots: emptySlots(),
+      slotBids: emptyBids(),
       diagCodes: [],
       comorbFilter: '전체',
       sessionPrescriptions: [],

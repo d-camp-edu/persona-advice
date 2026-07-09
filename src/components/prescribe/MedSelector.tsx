@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, ChevronLeft, Star, X } from 'lucide-react';
-import type { DrugClass, MedCategory, Medication } from '../../types';
+import type { MedCategory, Medication } from '../../types';
 
 const CAT_ALL = '__all__';
 
@@ -11,7 +11,6 @@ interface MedSelectorProps {
   currentMedId: string | null;
   medications: Medication[];
   categories: MedCategory[];
-  drugClasses: DrugClass[];
   currentEgfr: number;
   onClose: () => void;
   onPick: (slotIndex: number, medId: string) => void;
@@ -24,7 +23,6 @@ export default function MedSelector({
   currentMedId,
   medications,
   categories,
-  drugClasses,
   currentEgfr,
   onClose,
   onPick,
@@ -38,9 +36,9 @@ export default function MedSelector({
     [categories],
   );
 
-  const classOrder = useMemo(
-    () => new Map(drugClasses.map((d) => [d.id, d.order ?? 999])),
-    [drugClasses],
+  const catOrder = useMemo(
+    () => new Map(categories.map((c) => [c.id, c.order])),
+    [categories],
   );
 
   const filteredMeds = useMemo(() => {
@@ -48,19 +46,17 @@ export default function MedSelector({
       selectedCat === CAT_ALL
         ? medications
         : medications.filter((m) => m.categoryId === selectedCat);
-    const primaryOrder = (m: Medication) => {
-      if (!m.classes?.length) return 9999;
-      return Math.min(...m.classes.map((c) => classOrder.get(c) ?? 999));
-    };
-    // 아사(자사) 제품 우선 → 계열 순서 → 개별 순서
+    // 아사(자사) 제품 우선 → 카테고리 순서(단일제·메트포민 복합제·2제·3제…)
+    // → 개별 order. order 필드는 카테고리 내에서 계열(DPP-4i·SGLT-2i·TZD) 순으로
+    // 이미 정렬돼 있으므로 그대로 따르면 요청한 계열 순서가 유지된다.
     return [...list].sort((a, b) => {
       const asa = Number(!!b.isAsaProduct) - Number(!!a.isAsaProduct);
       if (asa !== 0) return asa;
-      const cls = primaryOrder(a) - primaryOrder(b);
-      if (cls !== 0) return cls;
+      const cat = (catOrder.get(a.categoryId) ?? 999) - (catOrder.get(b.categoryId) ?? 999);
+      if (cat !== 0) return cat;
       return a.order - b.order;
     });
-  }, [medications, selectedCat, classOrder]);
+  }, [medications, selectedCat, catOrder]);
 
   if (!open) return null;
 

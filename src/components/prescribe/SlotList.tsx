@@ -3,12 +3,21 @@ import SlotItem from './SlotItem';
 
 interface SlotListProps {
   slots: (string | null)[];
+  slotBids: boolean[];
   medications: Medication[];
   currentEgfr: number;
   onChangeSlot: (slotIndex: number) => void;
+  onToggleBid: (slotIndex: number) => void;
 }
 
-export default function SlotList({ slots, medications, currentEgfr, onChangeSlot }: SlotListProps) {
+export default function SlotList({
+  slots,
+  slotBids,
+  medications,
+  currentEgfr,
+  onChangeSlot,
+  onToggleBid,
+}: SlotListProps) {
   return (
     <ul className="flex flex-col gap-2">
       {slots.map((id, idx) => {
@@ -18,8 +27,10 @@ export default function SlotList({ slots, medications, currentEgfr, onChangeSlot
             <SlotItem
               slotIndex={idx}
               medication={med}
+              bid={!!slotBids[idx]}
               currentEgfr={currentEgfr}
               onChange={onChangeSlot}
+              onToggleBid={onToggleBid}
             />
           </li>
         );

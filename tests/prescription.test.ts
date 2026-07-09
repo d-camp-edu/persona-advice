@@ -120,6 +120,65 @@ describe('calculatePrescription — 단일 약제 결정성', () => {
   });
 });
 
+describe('calculatePrescription — BID(1일 2회)', () => {
+  it('bidFlags가 true인 슬롯은 효과가 2배로 적용된다', () => {
+    const p = patient('p1');
+    const m = med('m_2'); // effect 1.2, effectWeight -1
+    const result = calculatePrescription({
+      patient: p,
+      current: getPatientCurrentState(p, [], meds),
+      slots: slotsWith(m),
+      bidFlags: [true, false, false, false, false],
+      diagCodes: ['E11'],
+      settings,
+      exemptions: [],
+      pastSideEffectCounts: {},
+      rng: noSideEffectRng,
+      now: fixedNow,
+    });
+    expect(result.prescription.newHba1c).toBeCloseTo(7.8 - 1.2 * 2, 5);
+    expect(result.prescription.newWeight).toBeCloseTo(result.prescription.oldWeight - 1 * 2, 5);
+    expect(result.prescription.prescribedDrugs[0].bid).toBe(true);
+  });
+
+  it('BID여도 부작용 페널티는 1회분만 차감된다', () => {
+    const p = patient('p1');
+    const m = med('m_2'); // effect 1.2, penalty 0.4, prob 20
+    const result = calculatePrescription({
+      patient: p,
+      current: getPatientCurrentState(p, [], meds),
+      slots: slotsWith(m),
+      bidFlags: [true, false, false, false, false],
+      diagCodes: ['E11'],
+      settings,
+      exemptions: [],
+      pastSideEffectCounts: {},
+      rng: alwaysSideEffectRng,
+      now: fixedNow,
+    });
+    expect(result.prescription.sideEffects).toHaveLength(1);
+    expect(result.prescription.newHba1c).toBeCloseTo(7.8 - (1.2 * 2 - 0.4), 5);
+  });
+
+  it('bidFlags 미지정이면 QD(1배)로 계산 — 기존 동작 유지', () => {
+    const p = patient('p1');
+    const m = med('m_2');
+    const result = calculatePrescription({
+      patient: p,
+      current: getPatientCurrentState(p, [], meds),
+      slots: slotsWith(m),
+      diagCodes: ['E11'],
+      settings,
+      exemptions: [],
+      pastSideEffectCounts: {},
+      rng: noSideEffectRng,
+      now: fixedNow,
+    });
+    expect(result.prescription.newHba1c).toBeCloseTo(7.8 - 1.2, 5);
+    expect(result.prescription.prescribedDrugs[0].bid).toBe(false);
+  });
+});
+
 describe('calculatePrescription — 부작용 면제', () => {
   it('과거 위장장애 부작용 2회 이상이면 위장장애 약제 부작용 스킵', () => {
     const p = patient('p1');

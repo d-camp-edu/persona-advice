@@ -100,6 +100,11 @@ export default function ResultReportScreen() {
                   <div className="flex items-baseline gap-2">
                     <span className="text-[10px] font-semibold text-gray-400">#{d.slot}</span>
                     <span className="text-sm font-medium text-gray-800">{d.name}</span>
+                    {d.bid && (
+                      <span className="rounded bg-indigo-100 px-1 py-0.5 text-[10px] font-bold text-indigo-700">
+                        BID
+                      </span>
+                    )}
                   </div>
                   <Badge color={d.isSelfPay ? 'orange' : 'blue'}>
                     {d.isSelfPay ? '자가부담' : '보험'}
