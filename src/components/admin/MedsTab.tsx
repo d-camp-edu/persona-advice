@@ -5,6 +5,7 @@ import { saveDoc, removeDoc } from '../../lib/firestoreApi';
 import { uploadMedications } from '../../data/seedRunner';
 import { ensureMaterialized } from '../../lib/persistSeed';
 import { moveItem } from '../../lib/reorder';
+import { seedMedications } from '../../data/seed';
 import type { Medication, Pkg } from '../../types';
 
 const inp =
@@ -16,7 +17,7 @@ function newMed(): Medication {
   return {
     id: `m_${Date.now().toString(36)}`,
     name: '새 약제',
-    categoryId: 'cat_1',
+    categoryId: 'cat_single',
     pkg: 'ptp',
     classes: [],
     isNotDrug: false,
@@ -26,6 +27,7 @@ function newMed(): Medication {
     effectBnp: 0,
     effectNtprobnp: 0,
     effectEgfr: 0,
+    effectEgfrDip: 0,
     effectUacr: 0,
     beneficialComorb: [],
     worseningComorb: [],
@@ -145,7 +147,8 @@ function MedEditor({
             { k: 'effectLvef', label: 'LVEF 변화' },
             { k: 'effectBnp', label: 'BNP 변화' },
             { k: 'effectNtprobnp', label: 'NT-proBNP 변화' },
-            { k: 'effectEgfr', label: 'eGFR 변화' },
+            { k: 'effectEgfr', label: 'eGFR 연간 변화' },
+            { k: 'effectEgfrDip', label: 'eGFR 이니셜딥(첫 노출)' },
             { k: 'effectUacr', label: 'UACR 변화' },
             { k: 'egfrLimit', label: 'eGFR 하한' },
           ] as { k: keyof Medication; label: string }[]
@@ -161,7 +164,7 @@ function MedEditor({
       <p className="mb-1 text-xs font-semibold text-gray-600">부작용</p>
       <div className="mb-3 grid grid-cols-2 gap-x-3">
         <div>
-          <label className="mb-0.5 block text-xs text-gray-500">발생 확률 (0~1)</label>
+          <label className="mb-0.5 block text-xs text-gray-500">발생 확률 (0~100)</label>
           <input type="number" step="0.01" min="0" max="1" className={`${inp} mb-1`} value={draft.sideEffectProb} onChange={(e) => set('sideEffectProb', +e.target.value)} />
         </div>
         <div>
@@ -353,7 +356,7 @@ export default function MedsTab() {
   };
 
   const handleSeedReset = async () => {
-    if (!confirm('약제 데이터를 기본 60종으로 초기화하시겠습니까?')) return;
+    if (!confirm(`약제 데이터를 기본 ${seedMedications.length}종으로 초기화하시겠습니까?`)) return;
     setSeeding(true);
     try {
       await uploadMedications();
@@ -431,7 +434,7 @@ export default function MedsTab() {
           disabled={seeding}
           className="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-50"
         >
-          {seeding ? '초기화 중…' : '기본 초기화 (60종)'}
+          {seeding ? '초기화 중…' : `기본 초기화 (${seedMedications.length}종)`}
         </button>
       </div>
       <p className="mb-3 text-[11px] leading-snug text-gray-400">

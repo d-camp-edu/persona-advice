@@ -14,6 +14,12 @@ export interface Medication {
   effectBnp: number;
   effectNtprobnp: number;
   effectEgfr: number;
+  /**
+   * eGFR 이니셜딥(mL/min). 해당 계열(SGLT-2i 등)에 처음 노출될 때 1회만 적용되는
+   * 치료 초기 일시적 eGFR 하강. 같은 딥 계열을 이미 경험한 환자(이전 복용약 또는
+   * 세션 내 이전 처방)에게는 적용하지 않는다. 부호 그대로 더한다(음수=하강).
+   */
+  effectEgfrDip: number;
   effectUacr: number;
 
   beneficialComorb: string[];

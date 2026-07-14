@@ -12,16 +12,16 @@ describe('seed data 분량 검증 (M1 게이트)', () => {
     expect(seedPatients).toHaveLength(20);
   });
 
-  it('약제 60종', () => {
-    expect(seedMedications).toHaveLength(60);
+  it('약제 105종 (엑셀 104 + 생활습관 1)', () => {
+    expect(seedMedications).toHaveLength(105);
   });
 
-  it('카테고리 6종', () => {
-    expect(seedMedCategories).toHaveLength(6);
+  it('카테고리 4종', () => {
+    expect(seedMedCategories).toHaveLength(4);
   });
 
-  it('약물 계열 8종', () => {
-    expect(seedDrugClasses).toHaveLength(8);
+  it('약물 계열 9종', () => {
+    expect(seedDrugClasses).toHaveLength(9);
   });
 
   it('공병증 10종', () => {

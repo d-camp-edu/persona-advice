@@ -56,6 +56,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Admin "환자/약제/설정" 탭의 **"기본 초기화" 버튼만** `seedRunner.uploadAll()`로 batch write를 트리거.
 - 시연 화면은 `useDataStore`만 참조한다. 시드 import 직접 사용 금지(seedRunner 제외).
 
+#### 기본 약제 시드는 엑셀에서 생성 (중요)
+
+- **`src/data/seed/medications.seed.ts`는 자동 생성 파일이다. 직접 손대지 말 것.** 출처는 레포 루트의 **`기본 약제 초기화.xlsx`**.
+- 재생성: `node scripts/genMedications.mjs` (의존성 없음, Node 내장 zlib만 사용). 엑셀 → `medications.seed.ts`.
+- **워크플로:** 사용자가 `기본 약제 초기화.xlsx`를 수정하고 커밋/푸시를 요청하면 → 위 스크립트를 다시 실행 → `medications.seed.ts` 변경분과 함께 커밋한다. 그러면 Admin "기본 초기화" 버튼이 업로드하는 기본 약제가 그대로 바뀐다.
+- 엑셀 열 매핑·계열 파생·지표 환산 상수(LVEF/BNP/NT-proBNP/UACR %→절대량, HbA1c/eGFR 절대)는 `scripts/genMedications.mjs` 상단 주석 참조. 엑셀에 없는 값(공병증 호전/악화, eGFR 하한, 생활습관 비약물)은 계열 기준 표에서 파생·추가한다.
+- 약제 id는 엑셀 데이터 행 순서 기반(`m_1`…). **행 순서를 바꾸거나 행을 추가/삭제하면 id가 밀려** `patients.seed.ts`의 `prevDrugs` 참조가 깨질 수 있다. 재생성 후 `tests/seed.test.ts`(prevDrugs 실재 검증)를 반드시 돌려 확인한다.
+
 ### Firestore 경로
 
 ```
@@ -70,6 +78,8 @@ artifacts/{appId}/public/data/
 ## 도메인 규칙: 자주 헷갈리는 지점
 
 - **약제 effect 부호**: HbA1c는 `effect`만큼 **차감**(양수 = 강하). 체중·LVEF·BNP·NT-proBNP·eGFR·UACR 효과는 부호 그대로 더한다 (음수 = 감소).
+- **eGFR = 연간 감소 + 이니셜딥**: 엑셀 모델상 eGFR은 매 처방 `effectEgfr`(연간 감소 기울기, 대개 음수)만큼 항상 감소한다. SGLT-2i/GLP-1은 감소가 완만(−1.5)하지만 **딥 계열에 처음 노출**될 때 `effectEgfrDip`(예: SGLT-2i −4, GLP-1 −1)이 1회 추가된다. 나머지 계열은 딥 없이 −3.5 지속 감소. "처음"의 판정은 **계열 기준**: 이전 복용약(`prevDrugs`)이나 같은 세션 이전 처방에 같은 딥 계열이 있으면 이미 경험한 것으로 보고 딥을 적용하지 않는다. 딥 계열 집합·경험 여부는 `useSessionStore`에서 계산해 `calculatePrescription`에 `dipClassIds`/`experiencedDipClassIds`로 주입한다. → 첫 SGLT-2i 처방 회차는 eGFR이 (연간+딥)만큼 크게 떨어졌다가 이후 완만해지는, 임상적으로 알려진 "초기 딥" 서사를 그대로 보여준다.
+- **eGFR/UACR/BNP/NT-proBNP 하한 0**: `optionalNumeric(..., 0)`로 음수 방지(딥·큰 %감소가 저baseline 환자를 음수로 만들지 않도록).
 - **결과 리포트 색상**: HbA1c/UACR/체중/BNP/NT-proBNP는 감소가 개선(초록), 증가가 악화(빨강). LVEF/eGFR은 반대 — 증가가 개선. 변동 없는 지표는 표시 생략. 환자가 해당 수치를 가지지 않으면(`0` 또는 `""`) 행 자체를 숨긴다.
 - **상병코드 검사 범위**: E11(당뇨) 처방 기준은 슬롯 1~3(보험 처방)의 약물 처방만 대상. 본인부담(슬롯 4~5), `isInsuranceException`, `isNotDrug` 약제는 제외.
 - **HbA1c 하한**: `newHba1c = max(4.5, currentHba1c - effect.h)` — 4.5% 이하로 내려가지 않도록 클램프.

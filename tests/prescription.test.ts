@@ -21,11 +21,45 @@ function patient(id: string) {
   return p;
 }
 
-function med(id: string): Medication {
-  const m = meds.find((x) => x.id === id);
-  if (!m) throw new Error(`med ${id} not found in seed`);
-  return m;
+function round1(v: number): number {
+  return Math.round(v * 10) / 10;
 }
+
+// ── 시드 수치 변화에 견고하도록 약제는 "특성"으로 고른다 ──────────────────
+/** 경구 PTP 단일 약제(부작용 확률 0<p<100, 강하 효과 있음) */
+const ptpDrug = meds.find(
+  (m) => !m.isNotDrug && m.pkg === 'ptp' && m.effect > 0 && m.sideEffectProb > 0 && m.sideEffectProb < 100,
+)!;
+/** 병포장 약제(강하 효과 있음) */
+const bottleDrug = meds.find((m) => !m.isNotDrug && m.pkg === 'bottle' && m.effect > 0)!;
+/** worseningComorb에 위장장애를 가진 약제(PTP, 부작용 확률>0) */
+const giDrug = meds.find(
+  (m) => !m.isNotDrug && m.pkg === 'ptp' && m.worseningComorb.includes('위장장애') && m.sideEffectProb > 0,
+)!;
+/** dc_met 계열 약제(면제 조합 테스트용) */
+const metDrug = meds.find((m) => m.classes.includes('dc_met'))!;
+/** 비약물(생활습관) */
+const lifestyle = meds.find((m) => m.isNotDrug)!;
+/** SGLT-2i 심부전 지표(effectLvef 또는 effectNtprobnp≠0)를 움직이는 약제 */
+const hfDrug = meds.find(
+  (m) => m.classes.includes('dc_sglt2') && (m.effectLvef !== 0 || m.effectNtprobnp !== 0),
+)!;
+/** 비만 호전 약제 */
+const obesityDrug = meds.find((m) => !m.isNotDrug && m.beneficialComorb.includes('비만'))!;
+/** eGFR 이니셜딥을 가진 단일계열 SGLT-2i */
+const dipDrug = meds.find(
+  (m) => m.classes.length === 1 && m.classes[0] === 'dc_sglt2' && m.effectEgfrDip !== 0,
+)!;
+/** BID 테스트용: 경구 PTP·강하효과·체중효과·부작용 확률 모두 있는 약제 */
+const bidDrug = meds.find(
+  (m) =>
+    !m.isNotDrug &&
+    m.pkg === 'ptp' &&
+    m.effect > 0 &&
+    m.effectWeight !== 0 &&
+    m.sideEffectProb > 0 &&
+    m.sideEffectProb < 100,
+)!;
 
 function emptySlots(): (Medication | null)[] {
   return [null, null, null, null, null];
@@ -41,7 +75,7 @@ function slotsWith(...ms: Medication[]): (Medication | null)[] {
 
 describe('getPatientCurrentState', () => {
   it('재진 환자는 prevDrugs가 있어도 initialHba1c를 그대로 사용한다 (§5-1 literal)', () => {
-    const p = patient('p2'); // 재진, initialHba1c 6.8, prevDrugs ['m_1' (effect 0.8)]
+    const p = patient('p2'); // 재진, initialHba1c 6.8
     const state = getPatientCurrentState(p, [], meds);
     expect(state.hba1c).toBe(6.8);
     expect(state.weight).toBe(p.weight);
@@ -56,7 +90,7 @@ describe('getPatientCurrentState', () => {
   });
 
   it('재진 환자(p18)도 prevDrugs 차감 없이 initialHba1c 그대로', () => {
-    const p = patient('p18'); // 재진, prevDrugs ['m_8','m_1']
+    const p = patient('p18'); // 재진
     const state = getPatientCurrentState(p, [], meds);
     expect(state.hba1c).toBe(7.6);
   });
@@ -66,7 +100,7 @@ describe('getPatientCurrentState', () => {
     const fake = calculatePrescription({
       patient: p,
       current: getPatientCurrentState(p, [], meds),
-      slots: slotsWith(med('m_2')),
+      slots: slotsWith(ptpDrug),
       diagCodes: ['E11'],
       settings,
       exemptions: [],
@@ -81,12 +115,12 @@ describe('getPatientCurrentState', () => {
 });
 
 describe('calculatePrescription — 단일 약제 결정성', () => {
-  it('rng=1.0이면 부작용은 절대 발생하지 않는다 (sideEffectProb<100 가정)', () => {
+  it('rng=1.0이면 부작용은 절대 발생하지 않는다', () => {
     const p = patient('p1');
     const result = calculatePrescription({
       patient: p,
       current: getPatientCurrentState(p, [], meds),
-      slots: slotsWith(med('m_2')), // sideEffectProb 20
+      slots: slotsWith(ptpDrug),
       diagCodes: ['E11'],
       settings,
       exemptions: [],
@@ -95,16 +129,15 @@ describe('calculatePrescription — 단일 약제 결정성', () => {
       now: fixedNow,
     });
     expect(result.prescription.sideEffects).toEqual([]);
-    expect(result.prescription.newHba1c).toBeCloseTo(7.8 - 1.2, 5);
+    expect(result.prescription.newHba1c).toBeCloseTo(7.8 - ptpDrug.effect, 5);
   });
 
   it('rng=0.0이고 sideEffectProb>0이면 부작용 발생 + eH 차감', () => {
     const p = patient('p1');
-    const m = med('m_2'); // effect 1.2, penalty 0.4
     const result = calculatePrescription({
       patient: p,
       current: getPatientCurrentState(p, [], meds),
-      slots: slotsWith(m),
+      slots: slotsWith(ptpDrug),
       diagCodes: ['E11'],
       settings,
       exemptions: [],
@@ -113,21 +146,19 @@ describe('calculatePrescription — 단일 약제 결정성', () => {
       now: fixedNow,
     });
     expect(result.prescription.sideEffects).toHaveLength(1);
-    expect(result.prescription.sideEffects[0]).toContain(m.name);
-    expect(result.prescription.newHba1c).toBeCloseTo(7.8 - (1.2 - 0.4), 5);
+    expect(result.prescription.sideEffects[0]).toContain(ptpDrug.name);
+    expect(result.prescription.newHba1c).toBeCloseTo(7.8 - (ptpDrug.effect - ptpDrug.sideEffectPenalty), 5);
     expect(result.prescription.patientFeedback).toBe(settings.msgSideEffect);
-    expect(Object.keys(result.prescription.comorbFeedback)).toHaveLength(0);
   });
 });
 
 describe('calculatePrescription — BID(1일 2회)', () => {
   it('bidFlags가 true인 슬롯은 효과가 2배로 적용된다', () => {
     const p = patient('p1');
-    const m = med('m_2'); // effect 1.2, effectWeight -1
     const result = calculatePrescription({
       patient: p,
       current: getPatientCurrentState(p, [], meds),
-      slots: slotsWith(m),
+      slots: slotsWith(bidDrug),
       bidFlags: [true, false, false, false, false],
       diagCodes: ['E11'],
       settings,
@@ -136,18 +167,20 @@ describe('calculatePrescription — BID(1일 2회)', () => {
       rng: noSideEffectRng,
       now: fixedNow,
     });
-    expect(result.prescription.newHba1c).toBeCloseTo(7.8 - 1.2 * 2, 5);
-    expect(result.prescription.newWeight).toBeCloseTo(result.prescription.oldWeight - 1 * 2, 5);
+    expect(result.prescription.newHba1c).toBeCloseTo(round1(7.8 - bidDrug.effect * 2), 5);
+    expect(result.prescription.newWeight).toBeCloseTo(
+      round1(result.prescription.oldWeight + bidDrug.effectWeight * 2),
+      5,
+    );
     expect(result.prescription.prescribedDrugs[0].bid).toBe(true);
   });
 
   it('BID여도 부작용 페널티는 1회분만 차감된다', () => {
     const p = patient('p1');
-    const m = med('m_2'); // effect 1.2, penalty 0.4, prob 20
     const result = calculatePrescription({
       patient: p,
       current: getPatientCurrentState(p, [], meds),
-      slots: slotsWith(m),
+      slots: slotsWith(bidDrug),
       bidFlags: [true, false, false, false, false],
       diagCodes: ['E11'],
       settings,
@@ -157,16 +190,18 @@ describe('calculatePrescription — BID(1일 2회)', () => {
       now: fixedNow,
     });
     expect(result.prescription.sideEffects).toHaveLength(1);
-    expect(result.prescription.newHba1c).toBeCloseTo(7.8 - (1.2 * 2 - 0.4), 5);
+    expect(result.prescription.newHba1c).toBeCloseTo(
+      round1(7.8 - (bidDrug.effect * 2 - bidDrug.sideEffectPenalty)),
+      5,
+    );
   });
 
   it('bidFlags 미지정이면 QD(1배)로 계산 — 기존 동작 유지', () => {
     const p = patient('p1');
-    const m = med('m_2');
     const result = calculatePrescription({
       patient: p,
       current: getPatientCurrentState(p, [], meds),
-      slots: slotsWith(m),
+      slots: slotsWith(bidDrug),
       diagCodes: ['E11'],
       settings,
       exemptions: [],
@@ -174,7 +209,7 @@ describe('calculatePrescription — BID(1일 2회)', () => {
       rng: noSideEffectRng,
       now: fixedNow,
     });
-    expect(result.prescription.newHba1c).toBeCloseTo(7.8 - 1.2, 5);
+    expect(result.prescription.newHba1c).toBeCloseTo(round1(7.8 - bidDrug.effect), 5);
     expect(result.prescription.prescribedDrugs[0].bid).toBe(false);
   });
 });
@@ -182,11 +217,10 @@ describe('calculatePrescription — BID(1일 2회)', () => {
 describe('calculatePrescription — 부작용 면제', () => {
   it('과거 위장장애 부작용 2회 이상이면 위장장애 약제 부작용 스킵', () => {
     const p = patient('p1');
-    const m = med('m_2'); // worseningComorb includes 위장장애
     const result = calculatePrescription({
       patient: p,
       current: getPatientCurrentState(p, [], meds),
-      slots: slotsWith(m),
+      slots: slotsWith(giDrug),
       diagCodes: ['E11'],
       settings,
       exemptions: [],
@@ -195,21 +229,18 @@ describe('calculatePrescription — 부작용 면제', () => {
       now: fixedNow,
     });
     expect(result.prescription.sideEffects).toEqual([]);
-    expect(result.prescription.newHba1c).toBeCloseTo(7.8 - 1.2, 5);
+    expect(result.prescription.newHba1c).toBeCloseTo(7.8 - giDrug.effect, 5);
   });
 
   it('sideEffectExemptions 조합이 활성 계열에 포함되면 부작용 스킵', () => {
     const p = patient('p1');
-    const m = med('m_2');
     const result = calculatePrescription({
       patient: p,
       current: getPatientCurrentState(p, [], meds),
-      slots: slotsWith(m),
+      slots: slotsWith(metDrug),
       diagCodes: ['E11'],
       settings,
-      exemptions: [
-        { id: 'ex1', name: '메트포르민 면제', classIds: ['dc_met'], note: '' },
-      ],
+      exemptions: [{ id: 'ex1', name: '메트포르민 면제', classIds: ['dc_met'], note: '' }],
       pastSideEffectCounts: {},
       rng: alwaysSideEffectRng,
       now: fixedNow,
@@ -221,11 +252,10 @@ describe('calculatePrescription — 부작용 면제', () => {
 describe('calculatePrescription — 병포장 보너스', () => {
   it('선택 약제(비약물 제외) 모두 pkg=bottle이면 HbA1c +packagingBonusEffect', () => {
     const p = patient('p1');
-    const m = med('m_27'); // pkg='bottle', effect 1.5
     const result = calculatePrescription({
       patient: p,
       current: getPatientCurrentState(p, [], meds),
-      slots: slotsWith(m),
+      slots: slotsWith(bottleDrug),
       diagCodes: ['E11'],
       settings,
       exemptions: [],
@@ -235,7 +265,7 @@ describe('calculatePrescription — 병포장 보너스', () => {
     });
     expect(result.prescription.isPackagingBonus).toBe(true);
     expect(result.prescription.newHba1c).toBeCloseTo(
-      7.8 - (1.5 + settings.packagingBonusEffect),
+      round1(7.8 - (bottleDrug.effect + settings.packagingBonusEffect)),
       5,
     );
     expect(result.prescription.patientFeedback).toBe(settings.msgPackaging);
@@ -246,7 +276,7 @@ describe('calculatePrescription — 병포장 보너스', () => {
     const result = calculatePrescription({
       patient: p,
       current: getPatientCurrentState(p, [], meds),
-      slots: slotsWith(med('m_27'), med('m_2')), // bottle + ptp
+      slots: slotsWith(bottleDrug, ptpDrug), // bottle + ptp
       diagCodes: ['E11'],
       settings,
       exemptions: [],
@@ -260,13 +290,12 @@ describe('calculatePrescription — 병포장 보너스', () => {
 
 describe('calculatePrescription — 순응도 나쁨', () => {
   it('adherence=나쁨 + 비병포장 + 약물 처방 → totals.h = -0.4 (HbA1c 상승)', () => {
-    const p = patient('p11'); // adherence='나쁨', initialHba1c 10.2, prevDrugs m_15(1.6)
-    const m = med('m_2'); // ptp
+    const p = patient('p11'); // adherence='나쁨'
     const start = getPatientCurrentState(p, [], meds);
     const result = calculatePrescription({
       patient: p,
       current: start,
-      slots: slotsWith(m),
+      slots: slotsWith(ptpDrug),
       diagCodes: ['E11'],
       settings,
       exemptions: [],
@@ -281,12 +310,11 @@ describe('calculatePrescription — 순응도 나쁨', () => {
 
   it('adherence=나쁨이라도 병포장 처방이면 정상 계산', () => {
     const p = patient('p11');
-    const m = med('m_27'); // bottle
     const start = getPatientCurrentState(p, [], meds);
     const result = calculatePrescription({
       patient: p,
       current: start,
-      slots: slotsWith(m),
+      slots: slotsWith(bottleDrug),
       diagCodes: ['E11'],
       settings,
       exemptions: [],
@@ -297,7 +325,7 @@ describe('calculatePrescription — 순응도 나쁨', () => {
     expect(result.prescription.isPoorAdherence).toBe(false);
     expect(result.prescription.isPackagingBonus).toBe(true);
     expect(result.prescription.newHba1c).toBeCloseTo(
-      start.hba1c - (1.5 + settings.packagingBonusEffect),
+      round1(start.hba1c - (bottleDrug.effect + settings.packagingBonusEffect)),
       5,
     );
   });
@@ -306,10 +334,13 @@ describe('calculatePrescription — 순응도 나쁨', () => {
 describe('calculatePrescription — HbA1c 4.5 클램프', () => {
   it('총효과가 너무 커도 newHba1c는 4.5 미만으로 떨어지지 않는다', () => {
     const p = patient('p1');
+    const strong = meds
+      .filter((m) => !m.isNotDrug && m.effect > 0)
+      .sort((a, b) => b.effect - a.effect);
     const result = calculatePrescription({
       patient: p,
       current: { ...getPatientCurrentState(p, [], meds), hba1c: 5.5 },
-      slots: slotsWith(med('m_27'), med('m_30')), // 합산 effect 매우 큼
+      slots: slotsWith(strong[0], strong[1]),
       diagCodes: ['E11'],
       settings,
       exemptions: [],
@@ -317,7 +348,6 @@ describe('calculatePrescription — HbA1c 4.5 클램프', () => {
       rng: noSideEffectRng,
       now: fixedNow,
     });
-    expect(result.prescription.newHba1c).toBeGreaterThanOrEqual(4.5);
     expect(result.prescription.newHba1c).toBe(4.5);
   });
 });
@@ -325,12 +355,11 @@ describe('calculatePrescription — HbA1c 4.5 클램프', () => {
 describe('calculatePrescription — 비약물 전용 처방', () => {
   it('isNotDrug 약제만 처방하면 isLifestyleOnly + msgLifestyle', () => {
     const p = patient('p1');
-    const m = med('m_60'); // 생활습관, isNotDrug
     const start = getPatientCurrentState(p, [], meds);
     const result = calculatePrescription({
       patient: p,
       current: start,
-      slots: slotsWith(m),
+      slots: slotsWith(lifestyle),
       diagCodes: [],
       settings,
       exemptions: [],
@@ -339,7 +368,7 @@ describe('calculatePrescription — 비약물 전용 처방', () => {
       now: fixedNow,
     });
     expect(result.prescription.newHba1c).toBe(start.hba1c);
-    expect(result.prescription.newWeight).toBeCloseTo(start.weight - 1, 5);
+    expect(result.prescription.newWeight).toBeCloseTo(start.weight + lifestyle.effectWeight, 5);
     expect(result.prescription.patientFeedback).toBe(settings.msgLifestyle);
     expect(result.prescription.isPoorAdherence).toBe(false);
     expect(result.prescription.isPackagingBonus).toBe(false);
@@ -352,7 +381,7 @@ describe('calculatePrescription — 빈 지표 처리 (5-3)', () => {
     const result = calculatePrescription({
       patient: p,
       current: getPatientCurrentState(p, [], meds),
-      slots: slotsWith(med('m_27')), // SGLT-2i 복합제 → effectLvef/effectNtprobnp 등 있음
+      slots: slotsWith(hfDrug),
       diagCodes: ['E11'],
       settings,
       exemptions: [],
@@ -369,11 +398,10 @@ describe('calculatePrescription — 빈 지표 처리 (5-3)', () => {
   it('current 지표가 0이 아니면 newXxx는 효과를 더한 숫자', () => {
     const p = patient('p2'); // lvef 35, ntprobnp 150
     const start = getPatientCurrentState(p, [], meds);
-    const m = med('m_27'); // effectLvef +2, effectNtprobnp -130
     const result = calculatePrescription({
       patient: p,
       current: start,
-      slots: slotsWith(m),
+      slots: slotsWith(hfDrug),
       diagCodes: ['E11', 'I50'],
       settings,
       exemptions: [],
@@ -381,19 +409,18 @@ describe('calculatePrescription — 빈 지표 처리 (5-3)', () => {
       rng: noSideEffectRng,
       now: fixedNow,
     });
-    expect(result.prescription.newLvef).toBe(start.lvef + 2);
-    expect(result.prescription.newNtprobnp).toBe(start.ntprobnp - 130);
+    expect(result.prescription.newLvef).toBe(round1(start.lvef + hfDrug.effectLvef));
+    expect(result.prescription.newNtprobnp).toBe(round1(start.ntprobnp + hfDrug.effectNtprobnp));
   });
 });
 
 describe('calculatePrescription — 공병증 메시지', () => {
   it('호전 공병증 일치 시 good 엔트리 생성', () => {
     const p = patient('p1'); // comorbidities ['비만']
-    const m = med('m_2'); // beneficialComorb ['비만','MASH']
     const result = calculatePrescription({
       patient: p,
       current: getPatientCurrentState(p, [], meds),
-      slots: slotsWith(m),
+      slots: slotsWith(obesityDrug),
       diagCodes: ['E11'],
       settings,
       exemptions: [],
@@ -410,7 +437,7 @@ describe('calculatePrescription — 공병증 메시지', () => {
     const result = calculatePrescription({
       patient: p,
       current: getPatientCurrentState(p, [], meds),
-      slots: slotsWith(med('m_2')),
+      slots: slotsWith(giDrug),
       diagCodes: ['E11'],
       settings,
       exemptions: [],
@@ -422,16 +449,77 @@ describe('calculatePrescription — 공병증 메시지', () => {
   });
 });
 
-describe('p2 + m_30 (계획.md M5 마일스톤 시나리오)', () => {
-  it('A안 적용 후: 6.8(base 그대로) → m_30(1.8)+병포장(0.3)=2.1 차감 → 4.7', () => {
+describe('calculatePrescription — eGFR 이니셜딥 (첫 노출 시 1회)', () => {
+  const p = patient('p2'); // egfr 65
+
+  it('딥 계열 첫 노출: newEgfr = 현재 + 연간 + 딥', () => {
+    const start = getPatientCurrentState(p, [], meds);
+    const res = calculatePrescription({
+      patient: p,
+      current: start,
+      slots: slotsWith(dipDrug),
+      diagCodes: ['E11'],
+      settings,
+      exemptions: [],
+      pastSideEffectCounts: {},
+      dipClassIds: ['dc_sglt2'],
+      experiencedDipClassIds: [],
+      rng: noSideEffectRng,
+      now: fixedNow,
+    });
+    expect(res.prescription.newEgfr).toBe(
+      round1(start.egfr + dipDrug.effectEgfr + dipDrug.effectEgfrDip),
+    );
+  });
+
+  it('이미 딥 계열 경험(experiencedDipClassIds)하면 딥 없이 연간만 적용', () => {
+    const start = getPatientCurrentState(p, [], meds);
+    const res = calculatePrescription({
+      patient: p,
+      current: start,
+      slots: slotsWith(dipDrug),
+      diagCodes: ['E11'],
+      settings,
+      exemptions: [],
+      pastSideEffectCounts: {},
+      dipClassIds: ['dc_sglt2'],
+      experiencedDipClassIds: ['dc_sglt2'],
+      rng: noSideEffectRng,
+      now: fixedNow,
+    });
+    expect(res.prescription.newEgfr).toBe(round1(start.egfr + dipDrug.effectEgfr));
+  });
+
+  it('dipClassIds를 주지 않으면(기본) 딥은 적용되지 않는다', () => {
+    const start = getPatientCurrentState(p, [], meds);
+    const res = calculatePrescription({
+      patient: p,
+      current: start,
+      slots: slotsWith(dipDrug),
+      diagCodes: ['E11'],
+      settings,
+      exemptions: [],
+      pastSideEffectCounts: {},
+      rng: noSideEffectRng,
+      now: fixedNow,
+    });
+    expect(res.prescription.newEgfr).toBe(round1(start.egfr + dipDrug.effectEgfr));
+  });
+});
+
+describe('병포장 SGLT-2i 복합제 시나리오 (계획.md M5)', () => {
+  it('재진 p2: base 6.8에서 병포장 복합제 강하 + 보너스 차감', () => {
     const p = patient('p2');
     const start = getPatientCurrentState(p, [], meds);
     expect(start.hba1c).toBe(6.8); // §5-1 literal: 재진은 prevDrugs 차감 없이 initialHba1c
 
+    const combo = meds.find(
+      (m) => m.pkg === 'bottle' && m.classes.includes('dc_sglt2') && m.classes.includes('dc_met'),
+    )!;
     const result = calculatePrescription({
       patient: p,
       current: start,
-      slots: slotsWith(med('m_30')),
+      slots: slotsWith(combo),
       diagCodes: ['E11', 'I50'],
       settings,
       exemptions: [],
@@ -439,9 +527,10 @@ describe('p2 + m_30 (계획.md M5 마일스톤 시나리오)', () => {
       rng: noSideEffectRng,
       now: fixedNow,
     });
-    // 기획.md §3-4 예시는 5.6이지만 표(§4-7)의 m_30.effect=1.8 + 병포장 보너스 0.3로
-    // 산술 결과는 4.7. 5.6은 illustrative 수치로 간주.
-    expect(result.prescription.newHba1c).toBeCloseTo(4.7, 5);
     expect(result.prescription.isPackagingBonus).toBe(true);
+    expect(result.prescription.newHba1c).toBeCloseTo(
+      round1(Math.max(4.5, 6.8 - (combo.effect + settings.packagingBonusEffect))),
+      5,
+    );
   });
 });

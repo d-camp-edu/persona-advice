@@ -321,6 +321,15 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       data.medications,
     );
 
+    // eGFR 이니셜딥: 딥을 유발하는 계열과, 환자가 이미 노출된 딥 계열을 파악해 전달.
+    const dipClassIds = deriveDipClassIds(data.medications);
+    const experiencedDipClassIds = deriveExperiencedDipClasses(
+      patient.id,
+      sessionPrescriptions,
+      baselineMeds,
+      dipClassIds,
+    );
+
     const result = calculatePrescription({
       patient,
       current,
@@ -332,6 +341,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       exemptions: data.sideEffectExemptions,
       pastSideEffectCounts,
       patientMetricDefs: data.patientMetricDefs,
+      dipClassIds,
+      experiencedDipClassIds,
     });
 
     const nonDmReasons: string[] = [];
@@ -437,6 +448,43 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   exitAdmin: () => set({ phase: 'login' }),
   goMyResults: () => set({ phase: 'myresults' }),
 }));
+
+/**
+ * eGFR 이니셜딥을 유발하는 계열 id 목록. 단일계열(mono) 약제 중 effectEgfrDip≠0 인
+ * 약제의 계열을 딥 계열로 간주한다(예: SGLT-2i, GLP-1 RA). 복합제의 딥은 이 계열로 귀속.
+ */
+function deriveDipClassIds(meds: Medication[]): string[] {
+  const s = new Set<string>();
+  for (const m of meds) {
+    if (m.classes.length === 1 && m.effectEgfrDip) s.add(m.classes[0]);
+  }
+  return [...s];
+}
+
+/**
+ * 환자가 이미 노출된 딥 계열. 이전 복용약(prevDrugs)과 같은 시연 세션의 이전 처방에서
+ * 딥 계열을 모은다. 여기 포함된 계열은 이번 처방에서 이니셜딥을 다시 적용하지 않는다.
+ */
+function deriveExperiencedDipClasses(
+  patientId: string,
+  sessionPrescriptions: Prescription[],
+  baselineMeds: (Medication | null)[],
+  dipClassIds: string[],
+): string[] {
+  const dip = new Set(dipClassIds);
+  const out = new Set<string>();
+  for (const m of baselineMeds) {
+    if (!m) continue;
+    for (const c of m.classes) if (dip.has(c)) out.add(c);
+  }
+  for (const p of sessionPrescriptions) {
+    if (p.patientId !== patientId) continue;
+    for (const d of p.prescribedDrugs) {
+      for (const c of d.classes) if (dip.has(c)) out.add(c);
+    }
+  }
+  return [...out];
+}
 
 /** 보험 삭감 검사 대상(isInsuranceException·isNotDrug 제외) 약제의 서로 다른 계열 수 */
 function countInsuranceClasses(meds: Medication[]): number {

@@ -31,6 +31,10 @@ export interface CalculatePrescriptionInput {
   exemptions: SideEffectExemption[];
   pastSideEffectCounts: Record<string, number>;
   patientMetricDefs?: PatientMetricDef[];
+  /** eGFR 이니셜딥을 유발하는 계열 id 집합(예: dc_sglt2, dc_glp1). 보통 전체 약제에서 파생해 주입. */
+  dipClassIds?: string[];
+  /** 환자가 이미 노출된 딥 계열 id(이전 복용약 + 세션 내 이전 처방). 해당 계열엔 딥을 적용하지 않는다. */
+  experiencedDipClassIds?: string[];
   rng?: () => number;
   now?: () => Date;
 }
@@ -75,6 +79,11 @@ export function calculatePrescription(input: CalculatePrescriptionInput): Prescr
   const exemptedClassIds = collectExemptedClassIds(exemptions, activeClasses);
   const giSkipDueToHistory = (pastSideEffectCounts['위장장애'] ?? 0) >= 2;
 
+  // eGFR 이니셜딥: 딥 계열(SGLT-2i 등)에 처음 노출될 때만 1회 적용.
+  const dipClasses = new Set(input.dipClassIds ?? []);
+  const experiencedDip = new Set(input.experiencedDipClassIds ?? []);
+  const dipAppliedClasses = new Set<string>();
+
   const totals: Totals = { h: 0, w: 0, l: 0, n: 0, b: 0, nt: 0, eg: 0, ua: 0 };
   const customTotals: Record<string, number> = {};
   const sideEffects: string[] = [];
@@ -104,6 +113,16 @@ export function calculatePrescription(input: CalculatePrescriptionInput): Prescr
     totals.b += med.effectBnp * dose;
     totals.nt += med.effectNtprobnp * dose;
     totals.eg += med.effectEgfr * dose;
+    // 딥 계열에 처음 노출되는 경우에만 이니셜딥을 1회 추가(BID면 dose배).
+    if (med.effectEgfrDip && dipClasses.size > 0) {
+      const newDipClasses = med.classes.filter(
+        (c) => dipClasses.has(c) && !experiencedDip.has(c) && !dipAppliedClasses.has(c),
+      );
+      if (newDipClasses.length > 0) {
+        totals.eg += med.effectEgfrDip * dose;
+        for (const c of newDipClasses) dipAppliedClasses.add(c);
+      }
+    }
     totals.ua += med.effectUacr * dose;
 
     for (const def of customDefs) {
@@ -159,10 +178,10 @@ export function calculatePrescription(input: CalculatePrescriptionInput): Prescr
   const newWeight = round1(current.weight + totals.w);
   const newLvef = optionalNumeric(current.lvef, totals.l);
   const newNyha = optionalNumeric(current.nyha, totals.n);
-  const newBnp = optionalNumeric(current.bnp, totals.b);
-  const newNtprobnp = optionalNumeric(current.ntprobnp, totals.nt);
-  const newEgfr = optionalNumeric(current.egfr, totals.eg);
-  const newUacr = optionalNumeric(current.uacr, totals.ua);
+  const newBnp = optionalNumeric(current.bnp, totals.b, 0);
+  const newNtprobnp = optionalNumeric(current.ntprobnp, totals.nt, 0);
+  const newEgfr = optionalNumeric(current.egfr, totals.eg, 0);
+  const newUacr = optionalNumeric(current.uacr, totals.ua, 0);
 
   const oldCustomMetrics: Record<string, number | ''> = {};
   const newCustomMetrics: Record<string, number | ''> = {};
@@ -281,9 +300,10 @@ function collectExemptedClassIds(
   return out;
 }
 
-function optionalNumeric(currentValue: number, delta: number): number | '' {
+function optionalNumeric(currentValue: number, delta: number, min?: number): number | '' {
   if (!currentValue) return '';
-  return round1(currentValue + delta);
+  const v = round1(currentValue + delta);
+  return min !== undefined ? Math.max(min, v) : v;
 }
 
 function round1(v: number): number {
