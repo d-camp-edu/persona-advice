@@ -62,7 +62,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 재생성: `node scripts/genMedications.mjs` (의존성 없음, Node 내장 zlib만 사용). 엑셀 → `medications.seed.ts`.
 - **워크플로:** 사용자가 `기본 약제 초기화.xlsx`를 수정하고 커밋/푸시를 요청하면 → 위 스크립트를 다시 실행 → `medications.seed.ts` 변경분과 함께 커밋한다. 그러면 Admin "기본 초기화" 버튼이 업로드하는 기본 약제가 그대로 바뀐다.
 - 엑셀 열 매핑·계열 파생·지표 환산 상수(LVEF/BNP/NT-proBNP/UACR %→절대량, HbA1c/eGFR 절대)는 `scripts/genMedications.mjs` 상단 주석 참조. 엑셀에 없는 값(공병증 호전/악화, eGFR 하한, 생활습관 비약물)은 계열 기준 표에서 파생·추가한다.
+- **약제 구분(카테고리)은 엑셀 '카테고리' 열이 아니라 체크된 계열 수로 파생**한다: 1개→`cat_single`(단일제), 2개(biguanide 제외)→`cat_combo2`(2제 복합제), 2개(biguanide 포함)→`cat_combo_met`(메폴민 2제 복합제), 3개 이상→`cat_combo3`(3제 복합제). 포장=injection은 계열 수 무관 `cat_injection`(주사제), 생활습관 비약물은 `cat_lifestyle`. 카테고리 목록은 `medCategories.seed.ts`.
+- **아사(자사) 표시(`isAsaProduct`)는 엑셀 판매사 열(0열)이 '종근당'인 행 전체**. 처방 화면(`MedSelector`)에서 아사 제품이 목록 최상단으로 정렬된다.
 - 약제 id는 엑셀 데이터 행 순서 기반(`m_1`…). **행 순서를 바꾸거나 행을 추가/삭제하면 id가 밀려** `patients.seed.ts`의 `prevDrugs` 참조가 깨질 수 있다. 재생성 후 `tests/seed.test.ts`(prevDrugs 실재 검증)를 반드시 돌려 확인한다.
+
+##### 인앱 "엑셀 반영" 버튼 (`lib/medExcelImport.ts`)
+
+- Admin 약제 관리 탭의 **"엑셀 반영" 버튼**은 사용자가 수정한 `기본 약제 초기화.xlsx`를 **브라우저에서 직접 파싱**해 Firestore에 업로드한다(파일 선택 → 파싱 → `seedRunner.uploadMedicationList`). 매번 스크립트를 돌려 커밋하지 않아도 현장에서 반영 가능. 의존성 없이 브라우저 내장 `DecompressionStream`으로 압축 해제, inlineStr·sharedStrings(엑셀 재저장 시) 모두 지원.
+- **⚠️ `lib/medExcelImport.ts`의 매핑 로직은 `scripts/genMedications.mjs`와 반드시 동일해야 한다.** 한쪽을 고치면 다른 쪽도 고쳐라. `tests/medExcelImport.test.ts`가 브라우저 파서의 결과를 커밋된 `seedMedications`와 deep-equal 비교해 드리프트를 잡는다 — 이 테스트가 깨지면 두 구현이 어긋난 것이다.
 
 ### Firestore 경로
 

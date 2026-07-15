@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, GripVertical, Plus, Star, Trash2 } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
+import { ChevronDown, ChevronUp, FileUp, GripVertical, Plus, Star, Trash2 } from 'lucide-react';
 import { useDataStore } from '../../store/useDataStore';
 import { saveDoc, removeDoc } from '../../lib/firestoreApi';
-import { uploadMedications } from '../../data/seedRunner';
+import { uploadMedications, uploadMedicationList } from '../../data/seedRunner';
+import { parseMedicationsXlsx } from '../../lib/medExcelImport';
 import { ensureMaterialized } from '../../lib/persistSeed';
 import { moveItem } from '../../lib/reorder';
 import { seedMedications } from '../../data/seed';
@@ -242,9 +243,11 @@ export default function MedsTab() {
 
   const [expanded, setExpanded] = useState<string | null>(null);
   const [seeding, setSeeding] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [flash, setFlash] = useState('');
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const showFlash = (msg: string) => {
     setFlash(msg);
@@ -355,6 +358,21 @@ export default function MedsTab() {
     }
   };
 
+  /** 사용자가 수정한 '기본 약제 초기화.xlsx' 를 선택 → 파싱 → 업로드 */
+  const handleXlsxImport = async (file: File) => {
+    setImporting(true);
+    try {
+      const meds = await parseMedicationsXlsx(file);
+      await uploadMedicationList(meds);
+      showFlash(`엑셀 반영됨 (${meds.length}종)`);
+    } catch (e) {
+      showFlash(`반영 실패: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setImporting(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
   const handleSeedReset = async () => {
     if (!confirm(`약제 데이터를 기본 ${seedMedications.length}종으로 초기화하시겠습니까?`)) return;
     setSeeding(true);
@@ -431,15 +449,38 @@ export default function MedsTab() {
         <button
           type="button"
           onClick={() => void handleSeedReset()}
-          disabled={seeding}
+          disabled={seeding || importing}
           className="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-50"
         >
           {seeding ? '초기화 중…' : `기본 초기화 (${seedMedications.length}종)`}
         </button>
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={seeding || importing}
+          className="flex items-center gap-1 rounded-lg border border-emerald-300 px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+        >
+          <FileUp className="h-3.5 w-3.5" />
+          {importing ? '반영 중…' : '엑셀 반영'}
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void handleXlsxImport(f);
+          }}
+        />
       </div>
       <p className="mb-3 text-[11px] leading-snug text-gray-400">
         카테고리 → 계열 순으로 묶여 있습니다. 같은 계열 안에서 <strong>왼쪽 손잡이를 드래그</strong>해 순서를
         바꾸세요. 계열 그룹 순서는 <strong>설정 › 약물 계열 관리</strong>에서 조정합니다.
+        <br />
+        <strong className="text-emerald-700">엑셀 반영</strong>: 수정한 <strong>‘기본 약제 초기화.xlsx’</strong>를
+        선택하면 계열 수로 구분(단일제·2제·메폴민 2제·3제)을 자동 판정하고 판매사 ‘종근당’ 제품을 아사로
+        표시해 그대로 업로드합니다.
       </p>
       {flash && <p className="mb-2 text-sm font-medium text-indigo-600">{flash}</p>}
 

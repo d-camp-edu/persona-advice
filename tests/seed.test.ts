@@ -16,8 +16,8 @@ describe('seed data 분량 검증 (M1 게이트)', () => {
     expect(seedMedications).toHaveLength(105);
   });
 
-  it('카테고리 4종', () => {
-    expect(seedMedCategories).toHaveLength(4);
+  it('카테고리 6종 (단일제·2제·메폴민2제·3제·주사제·생활습관)', () => {
+    expect(seedMedCategories).toHaveLength(6);
   });
 
   it('약물 계열 9종', () => {

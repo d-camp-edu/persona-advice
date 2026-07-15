@@ -46,7 +46,7 @@ export default function MedSelector({
       selectedCat === CAT_ALL
         ? medications
         : medications.filter((m) => m.categoryId === selectedCat);
-    // 아사(자사) 제품 우선 → 카테고리 순서(단일제·메트포민 복합제·2제·3제…)
+    // 아사(자사=종근당) 제품 우선 → 카테고리 순서(단일제·2제·메폴민2제·3제·주사제…)
     // → 개별 order. order 필드는 카테고리 내에서 계열(DPP-4i·SGLT-2i·TZD) 순으로
     // 이미 정렬돼 있으므로 그대로 따르면 요청한 계열 순서가 유지된다.
     return [...list].sort((a, b) => {

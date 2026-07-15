@@ -174,9 +174,18 @@ function pkgFromRow(pack) {
   return 'ptp';
 }
 
-function categoryFromRow(cells, pkg) {
+// 카테고리는 엑셀 '카테고리' 열이 아니라 체크된 계열(class) 수로 파생한다.
+//   주사제(포장=injection) → cat_injection (계열 수 무관)
+//   계열 1개 이하           → cat_single      단일제
+//   계열 2개(biguanide 제외) → cat_combo2      2제 복합제
+//   계열 2개(biguanide 포함) → cat_combo_met   메폴민 2제 복합제
+//   계열 3개 이상            → cat_combo3      3제 복합제
+function categoryFromRow(_cells, pkg, classes) {
   if (pkg === 'injection') return 'cat_injection';
-  return String(cells[24] ?? '').includes('복합') ? 'cat_combo' : 'cat_single';
+  const n = classes.length;
+  if (n >= 3) return 'cat_combo3';
+  if (n === 2) return classes.includes('dc_met') ? 'cat_combo_met' : 'cat_combo2';
+  return 'cat_single';
 }
 
 function egfrLimitFromClasses(classes) {
@@ -220,7 +229,7 @@ function buildMed(cells, order) {
   return {
     id: `m_${order}`,
     name,
-    categoryId: categoryFromRow(cells, pkg),
+    categoryId: categoryFromRow(cells, pkg, classes),
     pkg,
     classes,
     isNotDrug: false,
@@ -243,6 +252,8 @@ function buildMed(cells, order) {
     allowCkdCoverage: String(cells[28] ?? '').trim() === '1',
     isInsuranceException: false,
     allow2TQD: String(cells[29] ?? '').trim() === '1',
+    // 판매사(엑셀 0열)가 '종근당'이면 아사(자사) 제품 — 처방 슬롯 최상단 노출
+    isAsaProduct: String(cells[0] ?? '').trim() === '종근당',
     order,
   };
 }
@@ -275,6 +286,7 @@ function lifestyleMed(order) {
     allowCkdCoverage: false,
     isInsuranceException: true,
     allow2TQD: false,
+    isAsaProduct: false,
     order,
   };
 }
@@ -291,7 +303,7 @@ function serializeMed(m) {
     beneficialComorb: ${j(m.beneficialComorb)}, worseningComorb: ${j(m.worseningComorb)},
     sideEffectProb: ${m.sideEffectProb}, sideEffectPenalty: ${m.sideEffectPenalty}, sideEffectMsg: ${j(m.sideEffectMsg)},
     egfrLimit: ${m.egfrLimit}, allowHFrEFCoverage: ${m.allowHFrEFCoverage}, allowHFpEFCoverage: ${m.allowHFpEFCoverage}, allowCkdCoverage: ${m.allowCkdCoverage},
-    isInsuranceException: ${m.isInsuranceException}, allow2TQD: ${m.allow2TQD}, order: ${m.order},
+    isInsuranceException: ${m.isInsuranceException}, allow2TQD: ${m.allow2TQD}, isAsaProduct: ${m.isAsaProduct}, order: ${m.order},
   },`;
 }
 
