@@ -1,9 +1,25 @@
 import { useMemo, useState } from 'react';
-import { Search, Loader2, CheckCircle2, ChevronRight, Building2, Stethoscope, Package } from 'lucide-react';
+import { Search, Loader2, CheckCircle2, ChevronRight, Building2, Stethoscope, Package, History } from 'lucide-react';
 import { useDataStore } from '../../store/useDataStore';
 import { useSessionStore } from '../../store/useSessionStore';
 import { loadTargetsByEmp, loadCompletionsByEmp } from '../../lib/targetsRepo';
 import type { Target, TargetCampaign } from '../../types';
+
+const LAST_EMPNO_KEY = 'persona_rx_last_empno';
+function loadLastEmpNo(): string {
+  try {
+    return localStorage.getItem(LAST_EMPNO_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+function saveLastEmpNo(no: string): void {
+  try {
+    localStorage.setItem(LAST_EMPNO_KEY, no);
+  } catch {
+    /* ignore */
+  }
+}
 
 export default function TargetLoginPanel() {
   const campaigns = useDataStore((s) => s.targetCampaigns);
@@ -21,6 +37,7 @@ export default function TargetLoginPanel() {
 
   const [productId, setProductId] = useState('');
   const [empNo, setEmpNo] = useState('');
+  const [lastEmpNo] = useState(loadLastEmpNo);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState('');
@@ -58,6 +75,7 @@ export default function TargetLoginPanel() {
       setError('먼저 품목을 선택하세요.');
       return;
     }
+    saveLastEmpNo(no);
     setLoading(true);
     setError('');
     setSearched(true);
@@ -166,6 +184,17 @@ export default function TargetLoginPanel() {
           검색
         </button>
       </div>
+
+      {lastEmpNo && lastEmpNo !== empNo.trim() && (
+        <button
+          type="button"
+          onClick={() => setEmpNo(lastEmpNo)}
+          className="mt-2 flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+        >
+          <History size={13} />
+          이전 사번 {lastEmpNo} 입력
+        </button>
+      )}
 
       {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
 

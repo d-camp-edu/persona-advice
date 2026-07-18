@@ -70,10 +70,17 @@ export function targetsFromRows(rows: string[][], campaignId: string): ParsedTar
     throw new Error('‘담당자사번’ 헤더를 찾지 못했습니다.');
   }
 
-  // 병원 포맷은 Dr.명 열이 있고, 의원 포맷은 담당자명 열이 있다.
+  // 파일 기본 포맷: Dr.명 열이 있으면 병원, 없으면 의원.
   const format: TargetInstitution = drCol >= 0 ? '병원' : '의원';
 
   const cell = (row: string[], col: number) => (col >= 0 ? String(row[col] ?? '').trim() : '');
+
+  // 기관유형은 사업부명을 우선한다: '병원' 포함 → 병원, '의원' 포함 → 의원. 둘 다 없으면 파일 포맷.
+  const institutionFor = (division: string): TargetInstitution => {
+    if (division.includes('병원')) return '병원';
+    if (division.includes('의원')) return '의원';
+    return format;
+  };
 
   const targets: Target[] = [];
   const seen = new Set<string>();
@@ -90,14 +97,15 @@ export function targetsFromRows(rows: string[][], campaignId: string): ParsedTar
     if (seen.has(id)) continue; // 동일 캠페인 내 (거래처, 사번) 중복 제거
     seen.add(id);
 
+    const division = cell(row, divCol);
     targets.push({
       id,
       campaignId,
       code,
       name,
-      institutionType: format,
+      institutionType: institutionFor(division),
       drName: cell(row, drCol),
-      division: cell(row, divCol),
+      division,
       team: cell(row, teamCol),
       empNo,
       empName: cell(row, empNameCol),

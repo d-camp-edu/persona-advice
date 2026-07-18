@@ -193,6 +193,7 @@ export default function ProgressTab() {
   // ── 대시보드 ──────────────────────────────────────────────────────────
   const [month, setMonth] = useState<string>('all');
   const [dashProductId, setDashProductId] = useState<string>('all');
+  const [dashCampaignId, setDashCampaignId] = useState<string>('all');
   const [targets, setTargets] = useState<Target[]>([]);
   const [completions, setCompletions] = useState<TargetCompletion[]>([]);
   const [loadingDash, setLoadingDash] = useState(false);
@@ -221,15 +222,40 @@ export default function ProgressTab() {
     return [...set].sort((a, b) => (a < b ? 1 : -1));
   }, [campaigns]);
 
-  // 선택 월·품목에 해당하는 캠페인 id 집합
-  const scopedCampaignIds = useMemo(() => {
-    return new Set(
-      campaigns
+  // 선택 월·품목에 해당하는 캠페인 목록 (캠페인 드롭다운·요약의 풀)
+  const scopedCampaigns = useMemo(
+    () =>
+      sortedCampaigns
         .filter((c) => month === 'all' || c.month === month)
-        .filter((c) => dashProductId === 'all' || c.productId === dashProductId)
-        .map((c) => c.id),
-    );
-  }, [campaigns, month, dashProductId]);
+        .filter((c) => dashProductId === 'all' || c.productId === dashProductId),
+    [sortedCampaigns, month, dashProductId],
+  );
+
+  // 실제 집계 대상 캠페인 id 집합: 특정 캠페인을 고르면 그것만, 아니면 위 풀 전체
+  const scopedCampaignIds = useMemo(() => {
+    if (dashCampaignId !== 'all') return new Set([dashCampaignId]);
+    return new Set(scopedCampaigns.map((c) => c.id));
+  }, [scopedCampaigns, dashCampaignId]);
+
+  // 캠페인별 진행률 요약 (월·품목 필터 안의 각 캠페인)
+  const campaignStats = useMemo(() => {
+    return scopedCampaigns.map((c) => {
+      const ct = targets.filter((t) => t.campaignId === c.id);
+      const doneSet = new Set(
+        completions.filter((x) => x.campaignId === c.id).map((x) => x.targetId),
+      );
+      const total = ct.length;
+      const done = ct.filter((t) => doneSet.has(t.id)).length;
+      return { campaign: c, total, done };
+    });
+  }, [scopedCampaigns, targets, completions]);
+
+  // 월·품목 필터가 바뀌어 선택 캠페인이 범위를 벗어나면 '전체'로 되돌린다.
+  useEffect(() => {
+    if (dashCampaignId !== 'all' && !scopedCampaigns.some((c) => c.id === dashCampaignId)) {
+      setDashCampaignId('all');
+    }
+  }, [scopedCampaigns, dashCampaignId]);
 
   const { teamStats, repStats, overall } = useMemo(() => {
     const scopedTargets = targets.filter((t) => scopedCampaignIds.has(t.campaignId));
@@ -587,6 +613,18 @@ export default function ProgressTab() {
                 </option>
               ))}
             </select>
+            <select
+              className="max-w-[10rem] rounded border border-gray-300 px-2 py-1.5 text-xs outline-none focus:border-indigo-500"
+              value={dashCampaignId}
+              onChange={(e) => setDashCampaignId(e.target.value)}
+            >
+              <option value="all">전체 캠페인</option>
+              {scopedCampaigns.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
             <button
               type="button"
               onClick={() => void loadDashboard()}
@@ -611,13 +649,43 @@ export default function ProgressTab() {
         {/* 전체 진행률 */}
         <div className="mb-4 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3">
           <div className="mb-1.5 flex items-center justify-between">
-            <span className="text-sm font-semibold text-gray-800">전체 진행률</span>
+            <span className="text-sm font-semibold text-gray-800">
+              {dashCampaignId === 'all' ? '전체 진행률' : '캠페인 진행률'}
+            </span>
             <span className="text-xs text-gray-500">
-              {month === 'all' ? '전체 월' : month}
+              {dashCampaignId === 'all'
+                ? month === 'all'
+                  ? '전체 월'
+                  : month
+                : scopedCampaigns.find((c) => c.id === dashCampaignId)?.name}
             </span>
           </div>
           <ProgressBar done={overall.done} total={overall.total} />
         </div>
+
+        {/* 캠페인별 진행률 (전체 캠페인 모드일 때만) */}
+        {dashCampaignId === 'all' && campaignStats.length > 0 && (
+          <div className="mb-4">
+            <h4 className="mb-1.5 text-xs font-bold uppercase tracking-wide text-gray-500">캠페인별</h4>
+            <div className="space-y-2 rounded-lg border border-gray-100 p-3">
+              {campaignStats.map(({ campaign, done, total }) => (
+                <button
+                  key={campaign.id}
+                  type="button"
+                  onClick={() => setDashCampaignId(campaign.id)}
+                  className="grid w-full grid-cols-[10rem_1fr] items-center gap-2 rounded px-1 py-1 text-left hover:bg-gray-50"
+                  title="클릭하면 이 캠페인만 봅니다"
+                >
+                  <span className="truncate text-xs text-gray-700">
+                    {campaign.name}
+                    <span className="ml-1 text-[10px] text-gray-400">{campaign.month}</span>
+                  </span>
+                  <ProgressBar done={done} total={total} />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {teamStats.length === 0 ? (
           <p className="rounded-lg bg-gray-50 px-3 py-6 text-center text-sm text-gray-400">

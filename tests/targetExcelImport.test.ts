@@ -80,6 +80,20 @@ describe('targetsFromRows', () => {
     expect(other.targets[0].id).not.toBe(targets[0].id);
   });
 
+  it('사업부명에 병원/의원이 들어있으면 그것으로 기관유형을 분류한다', () => {
+    // 파일 포맷은 Dr.명이 없어 의원이지만, 사업부명에 '병원'이 있으면 병원으로.
+    const rows: string[][] = [
+      ['거래처코드', '거래처명', '사업부명', '팀명', '담당자사번', '담당자명'],
+      ['A1', '가나거래처', '서울병원사업부', '1팀', '10001', '홍길동'],
+      ['A2', '다라거래처', '부산의원사업부', '2팀', '10002', '김영희'],
+      ['A3', '마바거래처', '영업3부', '3팀', '10003', '박철수'],
+    ];
+    const { targets } = targetsFromRows(rows, 'camp1');
+    expect(targets[0].institutionType).toBe('병원'); // 사업부명 '병원'
+    expect(targets[1].institutionType).toBe('의원'); // 사업부명 '의원'
+    expect(targets[2].institutionType).toBe('의원'); // 둘 다 없음 → 파일 포맷(의원)
+  });
+
   it('거래처/사번이 비면 그 행을 건너뛴다', () => {
     const rows: string[][] = [
       ['거래처코드', '거래처명', '사업부명', '팀명', '담당자사번', '담당자명'],
