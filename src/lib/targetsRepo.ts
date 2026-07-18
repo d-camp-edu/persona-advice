@@ -8,13 +8,28 @@ import {
   where,
   writeBatch,
 } from 'firebase/firestore';
-import type { Target, TargetCampaign, TargetCompletion } from '../types';
+import type { Product, Target, TargetCampaign, TargetCompletion } from '../types';
 import { getDb, isFirebaseConfigured } from './firebase';
 import { collectionPath, docPath } from './firestoreApi';
 
+const PRODUCTS = 'products';
 const CAMPAIGNS = 'targetCampaigns';
 const TARGETS = 'targets';
 const COMPLETIONS = 'targetCompletions';
+
+// ── 품목 ─────────────────────────────────────────────────────────────────
+export async function saveProduct(p: Product): Promise<void> {
+  const db = getDb();
+  if (!db) return;
+  const { id, ...rest } = p;
+  await setDoc(doc(db, docPath(PRODUCTS, id)), rest);
+}
+
+export async function deleteProduct(id: string): Promise<void> {
+  const db = getDb();
+  if (!db) return;
+  await deleteDoc(doc(db, docPath(PRODUCTS, id)));
+}
 
 // ── 캠페인 ────────────────────────────────────────────────────────────────
 export async function loadCampaigns(): Promise<TargetCampaign[]> {

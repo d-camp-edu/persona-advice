@@ -7,10 +7,11 @@ import {
   deleteAllSurveyResponses,
   deleteAllGiftLogs,
 } from '../../lib/logsRepo';
+import { loadAllCompletions } from '../../lib/targetsRepo';
 import { sessionsToCSV, downloadCSV } from '../../lib/csv';
 import { downloadWorkbook, type Sheet, type CellValue } from '../../lib/excel';
 import { useDataStore } from '../../store/useDataStore';
-import type { GiftLog, RxSession, SurveyResponse, SurveyQuestion, LoginFieldDef } from '../../types';
+import type { GiftLog, RxSession, SurveyResponse, SurveyQuestion, LoginFieldDef, TargetCompletion } from '../../types';
 
 /** ISO 문자열 → 'YYYY-MM-DD HH:mm' */
 function fmt(iso: string): string {
@@ -27,6 +28,7 @@ function buildSheets(
   sessions: RxSession[],
   surveys: SurveyResponse[],
   giftLogs: GiftLog[],
+  completions: TargetCompletion[],
   questions: SurveyQuestion[],
   loginFields: LoginFieldDef[],
 ): Sheet[] {
@@ -34,10 +36,15 @@ function buildSheets(
   const fieldVals = (fv?: Record<string, string>): CellValue[] =>
     fields.map((f) => fv?.[f.id] ?? '');
   const fieldHeaders = fields.map((f) => f.label);
+  // 타겟 세션이면 loginFieldValues 에 사번·담당자가 들어있다.
+  const empNo = (fv?: Record<string, string>) => fv?.['사번'] ?? '';
+  const empName = (fv?: Record<string, string>) => fv?.['담당자'] ?? '';
 
   // 1) 처방 기록
   const rxHeaders = [
     '일시',
+    '사번',
+    '담당자',
     '병원',
     '분과',
     '의사',
@@ -63,6 +70,8 @@ function buildSheets(
       });
       return [
         fmt(p.timestamp),
+        empNo(s.loginFieldValues),
+        empName(s.loginFieldValues),
         s.hospitalName,
         s.department ?? '',
         s.doctorName,
@@ -83,6 +92,8 @@ function buildSheets(
   const sortedQ = [...questions].sort((a, b) => a.order - b.order);
   const surveyHeaders = [
     '일시',
+    '사번',
+    '담당자',
     '병원',
     '분과',
     '의사',
@@ -93,6 +104,8 @@ function buildSheets(
   ];
   const surveyRows: CellValue[][] = surveys.map((sv) => [
     fmt(sv.answeredAt),
+    empNo(sv.loginFieldValues),
+    empName(sv.loginFieldValues),
     sv.hospitalName,
     sv.department ?? '',
     sv.doctorName,
@@ -126,10 +139,37 @@ function buildSheets(
     ...fieldVals(g.loginFieldValues),
   ]);
 
+  // 4) 타겟 진행(완료)
+  const targetHeaders = [
+    '완료일시',
+    '품목',
+    '사업부',
+    '팀',
+    '사번',
+    '담당자',
+    '기관유형',
+    '거래처코드',
+    '거래처명',
+    'Dr/의사',
+  ];
+  const targetRows: CellValue[][] = completions.map((c) => [
+    fmt(c.completedAt),
+    c.productName ?? '',
+    c.division,
+    c.team,
+    c.empNo,
+    c.empName,
+    c.institutionType,
+    c.code,
+    c.name,
+    c.doctorName,
+  ]);
+
   return [
     { name: '처방기록', headers: rxHeaders, rows: rxRows },
     { name: '서베이', headers: surveyHeaders, rows: surveyRows },
     { name: '룰렛보상', headers: giftHeaders, rows: giftRows },
+    { name: '타겟진행', headers: targetHeaders, rows: targetRows },
   ];
 }
 
@@ -140,6 +180,7 @@ export default function HistoryTab() {
   const [sessions, setSessions] = useState<RxSession[] | null>(null);
   const [surveys, setSurveys] = useState<SurveyResponse[]>([]);
   const [giftLogs, setGiftLogs] = useState<GiftLog[]>([]);
+  const [completions, setCompletions] = useState<TargetCompletion[]>([]);
   const [loading, setLoading] = useState(false);
   const [flash, setFlash] = useState('');
 
@@ -151,14 +192,17 @@ export default function HistoryTab() {
   const handleLoad = async () => {
     setLoading(true);
     try {
-      const [sess, svs, gifts] = await Promise.all([
+      const [sess, svs, gifts, comps] = await Promise.all([
         loadAllRxSessions(),
         loadAllSurveyResponses(),
         loadAllGiftLogs(),
+        loadAllCompletions(),
       ]);
       setSessions(sess);
       setSurveys(svs);
       setGiftLogs(gifts);
+      comps.sort((a, b) => (a.completedAt < b.completedAt ? 1 : a.completedAt > b.completedAt ? -1 : 0));
+      setCompletions(comps);
     } catch {
       showFlash('로드 실패');
     } finally {
@@ -168,7 +212,7 @@ export default function HistoryTab() {
 
   const handleExportExcel = () => {
     if (!sessions) return;
-    const sheets = buildSheets(sessions, surveys, giftLogs, questions, loginFields);
+    const sheets = buildSheets(sessions, surveys, giftLogs, completions, questions, loginFields);
     const now = new Date().toISOString().slice(0, 10);
     downloadWorkbook(`persona_rx_기록_${now}.xls`, sheets);
   };
@@ -202,7 +246,9 @@ export default function HistoryTab() {
 
   const totalPrescriptions = sessions?.reduce((sum, s) => sum + s.prescriptions.length, 0) ?? 0;
   const loaded = sessions !== null;
-  const hasAny = loaded && (sessions!.length > 0 || surveys.length > 0 || giftLogs.length > 0);
+  const hasAny =
+    loaded &&
+    (sessions!.length > 0 || surveys.length > 0 || giftLogs.length > 0 || completions.length > 0);
 
   return (
     <div>
@@ -262,19 +308,111 @@ export default function HistoryTab() {
 
       {hasAny && (
         <>
-          <div className="mb-3 grid grid-cols-3 gap-2">
+          <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
             <SummaryCard label="처방" value={`${totalPrescriptions}건`} sub={`세션 ${sessions!.length}개`} />
             <SummaryCard label="서베이" value={`${surveys.length}건`} />
+            <SummaryCard label="타겟 완료" value={`${completions.length}건`} />
             <SummaryCard label="룰렛 보상" value={`${giftLogs.length}건`} />
           </div>
 
-          <div className="flex flex-col gap-3">
-            {sessions!.map((s) => (
-              <SessionCard key={s.id} session={s} />
-            ))}
-          </div>
+          {sessions!.length > 0 && (
+            <div className="mb-4">
+              <h3 className="mb-1.5 text-xs font-bold uppercase tracking-wide text-gray-500">처방 세션</h3>
+              <div className="flex flex-col gap-3">
+                {sessions!.map((s) => (
+                  <SessionCard key={s.id} session={s} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {completions.length > 0 && (
+            <CollapsibleList title={`타겟 진행 완료 (${completions.length}건)`} defaultOpen>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-gray-50 text-gray-500">
+                    <tr>
+                      <th className="px-2 py-1.5 font-medium">완료일시</th>
+                      <th className="px-2 py-1.5 font-medium">품목</th>
+                      <th className="px-2 py-1.5 font-medium">사업부·팀</th>
+                      <th className="px-2 py-1.5 font-medium">담당자</th>
+                      <th className="px-2 py-1.5 font-medium">거래처</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {completions.map((c) => (
+                      <tr key={c.id}>
+                        <td className="whitespace-nowrap px-2 py-1.5 text-gray-500">{fmt(c.completedAt)}</td>
+                        <td className="px-2 py-1.5 text-indigo-600">{c.productName || '—'}</td>
+                        <td className="px-2 py-1.5 text-gray-600">
+                          {[c.division, c.team].filter(Boolean).join(' · ')}
+                        </td>
+                        <td className="px-2 py-1.5 text-gray-800">
+                          {c.empName || '—'}
+                          {c.empNo && <span className="ml-1 text-gray-400">{c.empNo}</span>}
+                        </td>
+                        <td className="px-2 py-1.5 text-gray-700">
+                          {c.name}
+                          {c.doctorName && c.doctorName !== c.name && (
+                            <span className="ml-1 text-gray-400">{c.doctorName}</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CollapsibleList>
+          )}
+
+          {surveys.length > 0 && (
+            <CollapsibleList title={`서베이 응답 (${surveys.length}건)`}>
+              <div className="divide-y divide-gray-100">
+                {surveys.map((sv) => (
+                  <div key={sv.id} className="px-3 py-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-gray-700">
+                        {sv.loginFieldValues?.['담당자'] || sv.doctorName || '—'}
+                        {sv.loginFieldValues?.['사번'] && (
+                          <span className="ml-1 text-gray-400">{sv.loginFieldValues['사번']}</span>
+                        )}
+                        <span className="ml-1.5 text-gray-400">· {sv.hospitalName}</span>
+                        {sv.patientName && <span className="ml-1 text-gray-400">· {sv.patientName}</span>}
+                      </span>
+                      <span className="shrink-0 text-[11px] text-gray-400">{fmt(sv.answeredAt)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CollapsibleList>
+          )}
         </>
       )}
+    </div>
+  );
+}
+
+function CollapsibleList({
+  title,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="mb-4 overflow-hidden rounded-lg bg-white shadow-sm">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between px-4 py-2.5 text-left hover:bg-gray-50"
+      >
+        <span className="text-xs font-bold uppercase tracking-wide text-gray-500">{title}</span>
+        <span className="text-xs text-gray-400">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && <div className="border-t border-gray-100">{children}</div>}
     </div>
   );
 }

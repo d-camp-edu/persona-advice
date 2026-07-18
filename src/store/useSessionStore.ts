@@ -54,6 +54,8 @@ interface SessionState {
   targetId: string;
   targetCode: string;
   campaignId: string;
+  productId: string;
+  productName: string;
   empNo: string;
   empName: string;
   division: string;
@@ -80,7 +82,7 @@ interface SessionState {
     department: string,
   ) => Promise<void>;
   completeSurvey: (answers: Record<string, string | string[]>) => Promise<void>;
-  loginWithTarget: (target: Target, campaign: TargetCampaign) => void;
+  loginWithTarget: (target: Target, campaign: TargetCampaign, productName?: string) => void;
   startSurveyOnly: () => void;
   dismissSurveyOnlyDone: () => void;
   goMyResults: () => void;
@@ -115,6 +117,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   targetId: '',
   targetCode: '',
   campaignId: '',
+  productId: '',
+  productName: '',
   empNo: '',
   empName: '',
   division: '',
@@ -194,6 +198,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       targetId: '',
       targetCode: '',
       campaignId: '',
+      productId: '',
+      productName: '',
       empNo: '',
       empName: '',
       division: '',
@@ -202,7 +208,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   },
 
   // 타겟처(지정처) 선택으로 세션 시작. 거래처명=병원, Dr.명(병원)/거래처명(의원)=의사.
-  loginWithTarget: (target, campaign) => {
+  loginWithTarget: (target, campaign, productName) => {
     const doctor = (target.drName || target.name || '').trim();
     const hospital = (target.name || target.code || '').trim();
     const key = makeSessionKey(hospital, doctor);
@@ -221,6 +227,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       targetId: target.id,
       targetCode: target.code,
       campaignId: campaign.id,
+      productId: campaign.productId ?? '',
+      productName: productName ?? '',
       empNo: target.empNo,
       empName: target.empName,
       division: target.division,
@@ -535,6 +543,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       targetId: '',
       targetCode: '',
       campaignId: '',
+      productId: '',
+      productName: '',
       empNo: '',
       empName: '',
       division: '',
@@ -565,6 +575,8 @@ function recordTargetCompletionOnSurvey(s: SessionState): void {
   const completion: TargetCompletion = {
     id: `${s.campaignId}__${s.targetId}`,
     campaignId: s.campaignId,
+    productId: s.productId,
+    productName: s.productName,
     targetId: s.targetId,
     code: s.targetCode,
     name: s.hospitalName,

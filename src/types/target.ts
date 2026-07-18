@@ -5,9 +5,19 @@
 
 export type TargetInstitution = '병원' | '의원';
 
+/** 품목(자사 제품). 로그인 1단계에서 담당자가 먼저 선택한다. */
+export interface Product {
+  id: string;
+  name: string;
+  order: number;
+  active: boolean;
+}
+
 export interface TargetCampaign {
   id: string;
   name: string;
+  /** 이 캠페인이 속한 품목 id (없으면 품목 무관) */
+  productId?: string;
   /** 대시보드 월별 집계 기준 'YYYY-MM' */
   month: string;
   /** 진행기간 시작/종료 'YYYY-MM-DD' (표시·필터용, 강제 차단은 안 함) */
@@ -33,6 +43,8 @@ export interface Target {
 export interface TargetCompletion {
   id: string; // `${campaignId}__${targetId}` — 1지정처 1완료
   campaignId: string;
+  productId?: string;
+  productName?: string;
   targetId: string;
   code: string;
   name: string;

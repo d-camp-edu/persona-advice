@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Search, Loader2, CheckCircle2, ChevronRight, Building2, Stethoscope } from 'lucide-react';
+import { Search, Loader2, CheckCircle2, ChevronRight, Building2, Stethoscope, Package } from 'lucide-react';
 import { useDataStore } from '../../store/useDataStore';
 import { useSessionStore } from '../../store/useSessionStore';
 import { loadTargetsByEmp, loadCompletionsByEmp } from '../../lib/targetsRepo';
@@ -7,17 +7,19 @@ import type { Target, TargetCampaign } from '../../types';
 
 export default function TargetLoginPanel() {
   const campaigns = useDataStore((s) => s.targetCampaigns);
+  const products = useDataStore((s) => s.products);
   const loginWithTarget = useSessionStore((s) => s.loginWithTarget);
 
-  const activeCampaigns = useMemo(
-    () => campaigns.filter((c) => c.active),
-    [campaigns],
+  const activeProducts = useMemo(
+    () => [...products].filter((p) => p.active).sort((a, b) => a.order - b.order),
+    [products],
   );
-  const campaignById = useMemo(
-    () => new Map(campaigns.map((c) => [c.id, c])),
-    [campaigns],
-  );
+  const hasProducts = activeProducts.length > 0;
 
+  const activeCampaigns = useMemo(() => campaigns.filter((c) => c.active), [campaigns]);
+  const campaignById = useMemo(() => new Map(campaigns.map((c) => [c.id, c])), [campaigns]);
+
+  const [productId, setProductId] = useState('');
   const [empNo, setEmpNo] = useState('');
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -25,25 +27,54 @@ export default function TargetLoginPanel() {
   const [targets, setTargets] = useState<Target[]>([]);
   const [doneIds, setDoneIds] = useState<Set<string>>(new Set());
 
+  const selectedProductName = activeProducts.find((p) => p.id === productId)?.name ?? '';
   const empName = targets.find((t) => t.empName)?.empName ?? '';
   const total = targets.length;
   const done = targets.filter((t) => doneIds.has(t.id)).length;
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
+  // 품목이 있으면 그 품목의 활성 캠페인, 없으면 전체 활성 캠페인
+  const scopedCampaignIds = useMemo(() => {
+    if (hasProducts) {
+      if (!productId) return [];
+      return activeCampaigns.filter((c) => c.productId === productId).map((c) => c.id);
+    }
+    return activeCampaigns.map((c) => c.id);
+  }, [hasProducts, productId, activeCampaigns]);
+
+  const canSearch = (!hasProducts || !!productId) && empNo.trim().length > 0 && !loading;
+
+  const resetResults = () => {
+    setSearched(false);
+    setTargets([]);
+    setDoneIds(new Set());
+    setError('');
+  };
+
   const handleSearch = async () => {
     const no = empNo.trim();
     if (!no) return;
+    if (hasProducts && !productId) {
+      setError('먼저 품목을 선택하세요.');
+      return;
+    }
     setLoading(true);
     setError('');
     setSearched(true);
     try {
-      const ids = activeCampaigns.map((c) => c.id);
+      const ids = scopedCampaignIds;
       const [ts, comps] = await Promise.all([
         loadTargetsByEmp(no, ids.length > 0 ? ids : undefined),
         loadCompletionsByEmp(no, ids.length > 0 ? ids : undefined),
       ]);
-      setTargets(ts);
-      setDoneIds(new Set(comps.map((c) => c.targetId)));
+      // 품목이 있는데 매칭 캠페인이 없으면(빈 ids) 잘못된 전체조회를 막는다.
+      if (hasProducts && ids.length === 0) {
+        setTargets([]);
+        setDoneIds(new Set());
+      } else {
+        setTargets(ts);
+        setDoneIds(new Set(comps.map((c) => c.targetId)));
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : '검색 실패');
       setTargets([]);
@@ -59,17 +90,55 @@ export default function TargetLoginPanel() {
       setError('연결된 캠페인을 찾을 수 없습니다.');
       return;
     }
-    loginWithTarget(t, campaign);
+    const productName =
+      selectedProductName ||
+      products.find((p) => p.id === campaign.productId)?.name ||
+      '';
+    loginWithTarget(t, campaign, productName);
   };
 
   return (
     <div>
       {activeCampaigns.length === 0 && (
         <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-          진행 중인 캠페인이 없습니다. 관리자가 타겟처와 진행기간을 등록하면 검색됩니다.
+          진행 중인 캠페인이 없습니다. 관리자가 품목·타겟처·진행기간을 등록하면 검색됩니다.
         </p>
       )}
 
+      {/* 1단계: 품목 선택 */}
+      {hasProducts && (
+        <div className="mb-3">
+          <label className="mb-1 block text-xs font-medium text-gray-600">
+            <span className="mr-1 inline-flex items-center gap-1">
+              <Package size={12} /> 품목 선택
+            </span>
+          </label>
+          <div className="flex flex-wrap gap-1.5">
+            {activeProducts.map((p) => {
+              const on = productId === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => {
+                    setProductId(p.id);
+                    resetResults();
+                  }}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                    on
+                      ? 'border-indigo-500 bg-indigo-600 text-white'
+                      : 'border-gray-300 bg-white text-gray-600 hover:border-indigo-300'
+                  }`}
+                >
+                  {p.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 2단계: 사번 입력 */}
       <label className="mb-1 block text-xs font-medium text-gray-600">담당자 사번</label>
       <div className="flex gap-2">
         <input
@@ -79,18 +148,18 @@ export default function TargetLoginPanel() {
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
-              void handleSearch();
+              if (canSearch) void handleSearch();
             }
           }}
-          placeholder="예: 12345"
-          className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          placeholder={hasProducts && !productId ? '먼저 품목을 선택하세요' : '예: 12345'}
+          disabled={hasProducts && !productId}
+          className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-gray-50 disabled:text-gray-400"
           autoComplete="off"
-          inputMode="text"
         />
         <button
           type="button"
           onClick={() => void handleSearch()}
-          disabled={loading || empNo.trim().length === 0}
+          disabled={!canSearch}
           className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
         >
           {loading ? <Loader2 size={15} className="animate-spin" /> : <Search size={15} />}
@@ -102,7 +171,7 @@ export default function TargetLoginPanel() {
 
       {searched && !loading && targets.length === 0 && !error && (
         <p className="mt-4 rounded-lg bg-gray-50 px-3 py-3 text-center text-sm text-gray-400">
-          해당 사번에 배정된 타겟처가 없습니다.
+          {selectedProductName ? `'${selectedProductName}' ` : ''}해당 사번에 배정된 타겟처가 없습니다.
         </p>
       )}
 
@@ -113,16 +182,16 @@ export default function TargetLoginPanel() {
             <div className="mb-1.5 flex items-center justify-between text-sm">
               <span className="font-semibold text-gray-800">
                 {empName ? `${empName} 님` : `사번 ${empNo}`}
+                {selectedProductName && (
+                  <span className="ml-1.5 text-xs font-normal text-indigo-500">· {selectedProductName}</span>
+                )}
               </span>
               <span className="text-xs text-gray-500">
                 완료 <strong className="text-indigo-600">{done}</strong> / 전체 {total} ({pct}%)
               </span>
             </div>
             <div className="h-2 rounded-full bg-gray-100">
-              <div
-                className="h-2 rounded-full bg-indigo-500 transition-all"
-                style={{ width: `${pct}%` }}
-              />
+              <div className="h-2 rounded-full bg-indigo-500 transition-all" style={{ width: `${pct}%` }} />
             </div>
           </div>
 

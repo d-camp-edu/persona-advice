@@ -73,20 +73,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### 타겟처(영업부 배포) 시스템
 
-영업 담당자가 **사번**으로 배정된 지정처(타겟처)를 검색해 진입하는 배포 흐름. 기존 병원명+의사명 자유입력 로그인과 **공존**한다(로그인 화면 상단 토글: '타겟처로 시작' / '직접 입력'). 진행 중(active) 캠페인이 있으면 타겟처 모드가 기본.
+영업 담당자가 **품목 선택 → 사번 입력** 순서로 배정된 지정처(타겟처)를 검색해 진입하는 배포 흐름. 기존 병원명+의사명 자유입력 로그인과 **공존**한다(로그인 화면 상단 토글: '타겟처로 시작' / '직접 입력'). **시작 화면 기본값은 항상 '타겟처로 시작'**(`LoginScreen` mode 기본 'target').
 
-- 도메인: `types/target.ts` — `TargetCampaign`(진행기간·월), `Target`(지정처), `TargetCompletion`(완료).
-- 엑셀 파싱: `lib/xlsxReader.ts`(범용 xlsx→행 리더, medExcelImport와 별개로 두어 드리프트 테스트 영향 없음) + `lib/targetExcelImport.ts`(헤더명으로 **의원/병원 포맷 자동 감지**). 매핑 순수 로직은 `targetsFromRows()`로 분리, `tests/targetExcelImport.test.ts`가 검증.
+- 도메인: `types/target.ts` — `Product`(품목), `TargetCampaign`(진행기간·월·`productId`), `Target`(지정처), `TargetCompletion`(완료·`productId`/`productName`).
+- 엑셀 파싱: `lib/xlsxReader.ts`(범용 xlsx→행 리더, medExcelImport와 별개로 두어 드리프트 테스트 영향 없음) + `lib/targetExcelImport.ts`(헤더명으로 **의원/병원 포맷 자동 감지**, 컬럼 순서 무관). 매핑 순수 로직은 `targetsFromRows()`로 분리, `tests/targetExcelImport.test.ts`가 검증.
   - 의원: 거래처코드·거래처명·사업부명·팀명·담당자사번·담당자명
-  - 병원: 거래처코드·거래처명·**Dr.명**·사업부명·팀명·담당자사번
-- Firestore: `lib/targetsRepo.ts` (컬렉션 `targetCampaigns`/`targets`/`targetCompletions`, 단일 where 쿼리라 복합 인덱스 불필요, batch는 400개 청크).
+  - 병원: 거래처코드·거래처명·**Dr.명**·사업부명·팀명·담당자사번·**담당자명** (담당자명은 헤더가 있으면 병원도 매핑됨)
+- **품목(Product)**: 담당자가 로그인 1단계에서 먼저 선택. 캠페인에 `productId`를 지정하면 그 품목 담당자에게만 노출. 관리자 '진행률' 탭 '품목 관리'에서 추가/활성/삭제. 대시보드도 품목별 필터 지원.
+- Firestore: `lib/targetsRepo.ts` (컬렉션 `products`/`targetCampaigns`/`targets`/`targetCompletions`, 단일 where 쿼리라 복합 인덱스 불필요, batch는 400개 청크).
 - **진행 완료 기준 = 서베이 완료**: `useSessionStore.completeSurvey`가 타겟처 세션(`targetId` 존재)이면 `recordTargetCompletionOnSurvey`로 완료 기록(문서 id `campaignId__targetId`, upsert).
-- 로그인: `components/login/TargetLoginPanel.tsx`(사번 검색 → 담당자 진행률 바 → 지정처 선택 → `loginWithTarget`). 캠페인은 `useDataStore.targetCampaigns`로 실시간 구독.
-- 관리자: `components/admin/ProgressTab.tsx`(Admin '진행률' 탭) — 캠페인 CRUD·진행기간·활성 토글, 의원/병원 엑셀 업로드(교체/추가), **월별** 사업부→팀 진행률 대시보드 + 담당자별 상세 + 엑셀 내보내기.
+- 로그인: `components/login/TargetLoginPanel.tsx`(품목 선택 → 사번 검색 → 담당자 진행률 바 → 지정처 선택 → `loginWithTarget`). 캠페인·품목은 `useDataStore`로 실시간 구독.
+- 관리자: `components/admin/ProgressTab.tsx`(Admin '진행률' 탭) — 품목 관리, 캠페인 CRUD(품목 연결)·진행기간·활성 토글, 의원/병원 엑셀 업로드(교체/추가), **월·품목별** 사업부→팀 진행률 대시보드 + 담당자별 상세 + 엑셀 내보내기.
+- 세션 이력(`HistoryTab`): 처방 세션 + **타겟 진행 완료 목록** + 서베이 응답 목록을 화면에 표시하고, 엑셀 내보내기에 '타겟진행' 시트와 사번·담당자 컬럼 포함.
 
-### 이미지 업로드(Storage 비의존)
+### 이미지 업로드(Storage 완전 비의존)
 
-`components/common/ImageUploader.tsx`는 Firebase Storage가 구성돼 있으면 우선 업로드하되, **미구성이거나 업로드 실패 시 `lib/imageResize.ts`로 브라우저에서 축소해 data URL(base64)로 저장**한다(버킷·보안규칙·CORS와 무관하게 항상 표시). `maxDim`으로 축소 크기 조절(로고 512·아이콘 256·배경/브로셔 1600). data URL은 Firestore 1MB 문서 한도 아래로 자동 재축소.
+`components/common/ImageUploader.tsx`는 **항상** `lib/imageResize.ts`로 브라우저에서 축소해 **data URL(base64)로 저장**한다(Firebase Storage 미사용 — 버킷·보안규칙·CORS와 무관하게 항상 표시). `maxDim`으로 축소 크기 조절(로고 512·아이콘 256·배경/브로셔 1600). data URL은 Firestore 1MB 문서 한도 아래로 자동 재축소. `storagePath` prop은 하위호환용으로 남아있으나 사용하지 않는다.
 
 ### Firestore 경로
 
@@ -95,7 +97,7 @@ artifacts/{appId}/public/data/
   patients, medications, medCategories, drugClasses,
   deductionRules, allowedCombinations, sideEffectExemptions,
   surveyQuestions, surveyResponses, gifts, giftLogs,
-  targetCampaigns, targets, targetCompletions,
+  products, targetCampaigns, targets, targetCompletions,
   settings/global, rx_sessions/{sessionDocId}
 ```
 

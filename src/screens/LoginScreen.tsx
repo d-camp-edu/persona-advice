@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Settings, BarChart2, RotateCcw, Users, PenLine } from 'lucide-react';
 import { useDataStore } from '../store/useDataStore';
 import { useSessionStore, type InstitutionType } from '../store/useSessionStore';
@@ -18,7 +18,6 @@ type LoginMode = 'target' | 'direct';
 
 export default function LoginScreen() {
   const settings = useDataStore((s) => s.settings);
-  const campaigns = useDataStore((s) => s.targetCampaigns);
   const login = useSessionStore((s) => s.login);
   const loginPending = useSessionStore((s) => s.loginPending);
   const goAdmin = useSessionStore((s) => s.goAdmin);
@@ -26,19 +25,10 @@ export default function LoginScreen() {
 
   const fields = [...(settings.loginFields ?? [])].sort((a, b) => a.order - b.order);
   const lastLogin = loadLastLogin();
-  const hasActiveCampaign = useMemo(() => campaigns.some((c) => c.active), [campaigns]);
 
-  // 진행 중인 캠페인이 있으면 타겟처 모드를 기본으로 (영업부 배포), 없으면 직접 입력.
-  // 캠페인은 비동기로 도착하므로, 사용자가 아직 토글하지 않았다면 도착 시점에 맞춰준다.
-  const [mode, setMode] = useState<LoginMode>(hasActiveCampaign ? 'target' : 'direct');
-  const touchedRef = useRef(false);
-  useEffect(() => {
-    if (!touchedRef.current && hasActiveCampaign) setMode('target');
-  }, [hasActiveCampaign]);
-  const chooseMode = (m: LoginMode) => {
-    touchedRef.current = true;
-    setMode(m);
-  };
+  // 영업부 배포 기본: 시작 화면은 항상 '타겟처로 시작'. (필요 시 '직접 입력'으로 토글)
+  const [mode, setMode] = useState<LoginMode>('target');
+  const chooseMode = (m: LoginMode) => setMode(m);
 
   const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(fields.map((f) => [f.id, ''])),

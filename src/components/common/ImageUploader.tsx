@@ -1,7 +1,5 @@
 import { useRef, useState } from 'react';
 import { Upload, Loader2, X, Link2 } from 'lucide-react';
-import { uploadFile } from '../../lib/storageApi';
-import { isStorageConfigured } from '../../lib/firebase';
 import { fileToDataUrl } from '../../lib/imageResize';
 
 interface ImageUploaderProps {
@@ -23,33 +21,18 @@ export default function ImageUploader({
   maxDim,
 }: ImageUploaderProps) {
   const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [error, setError] = useState('');
-  const [note, setNote] = useState('');
   const [showUrl, setShowUrl] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const storageReady = isStorageConfigured();
+  // storagePath 는 하위호환용으로 받아만 두고 사용하지 않는다(경고 방지).
+  void storagePath;
 
+  // Firebase Storage(버킷·보안규칙·CORS)에 의존하지 않고, 항상 브라우저에서 축소해
+  // data URL(base64)로 저장한다. → 어떤 환경에서도 업로드한 이미지가 그대로 표시된다.
   const handleFile = async (file: File) => {
     setError('');
-    setNote('');
     setUploading(true);
-    setProgress(0);
     try {
-      // 1) Firebase Storage가 구성돼 있으면 우선 업로드 시도.
-      if (storageReady) {
-        try {
-          const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
-          const url = await uploadFile(`${storagePath}.${ext}`, file, setProgress);
-          onChange(url);
-          return;
-        } catch (e) {
-          // 업로드(권한/네트워크) 실패 → data URL 로 폴백. 사용자에겐 조용히 성공 처리.
-          console.warn('[ImageUploader] storage upload failed, falling back to data URL', e);
-          setNote('Storage 업로드 실패 → 이미지에 직접 저장했습니다.');
-        }
-      }
-      // 2) 미구성 또는 업로드 실패 → 브라우저에서 축소해 data URL 로 저장.
       const dataUrl = await fileToDataUrl(file, maxDim);
       onChange(dataUrl);
     } catch (e) {
@@ -99,7 +82,7 @@ export default function ImageUploader({
             {uploading ? (
               <>
                 <Loader2 size={12} className="animate-spin" />
-                {progress > 0 ? `${Math.round(progress)}% 업로드 중…` : '처리 중…'}
+                처리 중…
               </>
             ) : (
               <>
@@ -140,12 +123,6 @@ export default function ImageUploader({
             />
           )}
 
-          {!storageReady && (
-            <p className="mt-1 text-[10px] text-gray-400">
-              Storage 미구성 — 이미지를 축소해 데이터에 직접 저장합니다.
-            </p>
-          )}
-          {note && <p className="mt-1 text-[10px] text-amber-600">{note}</p>}
           {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
         </div>
       </div>
