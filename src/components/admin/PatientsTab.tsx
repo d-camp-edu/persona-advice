@@ -97,6 +97,7 @@ function PatientEditor({
           storagePath={`brochures/${draft.id}`}
           label="브로셔 이미지 (PPT 와이드)"
           previewSize="md"
+          maxDim={1600}
         />
         <div className="mt-2">
           <label className="mb-1 block text-[11px] text-gray-500">또는 YouTube 영상 링크</label>

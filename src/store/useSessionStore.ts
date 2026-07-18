@@ -8,7 +8,8 @@ import { checkNonDmCoverage } from '../lib/nonDmCoverage';
 import { loadLatestRxSession, saveRxSession } from '../lib/sessionRepo';
 import { saveDoc } from '../lib/firestoreApi';
 import { saveGiftLog } from '../lib/logsRepo';
-import type { Gift, GiftLog, Medication, Prescription, PrescriptionResult, RxSession, SurveyResponse } from '../types';
+import { saveTargetCompletion } from '../lib/targetsRepo';
+import type { Gift, GiftLog, Medication, Prescription, PrescriptionResult, RxSession, SurveyResponse, Target, TargetCampaign, TargetCompletion } from '../types';
 import { useDataStore } from './useDataStore';
 
 export type Phase = 'login' | 'survey' | 'select' | 'rx' | 'result' | 'admin' | 'myresults';
@@ -49,6 +50,15 @@ interface SessionState {
   sessionCreatedAt: string;
   loginFieldValues: Record<string, string>;
 
+  // 타겟처 배포: 사번으로 지정처를 선택해 시작한 세션이면 채워진다 (없으면 '')
+  targetId: string;
+  targetCode: string;
+  campaignId: string;
+  empNo: string;
+  empName: string;
+  division: string;
+  team: string;
+
   currentPatientId: string | null;
   slots: Slots;
   slotBids: Bids;
@@ -59,12 +69,20 @@ interface SessionState {
   lastResult: PrescriptionResult | null;
   loginPending: boolean;
 
+  /** '서베이만 진행' 모드: 환자 없이 공통 질문만 진행하고 끝나면 환자 선택으로 복귀 */
+  surveyOnly: boolean;
+  /** survey-only 완료 직후 환자 선택 화면에 표시할 확인 배너 */
+  surveyOnlyDone: boolean;
+
   login: (
     fieldValues: Record<string, string>,
     institutionType: InstitutionType,
     department: string,
   ) => Promise<void>;
   completeSurvey: (answers: Record<string, string | string[]>) => Promise<void>;
+  loginWithTarget: (target: Target, campaign: TargetCampaign) => void;
+  startSurveyOnly: () => void;
+  dismissSurveyOnlyDone: () => void;
   goMyResults: () => void;
   selectPatient: (id: string) => void;
   logGiftSpin: (gift: Gift | null) => void;
@@ -94,6 +112,14 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   sessionCreatedAt: '',
   loginFieldValues: {},
 
+  targetId: '',
+  targetCode: '',
+  campaignId: '',
+  empNo: '',
+  empName: '',
+  division: '',
+  team: '',
+
   currentPatientId: null,
   slots: emptySlots(),
   slotBids: emptyBids(),
@@ -103,6 +129,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   sessionPrescriptions: [],
   lastResult: null,
   loginPending: false,
+  surveyOnly: false,
+  surveyOnlyDone: false,
 
   login: async (fieldValues, institutionType, department) => {
     const h = (fieldValues['hospital'] ?? '').trim();
@@ -160,10 +188,54 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       currentPatientId: null,
       loginPending: false,
       lastResult: null,
+      surveyOnly: false,
+      surveyOnlyDone: false,
+      // 직접 입력 로그인은 타겟처 세션이 아니다.
+      targetId: '',
+      targetCode: '',
+      campaignId: '',
+      empNo: '',
+      empName: '',
+      division: '',
+      team: '',
     });
   },
 
-  // 환자별 서베이 완료 → 처방 시뮬레이션(rx)으로 진입
+  // 타겟처(지정처) 선택으로 세션 시작. 거래처명=병원, Dr.명(병원)/거래처명(의원)=의사.
+  loginWithTarget: (target, campaign) => {
+    const doctor = (target.drName || target.name || '').trim();
+    const hospital = (target.name || target.code || '').trim();
+    const key = makeSessionKey(hospital, doctor);
+    const now = Date.now();
+    const sessionDocId = makeSessionDocId(key, now);
+    set({
+      hospitalName: hospital,
+      doctorName: doctor,
+      institutionType: target.institutionType,
+      department: '',
+      sessionKey: key,
+      sessionDocId,
+      sessionCreatedAt: new Date(now).toISOString(),
+      sessionPrescriptions: [],
+      loginFieldValues: { hospital, doctor, 사번: target.empNo, 담당자: target.empName },
+      targetId: target.id,
+      targetCode: target.code,
+      campaignId: campaign.id,
+      empNo: target.empNo,
+      empName: target.empName,
+      division: target.division,
+      team: target.team,
+      phase: 'select',
+      comorbFilter: '전체',
+      currentPatientId: null,
+      lastResult: null,
+      loginPending: false,
+      surveyOnly: false,
+      surveyOnlyDone: false,
+    });
+  },
+
+  // 서베이 완료 → survey-only면 환자 선택으로 복귀, 아니면 처방 시뮬레이션(rx)으로 진입
   completeSurvey: async (answers) => {
     const {
       sessionDocId,
@@ -173,6 +245,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       institutionType,
       loginFieldValues,
       currentPatientId,
+      surveyOnly,
     } = get();
     const patient = useDataStore.getState().patients.find((p) => p.id === currentPatientId);
     const response: Omit<SurveyResponse, 'id'> = {
@@ -194,8 +267,30 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     } catch (e) {
       console.warn('[survey] save failed', e);
     }
-    set({ phase: 'rx', rxPhase: 'menu' });
+
+    // 타겟처 배포: 서베이 완료 = 해당 지정처 '진행 완료'로 기록 (1지정처 1완료, upsert)
+    void recordTargetCompletionOnSurvey(get());
+
+    if (surveyOnly) {
+      set({ phase: 'select', surveyOnly: false, surveyOnlyDone: true, currentPatientId: null });
+    } else {
+      set({ phase: 'rx', rxPhase: 'menu' });
+    }
   },
+
+  // '서베이만 진행': 환자 없이 공통 질문만 진행하는 서베이 화면으로 이동
+  startSurveyOnly: () => {
+    set({
+      surveyOnly: true,
+      surveyOnlyDone: false,
+      currentPatientId: null,
+      phase: 'survey',
+      rxPhase: 'menu',
+      lastResult: null,
+    });
+  },
+
+  dismissSurveyOnlyDone: () => set({ surveyOnlyDone: false }),
 
   selectPatient: (id) => {
     // 재진/리핏: 환자가 현재 복용 중인 약(prevDrugs)을 처방 슬롯에 미리 채워준다.
@@ -214,6 +309,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       rxPhase: 'menu',
       phase: hasSurvey ? 'survey' : 'rx',
       lastResult: null,
+      surveyOnly: false,
+      surveyOnlyDone: false,
     });
   },
 
@@ -419,6 +516,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       slotBids: emptyBids(),
       diagCodes: [],
       lastResult: null,
+      surveyOnly: false,
     });
   },
 
@@ -434,6 +532,13 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       sessionDocId: '',
       sessionCreatedAt: '',
       loginFieldValues: {},
+      targetId: '',
+      targetCode: '',
+      campaignId: '',
+      empNo: '',
+      empName: '',
+      division: '',
+      team: '',
       currentPatientId: null,
       slots: emptySlots(),
       slotBids: emptyBids(),
@@ -441,6 +546,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       comorbFilter: '전체',
       sessionPrescriptions: [],
       lastResult: null,
+      surveyOnly: false,
+      surveyOnlyDone: false,
     });
   },
 
@@ -448,6 +555,31 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   exitAdmin: () => set({ phase: 'login' }),
   goMyResults: () => set({ phase: 'myresults' }),
 }));
+
+/**
+ * 서베이 완료 시 타겟처(지정처) '진행 완료'를 기록한다. 타겟처 세션(targetId 존재)에서만 동작.
+ * 1지정처 1완료(문서 id = campaignId__targetId)라 여러 번 완료해도 덮어쓴다(upsert).
+ */
+function recordTargetCompletionOnSurvey(s: SessionState): void {
+  if (!s.targetId || !s.campaignId) return;
+  const completion: TargetCompletion = {
+    id: `${s.campaignId}__${s.targetId}`,
+    campaignId: s.campaignId,
+    targetId: s.targetId,
+    code: s.targetCode,
+    name: s.hospitalName,
+    institutionType: s.institutionType,
+    empNo: s.empNo,
+    empName: s.empName,
+    division: s.division,
+    team: s.team,
+    doctorName: s.doctorName,
+    completedAt: new Date().toISOString(),
+  };
+  void saveTargetCompletion(completion).catch((e) => {
+    console.warn('[target] saveTargetCompletion failed', e);
+  });
+}
 
 /**
  * eGFR 이니셜딥을 유발하는 계열 id 목록. 단일계열(mono) 약제 중 effectEgfrDip≠0 인

@@ -11,6 +11,7 @@ import ExemptionsTab from '../components/admin/ExemptionsTab';
 import HistoryTab from '../components/admin/HistoryTab';
 import SurveyTab from '../components/admin/SurveyTab';
 import GiftsTab from '../components/admin/GiftsTab';
+import ProgressTab from '../components/admin/ProgressTab';
 
 const TABS: { id: AdminTab; label: string }[] = [
   { id: 'patientProfile', label: '환자 프로파일' },
@@ -22,6 +23,7 @@ const TABS: { id: AdminTab; label: string }[] = [
   { id: 'rules', label: '삭감 규칙' },
   { id: 'allowed', label: '허용 조합' },
   { id: 'exemptions', label: '부작용 면제' },
+  { id: 'progress', label: '진행률' },
   { id: 'history', label: '세션 이력' },
 ];
 
@@ -83,6 +85,7 @@ export default function AdminScreen() {
         {activeTab === 'rules' && <RulesTab />}
         {activeTab === 'allowed' && <AllowedTab />}
         {activeTab === 'exemptions' && <ExemptionsTab />}
+        {activeTab === 'progress' && <ProgressTab />}
         {activeTab === 'history' && <HistoryTab />}
       </div>
     </div>

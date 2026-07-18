@@ -4,3 +4,4 @@ export * from './session';
 export * from './settings';
 export * from './survey';
 export * from './gift';
+export * from './target';

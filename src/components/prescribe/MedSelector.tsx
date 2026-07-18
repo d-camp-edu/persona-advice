@@ -31,10 +31,19 @@ export default function MedSelector({
   const [step, setStep] = useState<'category' | 'meds'>('category');
   const [selectedCat, setSelectedCat] = useState<string>(CAT_ALL);
 
-  const sortedCats = useMemo(
-    () => [...categories].sort((a, b) => a.order - b.order),
-    [categories],
-  );
+  // 실제 약제가 1개 이상 매핑된 카테고리만, id 기준 중복 없이 노출한다.
+  // (Firestore에 남은 옛 카테고리 문서나 약제 0개짜리 구분·중복 항목을 자동 제거)
+  const sortedCats = useMemo(() => {
+    const usedCatIds = new Set(medications.map((m) => m.categoryId));
+    const seen = new Set<string>();
+    return [...categories]
+      .filter((c) => {
+        if (seen.has(c.id)) return false;
+        seen.add(c.id);
+        return usedCatIds.has(c.id);
+      })
+      .sort((a, b) => a.order - b.order);
+  }, [categories, medications]);
 
   const catOrder = useMemo(
     () => new Map(categories.map((c) => [c.id, c.order])),

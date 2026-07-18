@@ -10,6 +10,7 @@ export type AdminTab =
   | 'rules'
   | 'allowed'
   | 'exemptions'
+  | 'progress'
   | 'history';
 
 interface AdminState {

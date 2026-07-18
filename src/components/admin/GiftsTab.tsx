@@ -65,6 +65,7 @@ function GiftEditor({
           storagePath={`gifts/${draft.id}`}
           label="선물 이미지"
           previewSize="md"
+          maxDim={512}
         />
       </div>
 

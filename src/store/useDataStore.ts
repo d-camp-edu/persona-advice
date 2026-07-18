@@ -12,6 +12,7 @@ import type {
   SurveyQuestion,
   PatientMetricDef,
   Gift,
+  TargetCampaign,
 } from '../types';
 import {
   seedPatients,
@@ -40,6 +41,7 @@ interface DataState {
   surveyQuestions: SurveyQuestion[];
   patientMetricDefs: PatientMetricDef[];
   gifts: Gift[];
+  targetCampaigns: TargetCampaign[];
 
   status: LoadStatus;
   error: string | null;
@@ -76,6 +78,7 @@ export const useDataStore = create<DataState>((set, get) => ({
   surveyQuestions: seedSurveyQuestions,
   patientMetricDefs: seedPatientMetricDefs,
   gifts: seedGifts,
+  targetCampaigns: [],
 
   status: 'idle',
   error: null,
@@ -178,6 +181,11 @@ export const useDataStore = create<DataState>((set, get) => ({
       subs.push(
         subscribeCollection<Gift>('gifts', (items) => {
           set({ gifts: items });
+        }),
+      );
+      subs.push(
+        subscribeCollection<TargetCampaign>('targetCampaigns', (items) => {
+          set({ targetCampaigns: items });
         }),
       );
 

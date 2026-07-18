@@ -174,6 +174,7 @@ export default function SettingsTab() {
             onChange={(url) => set('loginLogoUrl', url)}
             storagePath="settings/loginLogo"
             previewSize="sm"
+            maxDim={512}
           />
         </div>
         <div className="mb-3">
@@ -183,6 +184,7 @@ export default function SettingsTab() {
             onChange={(url) => set('loginTitleIconUrl', url)}
             storagePath="settings/titleIcon"
             previewSize="sm"
+            maxDim={256}
           />
         </div>
         <div className="mb-3">
@@ -192,6 +194,7 @@ export default function SettingsTab() {
             onChange={(url) => set('backgroundImgUrl', url)}
             storagePath="settings/backgroundImg"
             previewSize="sm"
+            maxDim={1600}
           />
         </div>
         <div className="mb-3">

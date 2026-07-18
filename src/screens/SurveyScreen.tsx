@@ -12,6 +12,7 @@ export default function SurveyScreen() {
   const currentPatientId = useSessionStore((s) => s.currentPatientId);
   const completeSurvey = useSessionStore((s) => s.completeSurvey);
   const resetToSelect = useSessionStore((s) => s.resetToSelect);
+  const surveyOnly = useSessionStore((s) => s.surveyOnly);
   const settings = useDataStore((s) => s.settings);
 
   const currentPatient = patients.find((p) => p.id === currentPatientId);
@@ -86,7 +87,9 @@ export default function SurveyScreen() {
         <p className="text-sm font-medium text-white/80 mb-1">
           {doctorName} 선생님{patientName && ` · ${patientName} 환자`}
         </p>
-        <h1 className="text-xl font-bold text-white">진료 전 서베이를 부탁드립니다.</h1>
+        <h1 className="text-xl font-bold text-white">
+          {surveyOnly ? '서베이를 부탁드립니다.' : '진료 전 서베이를 부탁드립니다.'}
+        </h1>
       </div>
 
       {/* Progress bar */}
@@ -214,7 +217,7 @@ export default function SurveyScreen() {
             '저장 중…'
           ) : isLast ? (
             <>
-              시연 시작하기
+              {surveyOnly ? '서베이 완료' : '시연 시작하기'}
               <CheckCircle2 size={16} />
             </>
           ) : (

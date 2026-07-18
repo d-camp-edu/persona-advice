@@ -71,12 +71,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Admin 약제 관리 탭의 **"엑셀 반영" 버튼**은 사용자가 수정한 `기본 약제 초기화.xlsx`를 **브라우저에서 직접 파싱**해 Firestore에 업로드한다(파일 선택 → 파싱 → `seedRunner.uploadMedicationList`). 매번 스크립트를 돌려 커밋하지 않아도 현장에서 반영 가능. 의존성 없이 브라우저 내장 `DecompressionStream`으로 압축 해제, inlineStr·sharedStrings(엑셀 재저장 시) 모두 지원.
 - **⚠️ `lib/medExcelImport.ts`의 매핑 로직은 `scripts/genMedications.mjs`와 반드시 동일해야 한다.** 한쪽을 고치면 다른 쪽도 고쳐라. `tests/medExcelImport.test.ts`가 브라우저 파서의 결과를 커밋된 `seedMedications`와 deep-equal 비교해 드리프트를 잡는다 — 이 테스트가 깨지면 두 구현이 어긋난 것이다.
 
+### 타겟처(영업부 배포) 시스템
+
+영업 담당자가 **사번**으로 배정된 지정처(타겟처)를 검색해 진입하는 배포 흐름. 기존 병원명+의사명 자유입력 로그인과 **공존**한다(로그인 화면 상단 토글: '타겟처로 시작' / '직접 입력'). 진행 중(active) 캠페인이 있으면 타겟처 모드가 기본.
+
+- 도메인: `types/target.ts` — `TargetCampaign`(진행기간·월), `Target`(지정처), `TargetCompletion`(완료).
+- 엑셀 파싱: `lib/xlsxReader.ts`(범용 xlsx→행 리더, medExcelImport와 별개로 두어 드리프트 테스트 영향 없음) + `lib/targetExcelImport.ts`(헤더명으로 **의원/병원 포맷 자동 감지**). 매핑 순수 로직은 `targetsFromRows()`로 분리, `tests/targetExcelImport.test.ts`가 검증.
+  - 의원: 거래처코드·거래처명·사업부명·팀명·담당자사번·담당자명
+  - 병원: 거래처코드·거래처명·**Dr.명**·사업부명·팀명·담당자사번
+- Firestore: `lib/targetsRepo.ts` (컬렉션 `targetCampaigns`/`targets`/`targetCompletions`, 단일 where 쿼리라 복합 인덱스 불필요, batch는 400개 청크).
+- **진행 완료 기준 = 서베이 완료**: `useSessionStore.completeSurvey`가 타겟처 세션(`targetId` 존재)이면 `recordTargetCompletionOnSurvey`로 완료 기록(문서 id `campaignId__targetId`, upsert).
+- 로그인: `components/login/TargetLoginPanel.tsx`(사번 검색 → 담당자 진행률 바 → 지정처 선택 → `loginWithTarget`). 캠페인은 `useDataStore.targetCampaigns`로 실시간 구독.
+- 관리자: `components/admin/ProgressTab.tsx`(Admin '진행률' 탭) — 캠페인 CRUD·진행기간·활성 토글, 의원/병원 엑셀 업로드(교체/추가), **월별** 사업부→팀 진행률 대시보드 + 담당자별 상세 + 엑셀 내보내기.
+
+### 이미지 업로드(Storage 비의존)
+
+`components/common/ImageUploader.tsx`는 Firebase Storage가 구성돼 있으면 우선 업로드하되, **미구성이거나 업로드 실패 시 `lib/imageResize.ts`로 브라우저에서 축소해 data URL(base64)로 저장**한다(버킷·보안규칙·CORS와 무관하게 항상 표시). `maxDim`으로 축소 크기 조절(로고 512·아이콘 256·배경/브로셔 1600). data URL은 Firestore 1MB 문서 한도 아래로 자동 재축소.
+
 ### Firestore 경로
 
 ```
 artifacts/{appId}/public/data/
   patients, medications, medCategories, drugClasses,
   deductionRules, allowedCombinations, sideEffectExemptions,
+  surveyQuestions, surveyResponses, gifts, giftLogs,
+  targetCampaigns, targets, targetCompletions,
   settings/global, rx_sessions/{sessionDocId}
 ```
 
