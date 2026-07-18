@@ -61,7 +61,7 @@ export function targetsFromRows(rows: string[][], campaignId: string): ParsedTar
   const teamCol = findCol(headers, ['팀']);
   const empNoCol = findCol(headers, ['담당자사번', '사번']);
   const empNameCol = findCol(headers, ['담당자명']);
-  const drCol = findCol(headers, ['dr명', 'dr', '닥터']);
+  const drCol = findCol(headers, ['dr명', 'dr', '닥터', '원장', '진료의', '처방의']);
 
   if (codeCol < 0 && nameCol < 0) {
     throw new Error('‘거래처코드/거래처명’ 헤더를 찾지 못했습니다.');

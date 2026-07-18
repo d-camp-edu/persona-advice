@@ -249,7 +249,11 @@ export default function TargetLoginPanel() {
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-1.5">
                         <span className="truncate text-sm font-semibold text-gray-900">{t.name}</span>
-                        {t.drName && <span className="shrink-0 text-xs text-gray-500">{t.drName}</span>}
+                        {t.drName && (
+                          <span className="shrink-0 rounded bg-indigo-50 px-1.5 py-0.5 text-[11px] font-semibold text-indigo-600">
+                            Dr. {t.drName}
+                          </span>
+                        )}
                       </span>
                       <span className="mt-0.5 block truncate text-[11px] text-gray-400">
                         {[t.division, t.team].filter(Boolean).join(' · ')}
