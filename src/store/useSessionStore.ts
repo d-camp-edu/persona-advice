@@ -58,6 +58,7 @@ interface SessionState {
   productName: string;
   empNo: string;
   empName: string;
+  empPhone: string;
   division: string;
   team: string;
 
@@ -82,7 +83,12 @@ interface SessionState {
     department: string,
   ) => Promise<void>;
   completeSurvey: (answers: Record<string, string | string[]>) => Promise<void>;
-  loginWithTarget: (target: Target, campaign: TargetCampaign, productName?: string) => void;
+  loginWithTarget: (
+    target: Target,
+    campaign: TargetCampaign,
+    productName?: string,
+    empPhone?: string,
+  ) => void;
   startSurveyOnly: () => void;
   dismissSurveyOnlyDone: () => void;
   goMyResults: () => void;
@@ -121,6 +127,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   productName: '',
   empNo: '',
   empName: '',
+  empPhone: '',
   division: '',
   team: '',
 
@@ -202,13 +209,14 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       productName: '',
       empNo: '',
       empName: '',
+      empPhone: '',
       division: '',
       team: '',
     });
   },
 
   // 타겟처(지정처) 선택으로 세션 시작. 거래처명=병원, Dr.명(병원)/거래처명(의원)=의사.
-  loginWithTarget: (target, campaign, productName) => {
+  loginWithTarget: (target, campaign, productName, empPhone) => {
     const doctor = (target.drName || target.name || '').trim();
     const hospital = (target.name || target.code || '').trim();
     const key = makeSessionKey(hospital, doctor);
@@ -223,7 +231,13 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       sessionDocId,
       sessionCreatedAt: new Date(now).toISOString(),
       sessionPrescriptions: [],
-      loginFieldValues: { hospital, doctor, 사번: target.empNo, 담당자: target.empName },
+      loginFieldValues: {
+        hospital,
+        doctor,
+        사번: target.empNo,
+        담당자: target.empName,
+        연락처: (empPhone ?? '').trim(),
+      },
       targetId: target.id,
       targetCode: target.code,
       campaignId: campaign.id,
@@ -231,6 +245,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       productName: productName ?? '',
       empNo: target.empNo,
       empName: target.empName,
+      empPhone: (empPhone ?? '').trim(),
       division: target.division,
       team: target.team,
       phase: 'select',
@@ -547,6 +562,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       productName: '',
       empNo: '',
       empName: '',
+      empPhone: '',
       division: '',
       team: '',
       currentPatientId: null,
@@ -583,6 +599,7 @@ function recordTargetCompletionOnSurvey(s: SessionState): void {
     institutionType: s.institutionType,
     empNo: s.empNo,
     empName: s.empName,
+    empPhone: s.empPhone,
     division: s.division,
     team: s.team,
     doctorName: s.doctorName,

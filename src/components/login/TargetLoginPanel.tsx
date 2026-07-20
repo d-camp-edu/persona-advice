@@ -6,6 +6,7 @@ import { loadTargetsByEmp, loadCompletionsByEmp } from '../../lib/targetsRepo';
 import type { Target, TargetCampaign } from '../../types';
 
 const LAST_EMPNO_KEY = 'persona_rx_last_empno';
+const LAST_PHONE_KEY = 'persona_rx_last_phone';
 function loadLastEmpNo(): string {
   try {
     return localStorage.getItem(LAST_EMPNO_KEY) ?? '';
@@ -16,6 +17,20 @@ function loadLastEmpNo(): string {
 function saveLastEmpNo(no: string): void {
   try {
     localStorage.setItem(LAST_EMPNO_KEY, no);
+  } catch {
+    /* ignore */
+  }
+}
+function loadLastPhone(): string {
+  try {
+    return localStorage.getItem(LAST_PHONE_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+function saveLastPhone(phone: string): void {
+  try {
+    localStorage.setItem(LAST_PHONE_KEY, phone);
   } catch {
     /* ignore */
   }
@@ -37,6 +52,7 @@ export default function TargetLoginPanel() {
 
   const [productId, setProductId] = useState('');
   const [empNo, setEmpNo] = useState('');
+  const [empPhone, setEmpPhone] = useState(loadLastPhone);
   const [lastEmpNo] = useState(loadLastEmpNo);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -59,7 +75,11 @@ export default function TargetLoginPanel() {
     return activeCampaigns.map((c) => c.id);
   }, [hasProducts, productId, activeCampaigns]);
 
-  const canSearch = (!hasProducts || !!productId) && empNo.trim().length > 0 && !loading;
+  const canSearch =
+    (!hasProducts || !!productId) &&
+    empNo.trim().length > 0 &&
+    empPhone.trim().length > 0 &&
+    !loading;
 
   const resetResults = () => {
     setSearched(false);
@@ -75,7 +95,12 @@ export default function TargetLoginPanel() {
       setError('먼저 품목을 선택하세요.');
       return;
     }
+    if (!empPhone.trim()) {
+      setError('연락처를 입력하세요. (리워드 발송용)');
+      return;
+    }
     saveLastEmpNo(no);
+    saveLastPhone(empPhone.trim());
     setLoading(true);
     setError('');
     setSearched(true);
@@ -112,7 +137,8 @@ export default function TargetLoginPanel() {
       selectedProductName ||
       products.find((p) => p.id === campaign.productId)?.name ||
       '';
-    loginWithTarget(t, campaign, productName);
+    saveLastPhone(empPhone.trim());
+    loginWithTarget(t, campaign, productName, empPhone.trim());
   };
 
   return (
@@ -158,32 +184,52 @@ export default function TargetLoginPanel() {
 
       {/* 2단계: 사번 입력 */}
       <label className="mb-1 block text-xs font-medium text-gray-600">담당자 사번</label>
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={empNo}
-          onChange={(e) => setEmpNo(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              if (canSearch) void handleSearch();
-            }
-          }}
-          placeholder={hasProducts && !productId ? '먼저 품목을 선택하세요' : '예: 12345'}
-          disabled={hasProducts && !productId}
-          className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-gray-50 disabled:text-gray-400"
-          autoComplete="off"
-        />
-        <button
-          type="button"
-          onClick={() => void handleSearch()}
-          disabled={!canSearch}
-          className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
-        >
-          {loading ? <Loader2 size={15} className="animate-spin" /> : <Search size={15} />}
-          검색
-        </button>
-      </div>
+      <input
+        type="text"
+        value={empNo}
+        onChange={(e) => setEmpNo(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            if (canSearch) void handleSearch();
+          }
+        }}
+        placeholder={hasProducts && !productId ? '먼저 품목을 선택하세요' : '예: 12345'}
+        disabled={hasProducts && !productId}
+        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-gray-50 disabled:text-gray-400"
+        autoComplete="off"
+      />
+
+      {/* 연락처: 리워드 발송용 (필수) */}
+      <label className="mb-1 mt-3 block text-xs font-medium text-gray-600">
+        연락처 <span className="font-normal text-gray-400">(리워드 발송용)</span>
+      </label>
+      <input
+        type="tel"
+        inputMode="tel"
+        value={empPhone}
+        onChange={(e) => setEmpPhone(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            if (canSearch) void handleSearch();
+          }
+        }}
+        placeholder="예: 010-1234-5678"
+        disabled={hasProducts && !productId}
+        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-gray-50 disabled:text-gray-400"
+        autoComplete="tel"
+      />
+
+      <button
+        type="button"
+        onClick={() => void handleSearch()}
+        disabled={!canSearch}
+        className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+      >
+        {loading ? <Loader2 size={15} className="animate-spin" /> : <Search size={15} />}
+        검색
+      </button>
 
       {lastEmpNo && lastEmpNo !== empNo.trim() && (
         <button

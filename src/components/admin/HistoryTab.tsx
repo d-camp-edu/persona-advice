@@ -147,6 +147,7 @@ function buildSheets(
     '팀',
     '사번',
     '담당자',
+    '연락처',
     '기관유형',
     '거래처코드',
     '거래처명',
@@ -159,6 +160,7 @@ function buildSheets(
     c.team,
     c.empNo,
     c.empName,
+    c.empPhone ?? '',
     c.institutionType,
     c.code,
     c.name,
@@ -336,6 +338,7 @@ export default function HistoryTab() {
                       <th className="px-2 py-1.5 font-medium">품목</th>
                       <th className="px-2 py-1.5 font-medium">사업부·팀</th>
                       <th className="px-2 py-1.5 font-medium">담당자</th>
+                      <th className="px-2 py-1.5 font-medium">연락처</th>
                       <th className="px-2 py-1.5 font-medium">거래처</th>
                     </tr>
                   </thead>
@@ -351,6 +354,7 @@ export default function HistoryTab() {
                           {c.empName || '—'}
                           {c.empNo && <span className="ml-1 text-gray-400">{c.empNo}</span>}
                         </td>
+                        <td className="whitespace-nowrap px-2 py-1.5 text-gray-600">{c.empPhone || '—'}</td>
                         <td className="px-2 py-1.5 text-gray-700">
                           {c.name}
                           {c.doctorName && c.doctorName !== c.name && (

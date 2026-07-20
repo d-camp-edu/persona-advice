@@ -51,6 +51,7 @@ export interface TargetCompletion {
   institutionType: TargetInstitution;
   empNo: string;
   empName: string;
+  empPhone: string; // 담당자 연락처 (리워드 발송용)
   division: string;
   team: string;
   doctorName: string;
