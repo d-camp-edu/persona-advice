@@ -26,4 +26,6 @@ export interface SurveyResponse {
   answeredAt: string;
   answers: Record<string, string | string[]>;
   loginFieldValues?: Record<string, string>;
+  /** 담당자 사번. 조회를 서버 where 쿼리로 좁히기 위한 인덱스 필드. (없을 수 있음) */
+  empNo?: string;
 }

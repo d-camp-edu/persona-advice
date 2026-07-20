@@ -25,6 +25,13 @@ type Bids = [boolean, boolean, boolean, boolean, boolean];
 const emptySlots = (): Slots => [null, null, null, null, null];
 const emptyBids = (): Bids => [false, false, false, false, false];
 
+/**
+ * 조회(내 결과)용 담당자 사번을 세션 상태에서 뽑아낸다.
+ * 타겟처 세션은 state.empNo, 직접 입력 로그인은 loginFieldValues의 사번 필드('employeeId').
+ */
+const deriveEmpNo = (empNo: string, loginFieldValues: Record<string, string>): string =>
+  (empNo || loginFieldValues['employeeId'] || '').trim();
+
 /** 환자가 현재 복용 중인 약(prevDrugs medId 배열)을 5칸 처방 슬롯으로 변환 */
 const slotsFromPrevDrugs = (prevDrugs?: string[]): Slots => {
   const s = emptySlots();
@@ -269,6 +276,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       loginFieldValues,
       currentPatientId,
       surveyOnly,
+      empNo,
     } = get();
     const patient = useDataStore.getState().patients.find((p) => p.id === currentPatientId);
     const response: Omit<SurveyResponse, 'id'> = {
@@ -282,6 +290,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       answeredAt: new Date().toISOString(),
       answers,
       loginFieldValues,
+      empNo: deriveEmpNo(empNo, loginFieldValues),
     };
     // 환자·시각마다 고유 문서로 저장 (세션당 1개가 아니라 환자별 다건)
     const surveyDocId = `${sessionDocId}_${currentPatientId ?? 'none'}_${Date.now().toString(36)}`;
@@ -523,6 +532,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         createdAt: sessionCreatedAt || new Date().toISOString(),
         prescriptions: nextPrescriptions,
         loginFieldValues,
+        empNo: deriveEmpNo(get().empNo, loginFieldValues),
       };
       void saveRxSession(session).catch((e) => {
         console.warn('[session] saveRxSession failed', e);

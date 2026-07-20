@@ -465,9 +465,10 @@ export default function SettingsTab() {
 
       {/* 시스템 */}
       <Section title="시스템">
-        <Field label="Admin 비밀번호">
-          <input type="text" className={inp} value={draft.adminPassword} onChange={(e) => set('adminPassword', e.target.value)} />
-        </Field>
+        <p className="text-xs text-gray-500">
+          Admin 비밀번호는 보안을 위해 이 화면에서 관리하지 않습니다. 배포 환경변수
+          <code className="mx-1 rounded bg-gray-100 px-1">VITE_ADMIN_PASSWORD</code>로 설정하세요.
+        </p>
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"

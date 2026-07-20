@@ -45,7 +45,6 @@ export const seedSettings: GlobalSettings = {
   msgLifestyle: '추천해주신 대로 생활습관을 바꾸니 몸이 가볍습니다.',
 
   comorbidities: seedComorbidities,
-  adminPassword: '1024',
   allowSessionCarryover: false,
 
   hospitalDepartments: [

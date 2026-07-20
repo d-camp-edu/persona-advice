@@ -1,19 +1,18 @@
 import { useState } from 'react';
 import { Lock } from 'lucide-react';
 import { useAdminStore } from '../../store/useAdminStore';
-import { useDataStore } from '../../store/useDataStore';
 import { useSessionStore } from '../../store/useSessionStore';
+import { ADMIN_PASSWORD } from '../../lib/adminAuth';
 
 export default function AdminGate() {
   const [pw, setPw] = useState('');
   const unlock = useAdminStore((s) => s.unlock);
   const authError = useAdminStore((s) => s.authError);
-  const adminPassword = useDataStore((s) => s.settings.adminPassword);
   const exitAdmin = useSessionStore((s) => s.exitAdmin);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    unlock(pw, adminPassword);
+    unlock(pw, ADMIN_PASSWORD);
   };
 
   return (

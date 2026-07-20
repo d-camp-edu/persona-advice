@@ -22,6 +22,24 @@ export async function loadLatestRxSession(sessionKey: string): Promise<RxSession
   return items[0];
 }
 
+/**
+ * 특정 담당자 사번(empNo)의 rx_session만 서버 where 쿼리로 가져온다.
+ * 컬렉션 전체를 내려받지 않아 담당자 수·누적 세션이 늘어도 조회 비용이 일정하다.
+ * (단일 where라 복합 인덱스 불필요)
+ */
+export async function loadRxSessionsByEmp(empNo: string): Promise<RxSession[]> {
+  if (!isFirebaseConfigured()) return [];
+  const db = getDb();
+  if (!db) return [];
+  const trimmed = empNo.trim();
+  if (!trimmed) return [];
+  const q = query(collection(db, collectionPath(COLL)), where('empNo', '==', trimmed));
+  const snap = await getDocs(q);
+  const items = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<RxSession, 'id'>) }));
+  items.sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
+  return items;
+}
+
 export async function loadAllRxSessions(): Promise<RxSession[]> {
   if (!isFirebaseConfigured()) return [];
   const db = getDb();

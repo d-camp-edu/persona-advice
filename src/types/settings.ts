@@ -45,7 +45,6 @@ export interface GlobalSettings {
   msgLifestyle: string;
 
   comorbidities: Comorbidity[];
-  adminPassword: string;
   allowSessionCarryover: boolean;
 
   /** 병원 선택 시 노출되는 분과 옵션 목록 (의원 선택 시 미노출) */

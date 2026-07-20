@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { ArrowLeft, Search, User, ClipboardList, Pill, MessageSquare } from 'lucide-react';
 import { useSessionStore } from '../store/useSessionStore';
 import { useDataStore } from '../store/useDataStore';
-import { loadAllRxSessions } from '../lib/sessionRepo';
-import { getDocs, collection } from 'firebase/firestore';
+import { loadRxSessionsByEmp } from '../lib/sessionRepo';
+import { getDocs, collection, query, where } from 'firebase/firestore';
 import { getDb, isFirebaseConfigured } from '../lib/firebase';
 import { collectionPath } from '../lib/firestoreApi';
 import type { RxSession, SurveyResponse } from '../types';
@@ -20,29 +20,23 @@ interface ResultCard {
   lastActivity: string;
 }
 
-async function loadSurveyResponses(): Promise<SurveyResponse[]> {
+/** 특정 담당자 사번의 서베이 응답만 서버 where 쿼리로 조회 (컬렉션 전체 미다운로드) */
+async function loadSurveyResponsesByEmp(empNo: string): Promise<SurveyResponse[]> {
   if (!isFirebaseConfigured()) return [];
   const db = getDb();
   if (!db) return [];
-  const snap = await getDocs(collection(db, collectionPath('surveyResponses')));
+  const trimmed = empNo.trim();
+  if (!trimmed) return [];
+  const snap = await getDocs(
+    query(collection(db, collectionPath('surveyResponses')), where('empNo', '==', trimmed)),
+  );
   return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<SurveyResponse, 'id'>) }));
 }
 
-function buildCards(
-  sessions: RxSession[],
-  surveys: SurveyResponse[],
-  fieldValues: Record<string, string>,
-): ResultCard[] {
-  const myFieldEntries = Object.entries(fieldValues).filter(([, v]) => v.trim().length > 0);
-
-  const mySessions = sessions.filter((s) => {
-    if (!s.loginFieldValues) return false;
-    const fv = s.loginFieldValues;
-    return myFieldEntries.every(([k, v]) => fv[k] === v);
-  });
-
+/** 이미 담당자 사번으로 좁혀진 세션·서베이를 선생님(병원·의사·분과)별 카드로 묶는다. */
+function buildCards(sessions: RxSession[], surveys: SurveyResponse[]): ResultCard[] {
   const grouped = new Map<string, RxSession[]>();
-  for (const s of mySessions) {
+  for (const s of sessions) {
     const key = `${s.doctorName}__${s.hospitalName}__${s.department ?? ''}`;
     if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key)!.push(s);
@@ -50,10 +44,6 @@ function buildCards(
 
   const surveyMap = new Map<string, SurveyResponse[]>();
   for (const sv of surveys) {
-    if (!sv.loginFieldValues) continue;
-    const svFv = sv.loginFieldValues;
-    const matches = myFieldEntries.every(([k, v]) => svFv[k] === v);
-    if (!matches) continue;
     const key = `${sv.doctorName}__${sv.hospitalName}__${sv.department ?? ''}`;
     if (!surveyMap.has(key)) surveyMap.set(key, []);
     surveyMap.get(key)!.push(sv);
@@ -94,27 +84,26 @@ function buildCards(
 export default function MyResultsScreen() {
   const resetToLogin = useSessionStore((s) => s.resetToLogin);
   const settings = useDataStore((s) => s.settings);
-  const loginFields = settings.loginFields ?? [];
 
-  const [searchValues, setSearchValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(loginFields.map((f) => [f.id, ''])),
-  );
+  const [empNo, setEmpNo] = useState('');
   const [cards, setCards] = useState<ResultCard[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSearch = async () => {
-    const filled = Object.values(searchValues).some((v) => v.trim().length > 0);
-    if (!filled) {
-      setError('최소 한 개 이상의 항목을 입력해 주세요.');
+    const no = empNo.trim();
+    if (!no) {
+      setError('담당자 사번을 입력해 주세요.');
       return;
     }
     setError('');
     setLoading(true);
     try {
-      const [sessions, surveys] = await Promise.all([loadAllRxSessions(), loadSurveyResponses()]);
-      const result = buildCards(sessions, surveys, searchValues);
-      setCards(result);
+      const [sessions, surveys] = await Promise.all([
+        loadRxSessionsByEmp(no),
+        loadSurveyResponsesByEmp(no),
+      ]);
+      setCards(buildCards(sessions, surveys));
     } catch (e) {
       setError('데이터 로드 실패: ' + String(e));
     } finally {
@@ -139,31 +128,29 @@ export default function MyResultsScreen() {
         </button>
         <div>
           <h1 className="text-base font-bold text-white">자문 디테일 결과 조회</h1>
-          <p className="text-xs text-white/70">담당자 정보를 입력해 결과를 확인하세요</p>
+          <p className="text-xs text-white/70">담당자 사번으로 결과를 확인하세요</p>
         </div>
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 pb-8 lg:mx-auto lg:w-full lg:max-w-5xl">
         <div className="rounded-2xl bg-white/95 p-5 shadow-2xl backdrop-blur mb-4 lg:mx-auto lg:max-w-xl">
-          {loginFields
-            .slice()
-            .sort((a, b) => a.order - b.order)
-            .filter((f) => !['hospital', 'doctor'].includes(f.id))
-            .map((field) => (
-              <label key={field.id} className="mb-3 block">
-                <span className="mb-1 block text-xs font-medium text-gray-600">{field.label}</span>
-                <input
-                  type="text"
-                  value={searchValues[field.id] ?? ''}
-                  onChange={(e) =>
-                    setSearchValues((prev) => ({ ...prev, [field.id]: e.target.value }))
-                  }
-                  placeholder={field.placeholder}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-                  autoComplete="off"
-                />
-              </label>
-            ))}
+          <label className="mb-3 block">
+            <span className="mb-1 block text-xs font-medium text-gray-600">담당자 사번</span>
+            <input
+              type="text"
+              value={empNo}
+              onChange={(e) => setEmpNo(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (!loading) void handleSearch();
+                }
+              }}
+              placeholder="예: 12345"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              autoComplete="off"
+            />
+          </label>
 
           {error && <p className="mb-3 text-xs text-red-500">{error}</p>}
 
