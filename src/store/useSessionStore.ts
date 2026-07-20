@@ -452,9 +452,13 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       id ? data.medications.find((m) => m.id === id) ?? null : null,
     );
 
-    const current = getPatientCurrentState(patient, sessionPrescriptions, data.medications, data.patientMetricDefs);
+    // 각 처방은 독립적이다: 같은 시연 세션의 이전 처방을 누적하지 않고, 항상 환자의
+    // 기준 상태(초기값 + prevDrugs 기준선)에서 새로 시작한다. 재선택 시 그 환자는 새로 시작.
+    // (기록/저장용 sessionPrescriptions 는 그대로 유지하되, 상태 산출에는 쓰지 않는다.)
+    const stateHistory: Prescription[] = [];
+    const current = getPatientCurrentState(patient, stateHistory, data.medications, data.patientMetricDefs);
     const pastSideEffectCounts = countPastSideEffects(
-      sessionPrescriptions,
+      stateHistory,
       patient.id,
       data.medications,
     );
@@ -463,7 +467,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     const dipClassIds = deriveDipClassIds(data.medications);
     const experiencedDipClassIds = deriveExperiencedDipClasses(
       patient.id,
-      sessionPrescriptions,
+      stateHistory,
       baselineMeds,
       dipClassIds,
     );
@@ -502,7 +506,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     // 이 처방 직전 환자가 실제로 복용 중이던 보험 약제의 계열 수.
     // 같은 시연 세션에 직전 처방이 있으면 그 보험 슬롯 약제를, 없으면 prevDrugs를 기준으로 한다.
     // 유지/감량 처방을 신규 병용으로 오인해 삭감하지 않도록 쓰인다.
-    const priorRx = [...sessionPrescriptions].reverse().find((p) => p.patientId === patient.id);
+    // 독립 처방: 직전 처방 기준선도 세션 누적이 아니라 환자의 prevDrugs(기준선)로 본다.
+    const priorRx = [...stateHistory].reverse().find((p) => p.patientId === patient.id);
     const priorMeds: Medication[] = priorRx
       ? priorRx.prescribedDrugs
           .filter((d) => !d.isSelfPay && d.slot < 4)

@@ -14,7 +14,8 @@ function newQuestion(): SurveyQuestion {
     text: '새 질문을 입력하세요.',
     type: 'single',
     options: ['선택지 1', '선택지 2'],
-    required: true,
+    required: false,
+    surveyOnly: false,
   };
 }
 
@@ -109,11 +110,11 @@ function QuestionEditor({
       <label className="mb-1 flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
         <input
           type="checkbox"
-          checked={draft.required}
-          onChange={(e) => set('required', e.target.checked)}
+          checked={!!draft.surveyOnly}
+          onChange={(e) => set('surveyOnly', e.target.checked)}
           className="h-3.5 w-3.5"
         />
-        필수 질문
+        서베이만 진행 전용 (환자 시연 중엔 표시 안 함, '서베이만 진행'에서만 노출)
       </label>
 
       {/* 노출 환자구분(공병증) */}
@@ -294,8 +295,10 @@ export default function SurveyTab() {
                 <span className="flex-shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
                   {typeLabel[q.type]}
                 </span>
-                {q.required && (
-                  <span className="flex-shrink-0 text-xs text-red-400">*필수</span>
+                {q.surveyOnly && (
+                  <span className="flex-shrink-0 rounded-full bg-indigo-50 px-2 py-0.5 text-xs text-indigo-600">
+                    서베이 전용
+                  </span>
                 )}
                 <span
                   className={`flex-shrink-0 rounded-full px-2 py-0.5 text-xs ${

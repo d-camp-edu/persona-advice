@@ -11,6 +11,11 @@ export interface SurveyQuestion {
    * 값이 있으면 선택된 환자가 해당 공병증 중 하나라도 가질 때만 노출한다.
    */
   comorbidityScope?: string[];
+  /**
+   * true면 '서베이만 진행' 흐름에서만 노출하고, 환자 시연 중 서베이에는 노출하지 않는다.
+   * (공통 질문을 환자마다 반복하지 않도록 서베이 전용으로 분리하는 용도)
+   */
+  surveyOnly?: boolean;
 }
 
 export interface SurveyResponse {

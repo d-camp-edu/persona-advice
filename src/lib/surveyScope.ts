@@ -14,12 +14,20 @@ export function questionAppliesToComorbidities(
   return scope.some((c) => comorbidities.includes(c));
 }
 
-/** 환자의 공병증에 맞는 서베이 질문만 골라 순서대로 정렬해 반환. */
+/**
+ * 환자의 공병증에 맞는 서베이 질문만 골라 순서대로 정렬해 반환.
+ * '서베이만 진행' 전용 질문(surveyOnly)은 환자 시연 중 서베이에서 제외한다.
+ */
 export function surveyQuestionsForPatient(
   questions: SurveyQuestion[],
   comorbidities: string[],
 ): SurveyQuestion[] {
   return questions
-    .filter((q) => questionAppliesToComorbidities(q, comorbidities))
+    .filter((q) => !q.surveyOnly && questionAppliesToComorbidities(q, comorbidities))
     .sort((a, b) => a.order - b.order);
+}
+
+/** '서베이만 진행' 흐름에서 노출할 질문(surveyOnly=true)만 순서대로 반환. */
+export function surveyOnlyQuestions(questions: SurveyQuestion[]): SurveyQuestion[] {
+  return questions.filter((q) => q.surveyOnly).sort((a, b) => a.order - b.order);
 }

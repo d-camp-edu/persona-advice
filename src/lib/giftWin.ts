@@ -15,7 +15,11 @@ export function resolveComorbWinRate(
   let best: number | null = null;
   for (const c of comorbidities) {
     if (!names.has(c.name)) continue;
-    const rate = institutionType === '병원' ? c.giftWinHospital : c.giftWinClinic;
+    // 해당 기관 유형 값을 우선 사용하되, 비어 있으면 다른 유형에 입력된 값으로 폴백한다.
+    // (병원/의원 한쪽만 입력해도 그 공병에는 당첨 확률이 적용되도록)
+    const primary = institutionType === '병원' ? c.giftWinHospital : c.giftWinClinic;
+    const secondary = institutionType === '병원' ? c.giftWinClinic : c.giftWinHospital;
+    const rate = typeof primary === 'number' ? primary : secondary;
     if (typeof rate !== 'number' || Number.isNaN(rate)) continue;
     const clamped = Math.max(0, Math.min(100, rate));
     if (best === null || clamped > best) best = clamped;

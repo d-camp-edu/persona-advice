@@ -27,7 +27,6 @@ export default function PrescribeScreen() {
   const toggleDiag = useSessionStore((s) => s.toggleDiag);
   const resetToSelect = useSessionStore((s) => s.resetToSelect);
   const confirmPrescription = useSessionStore((s) => s.confirmPrescription);
-  const sessionPrescriptions = useSessionStore((s) => s.sessionPrescriptions);
 
   const [selectorSlot, setSelectorSlot] = useState<number | null>(null);
 
@@ -51,7 +50,8 @@ export default function PrescribeScreen() {
     );
   }
 
-  const currentState = getPatientCurrentState(patient, sessionPrescriptions, medications);
+  // 각 처방은 독립적이다 — 세션 내 이전 처방을 누적하지 않고 항상 환자 기준 상태에서 시작한다.
+  const currentState = getPatientCurrentState(patient, [], medications);
   const currentHba1c = currentState.hba1c;
   const currentEgfr = currentState.egfr;
 

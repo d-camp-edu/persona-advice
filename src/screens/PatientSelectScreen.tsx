@@ -17,10 +17,10 @@ export default function PatientSelectScreen() {
   const surveyOnlyDone = useSessionStore((s) => s.surveyOnlyDone);
   const dismissSurveyOnlyDone = useSessionStore((s) => s.dismissSurveyOnlyDone);
 
-  // 공통(공병 무관) 서베이 질문이 있을 때만 '서베이만 진행' 버튼을 노출한다.
+  // '서베이만 진행 전용' 질문이 있을 때만 '서베이만 진행' 버튼을 노출한다.
   const surveyQuestions = useDataStore((s) => s.surveyQuestions);
-  const hasCommonSurvey = useMemo(
-    () => surveyQuestions.some((q) => !q.comorbidityScope || q.comorbidityScope.length === 0),
+  const hasSurveyOnly = useMemo(
+    () => surveyQuestions.some((q) => q.surveyOnly),
     [surveyQuestions],
   );
 
@@ -69,7 +69,7 @@ export default function PatientSelectScreen() {
       )}
 
       {/* 서베이만 진행 — 환자 공병 필터 제일 앞 */}
-      {hasCommonSurvey && (
+      {hasSurveyOnly && (
         <div className="border-b border-gray-100 bg-white px-4 pt-3">
           <button
             type="button"

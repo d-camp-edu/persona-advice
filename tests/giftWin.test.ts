@@ -44,11 +44,11 @@ describe('resolveComorbWinRate', () => {
     expect(resolveComorbWinRate(defs, ['CKD', '비만'], '병원')).toBe(60);
   });
 
-  it('한쪽만 설정된 공병은 미설정 축을 건너뜀', () => {
-    // 의원: 비만은 미설정, CKD 40 → 40
+  it('한쪽만 설정된 공병은 반대 축 값으로 폴백', () => {
+    // 의원: CKD 40, 비만은 의원 미설정 → 병원값 20으로 폴백 → max(40,20)=40
     expect(resolveComorbWinRate(defs, ['CKD', '비만'], '의원')).toBe(40);
-    // 의원: 비만만 있으면 미설정 → null
-    expect(resolveComorbWinRate(defs, ['비만'], '의원')).toBeNull();
+    // 의원: 비만만 있으면 병원값 20으로 폴백
+    expect(resolveComorbWinRate(defs, ['비만'], '의원')).toBe(20);
   });
 
   it('0~100 범위로 클램프', () => {

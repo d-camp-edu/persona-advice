@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ChevronRight, ChevronLeft, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { useDataStore } from '../store/useDataStore';
 import { useSessionStore } from '../store/useSessionStore';
-import { surveyQuestionsForPatient } from '../lib/surveyScope';
+import { surveyOnlyQuestions, surveyQuestionsForPatient } from '../lib/surveyScope';
 import type { SurveyQuestion } from '../types';
 
 export default function SurveyScreen() {
@@ -18,7 +18,10 @@ export default function SurveyScreen() {
   const currentPatient = patients.find((p) => p.id === currentPatientId);
   const patientName = currentPatient?.name ?? '';
 
-  const sorted = surveyQuestionsForPatient(questions, currentPatient?.comorbidities ?? []);
+  // '서베이만 진행' 흐름은 서베이 전용 질문만, 환자 시연 서베이는 전용이 아닌 공병 매칭 질문만.
+  const sorted = surveyOnly
+    ? surveyOnlyQuestions(questions)
+    : surveyQuestionsForPatient(questions, currentPatient?.comorbidities ?? []);
 
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
@@ -43,13 +46,8 @@ export default function SurveyScreen() {
     setAnswer(q, next);
   };
 
-  const canProceed = () => {
-    if (!current) return true;
-    if (!current.required) return true;
-    const ans = getAnswer(current);
-    if (current.type === 'multi') return (ans as string[]).length > 0;
-    return String(ans).trim().length > 0;
-  };
+  // 필수 질문 개념을 제거 — 모든 질문은 선택 응답이며 언제든 다음으로 진행 가능.
+  const canProceed = () => true;
 
   const handleNext = async () => {
     if (!canProceed()) return;
@@ -109,7 +107,6 @@ export default function SurveyScreen() {
           <div className="rounded-2xl bg-white/95 p-6 shadow-2xl backdrop-blur lg:mx-auto lg:max-w-3xl">
             <p className="mb-1 text-xs font-semibold text-indigo-500 uppercase tracking-wide">
               Q{step + 1}
-              {current.required && <span className="ml-1 text-red-400">*</span>}
             </p>
             <p className="mb-5 text-base font-semibold text-gray-900 leading-snug">
               {current.text}
@@ -186,7 +183,7 @@ export default function SurveyScreen() {
               <textarea
                 rows={4}
                 className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-800 outline-none transition-colors focus:border-indigo-400 resize-none"
-                placeholder={current.required ? '답변을 입력해 주세요.' : '(선택 사항)'}
+                placeholder="답변을 입력해 주세요. (선택)"
                 value={(getAnswer(current) as string) ?? ''}
                 onChange={(e) => setAnswer(current, e.target.value)}
               />
