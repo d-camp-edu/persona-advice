@@ -4,6 +4,11 @@
 //
 // zip 인플레이트: 브라우저 내장 DecompressionStream('deflate-raw')
 // 시트 XML: 정규식. inlineStr(<is><t>)·sharedStrings(<v t="s">)·숫자 모두 지원.
+//
+// 견고성:
+//  - 첫 시트를 sheet1.xml 로 하드코딩하지 않고 workbook.xml + rels 로 "실제 첫 시트"를 해석한다.
+//    (표지 시트가 앞에 있거나 시트 파일명이 sheet1.xml 이 아닌 실제 배포용 엑셀 대응)
+//  - <row>/<c> 에 r 속성이 없어도(일부 생성기) 순서로 인덱싱한다.
 
 function u16(b: Uint8Array, o: number) {
   return b[o] | (b[o + 1] << 8);
@@ -90,19 +95,26 @@ function parseSharedStrings(xml: string): string[] {
 
 function parseSheet(xml: string, shared: string[]): string[][] {
   const rows: string[][] = [];
-  const rowRe = /<row [^>]*r="(\d+)"[^>]*>([\s\S]*?)<\/row>/g;
+  // r 속성이 없어도 매칭되도록 attrs 를 선택적으로. 자기닫힘 <row/> 는 빈 행.
+  const rowRe = /<row\b([^>]*?)(?:\/>|>([\s\S]*?)<\/row>)/g;
   let m: RegExpExecArray | null;
+  let autoRow = 0; // r 속성이 없을 때 사용할 순차 인덱스(1-based)
   while ((m = rowRe.exec(xml))) {
-    const rIdx = +m[1];
-    const cellsXml = m[2];
+    const rowAttrs = m[1] ?? '';
+    const cellsXml = m[2] ?? '';
+    const rAttr = rowAttrs.match(/\br="(\d+)"/);
+    const rIdx = rAttr ? +rAttr[1] : ++autoRow;
+    if (rAttr) autoRow = rIdx; // r 있는 행 이후의 auto 는 그 뒤부터
+
     const cells: Record<number, string> = {};
     const cRe = /<c\b([^>]*)>([\s\S]*?)<\/c>|<c\b([^>]*)\/>/g;
     let c: RegExpExecArray | null;
+    let autoCol = -1; // r 속성 없는 셀용 순차 컬럼
     while ((c = cRe.exec(cellsXml))) {
       const attrs = c[1] ?? c[3] ?? '';
       const refM = attrs.match(/r="([A-Z]+)\d+"/);
-      if (!refM) continue;
-      const col = colToIdx(refM[1]);
+      const col = refM ? colToIdx(refM[1]) : ++autoCol;
+      if (refM) autoCol = col;
       if (c[3] !== undefined) {
         cells[col] = '';
         continue;
@@ -129,6 +141,47 @@ function parseSheet(xml: string, shared: string[]): string[][] {
   return rows;
 }
 
+/**
+ * workbook.xml(시트 순서) + workbook.xml.rels(r:id→파일) 로 "첫 시트"의 실제 경로를 해석한다.
+ * 실패하면 sheet1.xml, 그마저 없으면 첫 워크시트 파일을 쓴다.
+ */
+function resolveFirstSheetPath(
+  entries: Record<string, Uint8Array>,
+  dec: TextDecoder,
+): string | null {
+  const worksheetNames = Object.keys(entries).filter((n) =>
+    /^xl\/worksheets\/[^/]+\.xml$/i.test(n),
+  );
+  const wbBytes = entries['xl/workbook.xml'];
+  const relsBytes = entries['xl/_rels/workbook.xml.rels'];
+  if (wbBytes && relsBytes) {
+    const wb = dec.decode(wbBytes);
+    const rels = dec.decode(relsBytes);
+    // 문서 순서상 첫 <sheet ... r:id="rIdN"/>
+    const firstSheet = wb.match(/<sheet\b[^>]*\/?>/i);
+    const rid = firstSheet?.[0].match(/r:id="([^"]+)"/i)?.[1];
+    if (rid) {
+      const relRe = new RegExp(
+        `<Relationship\\b[^>]*Id="${rid}"[^>]*Target="([^"]+)"[^>]*/?>`,
+        'i',
+      );
+      let target = rels.match(relRe)?.[1];
+      if (target) {
+        // Target 은 보통 'worksheets/sheet1.xml'(xl 기준 상대) 또는 '/xl/worksheets/sheet1.xml'(절대).
+        target = target.replace(/^\//, '').replace(/^xl\//, '');
+        const path = `xl/${target}`;
+        if (entries[path]) return path;
+      }
+    }
+  }
+  if (entries['xl/worksheets/sheet1.xml']) return 'xl/worksheets/sheet1.xml';
+  if (worksheetNames.length > 0) {
+    worksheetNames.sort((a, b) => a.localeCompare(b));
+    return worksheetNames[0];
+  }
+  return null;
+}
+
 /** xlsx(File/Blob/ArrayBuffer/Uint8Array) → 첫 시트의 행 배열. 빈 행은 undefined일 수 있다. */
 export async function readXlsxRows(
   input: File | Blob | ArrayBuffer | Uint8Array,
@@ -138,13 +191,24 @@ export async function readXlsxRows(
   else if (input instanceof ArrayBuffer) bytes = new Uint8Array(input);
   else bytes = new Uint8Array(await input.arrayBuffer());
 
+  // 첫 시트 경로를 미리 알 수 없으므로 필요한 후보를 모두 읽어온다.
   const entries = await readZipEntries(
     bytes,
-    (name) => name === 'xl/worksheets/sheet1.xml' || name === 'xl/sharedStrings.xml',
+    (name) =>
+      name === 'xl/workbook.xml' ||
+      name === 'xl/_rels/workbook.xml.rels' ||
+      name === 'xl/sharedStrings.xml' ||
+      /^xl\/worksheets\/[^/]+\.xml$/i.test(name),
   );
-  const sheetBytes = entries['xl/worksheets/sheet1.xml'];
-  if (!sheetBytes) throw new Error("워크북에 'xl/worksheets/sheet1.xml' 시트가 없습니다.");
+
   const dec = new TextDecoder('utf-8');
+  const sheetPath = resolveFirstSheetPath(entries, dec);
+  const sheetBytes = sheetPath ? entries[sheetPath] : undefined;
+  if (!sheetBytes) {
+    throw new Error(
+      '워크북에서 시트를 찾지 못했습니다. .xlsx 형식이 맞는지 확인하세요. (구형 .xls는 지원하지 않습니다)',
+    );
+  }
   const shared = entries['xl/sharedStrings.xml']
     ? parseSharedStrings(dec.decode(entries['xl/sharedStrings.xml']))
     : [];

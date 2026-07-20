@@ -162,6 +162,7 @@ export default function ProgressTab() {
   const [uploadCampaignId, setUploadCampaignId] = useState('');
   const [replaceExisting, setReplaceExisting] = useState(true);
   const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -171,7 +172,9 @@ export default function ProgressTab() {
   }, [sortedCampaigns, uploadCampaignId]);
 
   const handleUpload = async (file: File) => {
+    setImportError('');
     if (!uploadCampaignId) {
+      setImportError('먼저 캠페인을 선택(또는 생성)하세요.');
       showFlash('먼저 캠페인을 선택(또는 생성)하세요.');
       return;
     }
@@ -183,7 +186,11 @@ export default function ProgressTab() {
       showFlash(`${format} 타겟처 ${targets.length}건 업로드됨`);
       void loadDashboard();
     } catch (e) {
-      showFlash(`업로드 실패: ${e instanceof Error ? e.message : String(e)}`);
+      const msg = e instanceof Error ? e.message : String(e);
+      // '아무 반응 없음'을 방지: 콘솔에 원본 오류를 남기고, 화면엔 사라지지 않는 오류를 표시.
+      console.error('[targets] 엑셀 업로드 실패', e);
+      setImportError(`업로드 실패: ${msg} (파일: ${file.name})`);
+      showFlash(`업로드 실패: ${msg}`);
     } finally {
       setImporting(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -574,7 +581,7 @@ export default function ProgressTab() {
           <input
             ref={fileRef}
             type="file"
-            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
@@ -582,6 +589,16 @@ export default function ProgressTab() {
             }}
           />
         </div>
+        {importError && (
+          <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs leading-snug text-red-600">
+            {importError}
+            <br />
+            <span className="text-red-400">
+              구형 .xls 파일이면 엑셀에서 '다른 이름으로 저장 → .xlsx'로 변환해 다시 올려주세요.
+              계속 실패하면 브라우저 콘솔(F12)의 오류 메시지를 알려주세요.
+            </span>
+          </p>
+        )}
       </section>
 
       {/* ── 대시보드 ── */}
