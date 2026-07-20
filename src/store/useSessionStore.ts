@@ -44,6 +44,15 @@ const slotsFromPrevDrugs = (prevDrugs?: string[]): Slots => {
   return s;
 };
 
+/** 환자의 현재 복용약 BID 설정(prevDrugBids)을 5칸 BID 슬롯으로 변환 */
+const bidsFromPrevDrugs = (prevDrugBids?: boolean[]): Bids => {
+  const b = emptyBids();
+  if (Array.isArray(prevDrugBids)) {
+    for (let i = 0; i < 5; i += 1) b[i] = !!prevDrugBids[i];
+  }
+  return b;
+};
+
 interface SessionState {
   phase: Phase;
   rxPhase: RxPhase;
@@ -336,7 +345,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     set({
       currentPatientId: id,
       slots: slotsFromPrevDrugs(patient?.prevDrugs),
-      slotBids: emptyBids(),
+      slotBids: bidsFromPrevDrugs(patient?.prevDrugBids),
       diagCodes: [],
       rxPhase: 'menu',
       phase: hasSurvey ? 'survey' : 'rx',
@@ -465,6 +474,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       slots: slotMeds,
       baselineSlots: baselineMeds,
       bidFlags: slotBids,
+      baselineBidFlags: bidsFromPrevDrugs(patient.prevDrugBids),
       diagCodes,
       settings: data.settings,
       exemptions: data.sideEffectExemptions,

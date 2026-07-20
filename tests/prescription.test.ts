@@ -212,6 +212,50 @@ describe('calculatePrescription — BID(1일 2회)', () => {
     expect(result.prescription.newHba1c).toBeCloseTo(round1(7.8 - bidDrug.effect), 5);
     expect(result.prescription.prescribedDrugs[0].bid).toBe(false);
   });
+
+  it('BID 기준약을 그대로 유지(같은 슬롯·같은 BID) 확정하면 순 변화량 0', () => {
+    const p = patient('p1');
+    const result = calculatePrescription({
+      patient: p,
+      current: getPatientCurrentState(p, [], meds),
+      slots: slotsWith(bidDrug),
+      bidFlags: [true, false, false, false, false],
+      baselineSlots: slotsWith(bidDrug),
+      baselineBidFlags: [true, false, false, false, false],
+      diagCodes: ['E11'],
+      settings,
+      exemptions: [],
+      pastSideEffectCounts: {},
+      rng: noSideEffectRng,
+      now: fixedNow,
+    });
+    // 현재도 BID·기준도 BID → 2배끼리 상쇄되어 변화 없음
+    expect(result.prescription.newHba1c).toBeCloseTo(result.prescription.oldHba1c, 5);
+    expect(result.prescription.newWeight).toBeCloseTo(result.prescription.oldWeight, 5);
+  });
+
+  it('기준약은 QD였는데 BID로 올리면 딱 1회분 추가 강하', () => {
+    const p = patient('p1');
+    const result = calculatePrescription({
+      patient: p,
+      current: getPatientCurrentState(p, [], meds),
+      slots: slotsWith(bidDrug),
+      bidFlags: [true, false, false, false, false],
+      baselineSlots: slotsWith(bidDrug),
+      baselineBidFlags: [false, false, false, false, false],
+      diagCodes: ['E11'],
+      settings,
+      exemptions: [],
+      pastSideEffectCounts: {},
+      rng: noSideEffectRng,
+      now: fixedNow,
+    });
+    // 현재 2배 - 기준 1배 = 1배분 순 강하
+    expect(result.prescription.newHba1c).toBeCloseTo(
+      round1(result.prescription.oldHba1c - bidDrug.effect),
+      5,
+    );
+  });
 });
 
 describe('calculatePrescription — 부작용 면제', () => {

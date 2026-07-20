@@ -26,6 +26,11 @@ export interface CalculatePrescriptionInput {
    * 미지정이면 전부 QD(1배)로 계산한다. isNotDrug(생활습관) 슬롯에는 영향 없음.
    */
   bidFlags?: boolean[];
+  /**
+   * 기준 처방(baselineSlots)의 슬롯별 BID 여부. 현재 슬롯과 동일 인덱스로 정렬.
+   * BID 기준약의 효과도 2배로 차감해, 같은 BID 처방을 그대로 확정하면 순 변화량이 0이 되게 한다.
+   */
+  baselineBidFlags?: boolean[];
   diagCodes: string[];
   settings: GlobalSettings;
   exemptions: SideEffectExemption[];
@@ -146,11 +151,10 @@ export function calculatePrescription(input: CalculatePrescriptionInput): Prescr
 
   // 재진/리핏 기준 처방(이미 복용 중)의 효과는 중복 적용하지 않도록 차감 → 순 변화량만 반영.
   // 같은 처방을 그대로 확정하면 모든 지표 변화가 0이 된다.
-  const baselineMeds = (input.baselineSlots ?? []).filter(
-    (m): m is Medication => m !== null,
-  );
+  const baselineSlots = input.baselineSlots ?? [];
+  const baselineMeds = baselineSlots.filter((m): m is Medication => m !== null);
   if (baselineMeds.length > 0) {
-    const base = sumBaselineTotals(baselineMeds, settings);
+    const base = sumBaselineTotals(baselineSlots, input.baselineBidFlags, settings);
     totals.h -= base.h;
     totals.w -= base.w;
     totals.l -= base.l;
@@ -160,10 +164,11 @@ export function calculatePrescription(input: CalculatePrescriptionInput): Prescr
     totals.eg -= base.eg;
     totals.ua -= base.ua;
     for (const def of customDefs) {
-      const baseDelta = baselineMeds.reduce(
-        (sum, m) => sum + ((m.customEffects ?? {})[def.id] ?? 0),
-        0,
-      );
+      const baseDelta = baselineSlots.reduce((sum, m, idx) => {
+        if (!m) return sum;
+        const dose = !m.isNotDrug && input.baselineBidFlags?.[idx] ? 2 : 1;
+        return sum + ((m.customEffects ?? {})[def.id] ?? 0) * dose;
+      }, 0);
       customTotals[def.id] = (customTotals[def.id] ?? 0) - baseDelta;
     }
   }
@@ -269,17 +274,26 @@ export function calculatePrescription(input: CalculatePrescriptionInput): Prescr
  * 기준 처방(이미 복용 중) 약제들의 효과 합산. 부작용(rng)은 적용하지 않는 결정적 계산.
  * 병포장 보너스는 현재 처방과 동일 조건으로 포함해, 동일 처방 차감 시 정확히 상쇄되게 한다.
  */
-function sumBaselineTotals(meds: Medication[], settings: GlobalSettings): Totals {
+function sumBaselineTotals(
+  slots: (Medication | null)[],
+  bidFlags: boolean[] | undefined,
+  settings: GlobalSettings,
+): Totals {
   const t: Totals = { h: 0, w: 0, l: 0, n: 0, b: 0, nt: 0, eg: 0, ua: 0 };
-  for (const med of meds) {
-    t.h += med.isNotDrug ? 0 : med.effect;
-    t.w += med.effectWeight;
-    t.l += med.effectLvef;
-    t.b += med.effectBnp;
-    t.nt += med.effectNtprobnp;
-    t.eg += med.effectEgfr;
-    t.ua += med.effectUacr;
-  }
+  const meds: Medication[] = [];
+  slots.forEach((med, idx) => {
+    if (!med) return;
+    meds.push(med);
+    // BID 기준약은 효과 2배로 차감. 생활습관(비약물)은 1배 고정.
+    const dose = !med.isNotDrug && bidFlags?.[idx] ? 2 : 1;
+    t.h += med.isNotDrug ? 0 : med.effect * dose;
+    t.w += med.effectWeight * dose;
+    t.l += med.effectLvef * dose;
+    t.b += med.effectBnp * dose;
+    t.nt += med.effectNtprobnp * dose;
+    t.eg += med.effectEgfr * dose;
+    t.ua += med.effectUacr * dose;
+  });
   const drugs = meds.filter((m) => !m.isNotDrug);
   const allBottle = drugs.length > 0 && drugs.every((m) => m.pkg === 'bottle');
   if (allBottle) t.h += settings.packagingBonusEffect;

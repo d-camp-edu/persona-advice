@@ -35,6 +35,7 @@ function newPatient(): Patient {
     dipstick: false,
     ckdStandardTx: false,
     prevDrugs: [],
+    prevDrugBids: [],
     prevTreatment: '',
     otherMedications: '',
     imageUrl: '',
@@ -266,6 +267,10 @@ function PatientEditor({
         {Array.from({ length: 5 }, (_, i) => {
           const medId = draft.prevDrugs[i] ?? '';
           const label = i < 3 ? `슬롯 ${i + 1} (급여)` : `슬롯 ${i + 1} (본인부담)`;
+          const med = medId ? medications.find((m) => m.id === medId) : undefined;
+          // 처방 화면과 동일: 생활습관(비약물)에는 BID 개념이 없다.
+          const canBid = !!med && !med.isNotDrug;
+          const bid = !!draft.prevDrugBids?.[i];
           return (
             <div key={i} className="flex items-center gap-2">
               <span className="w-24 shrink-0 text-xs text-gray-500">{label}</span>
@@ -276,6 +281,12 @@ function PatientEditor({
                   const next = Array.from({ length: 5 }, (_, j) => draft.prevDrugs[j] ?? '');
                   next[i] = e.target.value;
                   set('prevDrugs', next);
+                  // 약을 비우면 해당 슬롯 BID도 해제
+                  if (!e.target.value && draft.prevDrugBids?.[i]) {
+                    const nb = Array.from({ length: 5 }, (_, j) => !!draft.prevDrugBids?.[j]);
+                    nb[i] = false;
+                    set('prevDrugBids', nb);
+                  }
                 }}
               >
                 <option value="">— 비어 있음 —</option>
@@ -288,6 +299,27 @@ function PatientEditor({
                     </option>
                   ))}
               </select>
+              {canBid ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nb = Array.from({ length: 5 }, (_, j) => !!draft.prevDrugBids?.[j]);
+                    nb[i] = !nb[i];
+                    set('prevDrugBids', nb);
+                  }}
+                  aria-pressed={bid}
+                  title="1일 2회(BID) — 효과 2배"
+                  className={`shrink-0 rounded-md border px-2 py-1 text-xs font-semibold ${
+                    bid
+                      ? 'border-indigo-500 bg-indigo-500 text-white'
+                      : 'border-gray-300 text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  BID
+                </button>
+              ) : (
+                <span className="w-[38px] shrink-0" />
+              )}
             </div>
           );
         })}

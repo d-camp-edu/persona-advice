@@ -40,6 +40,11 @@ export interface Patient {
   ckdStandardTx: boolean;
 
   prevDrugs: string[];
+  /**
+   * 현재 복용 중인 처방(prevDrugs)의 슬롯별 BID(1일 2회) 여부. prevDrugs와 같은 인덱스로 정렬.
+   * 없거나 짧으면 해당 슬롯은 QD(1배)로 간주한다(하위호환). 생활습관(비약물) 슬롯엔 무의미.
+   */
+  prevDrugBids?: boolean[];
   prevTreatment: string;
   otherMedications?: string;
 
