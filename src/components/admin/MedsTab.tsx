@@ -73,6 +73,8 @@ function MedEditor({
   const categories = useDataStore((s) => s.medCategories);
   const drugClasses = useDataStore((s) => s.drugClasses);
   const comorbNames = useDataStore((s) => s.settings.comorbidities.map((c) => c.name));
+  const metricDefs = useDataStore((s) => s.patientMetricDefs);
+  const customDefs = metricDefs.filter((d) => !d.isBuiltIn && d.enabled).sort((a, b) => a.order - b.order);
   const [draft, setDraft] = useState<Medication>(() => structuredClone(med));
   const [saving, setSaving] = useState(false);
 
@@ -161,6 +163,31 @@ function MedEditor({
         ))}
       </div>
 
+      {/* 커스텀 검사 지표 효과 (환자 프로파일에서 추가한 지표) */}
+      {customDefs.length > 0 && (
+        <>
+          <p className="mb-1 text-xs font-semibold text-gray-600">커스텀 검사 지표 효과</p>
+          <div className="mb-3 grid grid-cols-2 gap-x-3">
+            {customDefs.map((def) => (
+              <div key={def.id}>
+                <label className="mb-0.5 block text-xs text-gray-500">
+                  {def.label}{def.unit ? ` (${def.unit})` : ''} 변화
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className={`${inp} mb-1`}
+                  value={draft.customEffects?.[def.id] ?? 0}
+                  onChange={(e) =>
+                    set('customEffects', { ...draft.customEffects, [def.id]: +e.target.value })
+                  }
+                />
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
       {/* 부작용 */}
       <p className="mb-1 text-xs font-semibold text-gray-600">부작용</p>
       <div className="mb-3 grid grid-cols-2 gap-x-3">
@@ -233,16 +260,41 @@ function MedEditor({
   );
 }
 
+/** 환자 프로파일의 커스텀 지표 중 AST/ALT/γ-GTP(간수치) 지표 id를 라벨로 찾는다. */
+function findLiverMetricIds(defs: { id: string; label: string; isBuiltIn: boolean }[]) {
+  const norm = (s: string) => s.trim().toUpperCase().replace(/[\s._-]/g, '');
+  let ast: string | undefined;
+  let alt: string | undefined;
+  let ggtp: string | undefined;
+  for (const d of defs) {
+    if (d.isBuiltIn) continue;
+    const n = norm(d.label);
+    if (n === 'AST') ast = d.id;
+    else if (n === 'ALT') alt = d.id;
+    else if (n.includes('GTP') || n.includes('GGT')) ggtp = d.id;
+  }
+  return { ast, alt, ggtp };
+}
+
+/** 계열별 AST·ALT·γ-GTP 처방 효과값 [AST, ALT, γ-GTP] */
+const LIVER_CLASS_EFFECTS = {
+  tzd: [-5, -13, -13],
+  sglt2: [-4, -10, -13],
+  both: [-15, -22, -29],
+} as const;
+
 export default function MedsTab() {
   const medications = useDataStore((s) => s.medications);
   const categories = useDataStore((s) => s.medCategories);
   const drugClasses = useDataStore((s) => s.drugClasses);
+  const metricDefs = useDataStore((s) => s.patientMetricDefs);
   const medsEmpty = useDataStore((s) => s.medsEmpty);
   const medCategoriesEmpty = useDataStore((s) => s.medCategoriesEmpty);
   const drugClassesEmpty = useDataStore((s) => s.drugClassesEmpty);
 
   const [expanded, setExpanded] = useState<string | null>(null);
   const [seeding, setSeeding] = useState(false);
+  const [applying, setApplying] = useState(false);
   const [importing, setImporting] = useState(false);
   const [flash, setFlash] = useState('');
   const [dragId, setDragId] = useState<string | null>(null);
@@ -386,6 +438,62 @@ export default function MedsTab() {
     }
   };
 
+  /** TZD/SGLT-2i 계열 약제에 AST·ALT·γ-GTP 계열 기준값을 일괄 채워 저장한다. */
+  const handleApplyLiverClassEffects = async () => {
+    const { ast, alt, ggtp } = findLiverMetricIds(metricDefs);
+    if (!ast || !alt || !ggtp) {
+      showFlash('AST·ALT·γ-GTP 지표를 먼저 환자 프로파일에 추가하세요');
+      return;
+    }
+    const targets = medications.filter(
+      (m) => m.classes.includes('dc_tzd') || m.classes.includes('dc_sglt2'),
+    );
+    if (targets.length === 0) {
+      showFlash('TZD·SGLT-2i 계열 약제가 없습니다');
+      return;
+    }
+    if (!confirm(`TZD·SGLT-2i 계열 약제 ${targets.length}종에 AST·ALT·γ-GTP 계열 기준값을 적용하시겠습니까?`))
+      return;
+
+    setApplying(true);
+    try {
+      const updated = targets.map((m) => {
+        const hasTzd = m.classes.includes('dc_tzd');
+        const hasSglt2 = m.classes.includes('dc_sglt2');
+        const vals =
+          hasTzd && hasSglt2
+            ? LIVER_CLASS_EFFECTS.both
+            : hasTzd
+              ? LIVER_CLASS_EFFECTS.tzd
+              : LIVER_CLASS_EFFECTS.sglt2;
+        const customEffects = {
+          ...m.customEffects,
+          [ast]: vals[0],
+          [alt]: vals[1],
+          [ggtp]: vals[2],
+        };
+        return { ...m, customEffects };
+      });
+
+      if (medsEmpty) {
+        const byId = new Map(updated.map((m) => [m.id, m]));
+        await materializeAll(medications.map((m) => byId.get(m.id) ?? m));
+      } else {
+        await Promise.all(
+          updated.map((m) => {
+            const { id, ...rest } = m;
+            return saveDoc('medications', id, rest as unknown as Record<string, unknown>);
+          }),
+        );
+      }
+      showFlash(`계열값 적용됨 (${updated.length}종)`);
+    } catch {
+      showFlash('적용 실패');
+    } finally {
+      setApplying(false);
+    }
+  };
+
   const renderRow = (m: Medication, groupMeds: Medication[]) => (
     <div
       key={m.id}
@@ -449,7 +557,7 @@ export default function MedsTab() {
         <button
           type="button"
           onClick={() => void handleSeedReset()}
-          disabled={seeding || importing}
+          disabled={seeding || importing || applying}
           className="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-50"
         >
           {seeding ? '초기화 중…' : `기본 초기화 (${seedMedications.length}종)`}
@@ -457,11 +565,19 @@ export default function MedsTab() {
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          disabled={seeding || importing}
+          disabled={seeding || importing || applying}
           className="flex items-center gap-1 rounded-lg border border-emerald-300 px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
         >
           <FileUp className="h-3.5 w-3.5" />
           {importing ? '반영 중…' : '엑셀 반영'}
+        </button>
+        <button
+          type="button"
+          onClick={() => void handleApplyLiverClassEffects()}
+          disabled={seeding || importing || applying}
+          className="rounded-lg border border-amber-300 px-3 py-2 text-xs font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-50"
+        >
+          {applying ? '적용 중…' : 'AST·ALT·γ-GTP 계열값 일괄 적용'}
         </button>
         <input
           ref={fileRef}

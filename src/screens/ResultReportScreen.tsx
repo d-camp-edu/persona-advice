@@ -7,6 +7,7 @@ import GiftRoulette from '../components/gift/GiftRoulette';
 import MetricRow from '../components/result/MetricRow';
 import Badge from '../components/common/Badge';
 import { genderLabel, typeBadgeColor } from '../components/patient/patientStyle';
+import { resolveComorbWinRate } from '../lib/giftWin';
 import type { PatientMetricDef, Prescription } from '../types';
 
 export default function ResultReportScreen() {
@@ -21,6 +22,7 @@ export default function ResultReportScreen() {
   const patients = useDataStore((s) => s.patients);
   const patientMetricDefs = useDataStore((s) => s.patientMetricDefs);
   const gifts = useDataStore((s) => s.gifts);
+  const comorbidities = useDataStore((s) => s.settings.comorbidities);
   const institutionType = useSessionStore((s) => s.institutionType);
   const [showBrochure, setShowBrochure] = useState(false);
   const [showRoulette, setShowRoulette] = useState(false);
@@ -48,6 +50,8 @@ export default function ResultReportScreen() {
   }
 
   const { prescription } = lastResult;
+  // 공병별 총 당첨 확률 오버라이드(병원/의원). 설정된 공병이 없으면 null → 기존 선물별 확률.
+  const giftWinRate = resolveComorbWinRate(comorbidities, patient.comorbidities, institutionType);
   const hasSideEffects = prescription.sideEffects.length > 0;
   const comorbEntries = Object.entries(prescription.comorbFeedback);
   const hasDeductions = prescription.deductionReasons.length > 0;
@@ -252,6 +256,7 @@ export default function ResultReportScreen() {
         <GiftRoulette
           gifts={gifts}
           institutionType={institutionType}
+          winRateOverride={giftWinRate}
           onResult={(g) => {
             logGiftSpin(g);
             setRouletteUsed(true);

@@ -194,7 +194,7 @@ export default function TargetLoginPanel() {
             if (canSearch) void handleSearch();
           }
         }}
-        placeholder={hasProducts && !productId ? '먼저 품목을 선택하세요' : '예: 12345'}
+        placeholder={hasProducts && !productId ? '먼저 품목을 선택하세요' : '예: 100000'}
         disabled={hasProducts && !productId}
         className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-gray-50 disabled:text-gray-400"
         autoComplete="off"

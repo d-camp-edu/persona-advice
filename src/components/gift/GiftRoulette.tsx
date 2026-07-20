@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import type { Gift } from '../../types';
 import type { InstitutionType } from '../../store/useSessionStore';
+import { pickWinnerWithRate } from '../../lib/giftWin';
 
 const ITEM_H = 88;
 const VISIBLE = 3;
@@ -13,7 +14,16 @@ interface RouletteItem {
   key: string;
 }
 
-function pickWinner(gifts: Gift[], institutionType: InstitutionType): Gift | null {
+function pickWinner(
+  gifts: Gift[],
+  institutionType: InstitutionType,
+  winRateOverride: number | null,
+): Gift | null {
+  // 공병별 총 당첨 확률이 지정된 경우: 해당 확률로 당첨 여부 결정 후, 선물은 기존 확률 비율로 추첨.
+  if (winRateOverride !== null) {
+    return pickWinnerWithRate(gifts, institutionType, winRateOverride, Math.random(), Math.random());
+  }
+
   const probs = gifts.map((g) =>
     institutionType === '병원' ? g.probHospital : g.probClinic,
   );
@@ -30,8 +40,12 @@ function pickWinner(gifts: Gift[], institutionType: InstitutionType): Gift | nul
   return null;
 }
 
-function buildStrip(gifts: Gift[], institutionType: InstitutionType): { items: RouletteItem[]; winnerIdx: number } {
-  const winner = pickWinner(gifts, institutionType);
+function buildStrip(
+  gifts: Gift[],
+  institutionType: InstitutionType,
+  winRateOverride: number | null,
+): { items: RouletteItem[]; winnerIdx: number } {
+  const winner = pickWinner(gifts, institutionType, winRateOverride);
 
   // 스트립에 흘러가는 "장식용" 아이템: 실제 당첨 확률과 무관하게 보이는 비율은 선물:꽝 = 반반.
   // (당첨 결과는 winner = pickWinner 로 이미 확률대로 결정됨)
@@ -96,12 +110,20 @@ function ItemCell({ item, highlight }: { item: RouletteItem; highlight: boolean 
 interface Props {
   gifts: Gift[];
   institutionType: InstitutionType;
+  /** 공병별로 지정된 총 당첨 확률(%). null이면 선물별 확률 합(기존 동작). */
+  winRateOverride?: number | null;
   onClose: () => void;
   /** 룰렛 1회가 끝났을 때 결과(당첨 선물 또는 null=꽝)를 알려준다. 로깅용. */
   onResult?: (gift: Gift | null) => void;
 }
 
-export default function GiftRoulette({ gifts, institutionType, onClose, onResult }: Props) {
+export default function GiftRoulette({
+  gifts,
+  institutionType,
+  winRateOverride = null,
+  onClose,
+  onResult,
+}: Props) {
   const [phase, setPhase] = useState<'idle' | 'spinning' | 'done'>('idle');
   const [items, setItems] = useState<RouletteItem[]>([]);
   const [winnerIdx, setWinnerIdx] = useState(0);
@@ -111,7 +133,7 @@ export default function GiftRoulette({ gifts, institutionType, onClose, onResult
 
   const spin = () => {
     if (phase === 'spinning') return;
-    const { items: strip, winnerIdx: wIdx } = buildStrip(gifts, institutionType);
+    const { items: strip, winnerIdx: wIdx } = buildStrip(gifts, institutionType, winRateOverride);
     setItems(strip);
     setWinnerIdx(wIdx);
     setWinner(undefined);
@@ -249,7 +271,11 @@ export default function GiftRoulette({ gifts, institutionType, onClose, onResult
       )}
 
       <p className="mt-3 text-xs text-white/40">
-        {phase === 'done' ? '환자당 1회만 참여할 수 있습니다' : `${institutionType} 기준 확률 적용 중`}
+        {phase === 'done'
+          ? '환자당 1회만 참여할 수 있습니다'
+          : winRateOverride !== null
+            ? `${institutionType} · 공병 기준 당첨 확률 ${winRateOverride}% 적용 중`
+            : `${institutionType} 기준 확률 적용 중`}
       </p>
     </div>,
     document.body,

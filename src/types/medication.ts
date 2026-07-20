@@ -62,4 +62,11 @@ export interface Comorbidity {
   goodMsg: string;
   badMsg: string;
   color?: string;
+  /**
+   * 이 공병을 가진 환자의 리워드 룰렛 총 당첨 확률(%). 병원/의원 각각 지정.
+   * 미설정(undefined)이면 선물별 확률 합(기존 동작)을 그대로 사용한다.
+   * 환자가 값이 설정된 공병을 여러 개 가지면 그중 가장 높은 값을 사용한다.
+   */
+  giftWinHospital?: number;
+  giftWinClinic?: number;
 }

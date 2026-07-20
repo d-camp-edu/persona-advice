@@ -75,6 +75,14 @@ export default function SettingsTab() {
     set('comorbidities', next);
   };
 
+  // 리워드 당첨 확률(병원/의원): 빈칸이면 undefined(미설정 → 기존 선물별 확률 사용).
+  const updateComorbWin = (idx: number, key: 'giftWinHospital' | 'giftWinClinic', value: string) => {
+    const next = [...draft.comorbidities];
+    const num = value === '' ? undefined : Math.max(0, Math.min(100, +value));
+    next[idx] = { ...next[idx], [key]: num };
+    set('comorbidities', next);
+  };
+
   const addComorb = () => {
     set('comorbidities', [
       ...draft.comorbidities,
@@ -447,6 +455,38 @@ export default function SettingsTab() {
                 <input type="color" value={c.color ?? '#6366f1'} onChange={(e) => updateComorb(i, 'color', e.target.value)} className="h-8 w-10 cursor-pointer rounded border" />
                 <input className={`${inpSm} flex-1`} value={c.color ?? ''} onChange={(e) => updateComorb(i, 'color', e.target.value)} placeholder="#6366f1" />
               </div>
+            </Field>
+            <Field label="리워드 당첨 확률 (%)">
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <span className="mb-0.5 block text-[11px] text-gray-400">병원</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    className={inpSm}
+                    value={c.giftWinHospital ?? ''}
+                    onChange={(e) => updateComorbWin(i, 'giftWinHospital', e.target.value)}
+                    placeholder="미설정"
+                  />
+                </div>
+                <div className="flex-1">
+                  <span className="mb-0.5 block text-[11px] text-gray-400">의원</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    className={inpSm}
+                    value={c.giftWinClinic ?? ''}
+                    onChange={(e) => updateComorbWin(i, 'giftWinClinic', e.target.value)}
+                    placeholder="미설정"
+                  />
+                </div>
+              </div>
+              <p className="mt-1 text-[11px] leading-snug text-gray-400">
+                이 공병을 가진 환자의 룰렛 총 당첨 확률입니다. 비워두면 선물별 확률 합(기존)을 사용합니다.
+                환자가 값이 설정된 공병을 여러 개 가지면 그중 가장 높은 값이 적용됩니다.
+              </p>
             </Field>
           </div>
         ))}
