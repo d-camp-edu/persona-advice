@@ -270,13 +270,9 @@ export default function GiftRoulette({
         </button>
       )}
 
-      <p className="mt-3 text-xs text-white/40">
-        {phase === 'done'
-          ? '환자당 1회만 참여할 수 있습니다'
-          : winRateOverride !== null
-            ? `${institutionType} · 공병 기준 당첨 확률 ${winRateOverride}% 적용 중`
-            : `${institutionType} 기준 확률 적용 중`}
-      </p>
+      {phase === 'done' && (
+        <p className="mt-3 text-xs text-white/40">환자당 1회만 참여할 수 있습니다</p>
+      )}
     </div>,
     document.body,
   );
