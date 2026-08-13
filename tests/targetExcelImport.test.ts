@@ -97,6 +97,61 @@ describe('targetsFromRows', () => {
     expect(withDup.targets).toHaveLength(3);
   });
 
+  it('거래처 칸이 세로 병합돼 비어 있어도 위 행 값을 이어받아 Dr.별로 다 읽는다', () => {
+    // 실제 병원 배포 엑셀: 한 병원에 Dr.가 여러 명이면 거래처코드/거래처명/사업부/팀을 세로 병합.
+    const merged: string[][] = [
+      ['거래처코드', '거래처명', 'Dr.명', '사업부명', '팀명', '담당자사번', '담당자명'],
+      ['H001', 'A거래처', '1닥터', '병원사업부', 'A팀', '20001', '홍길동'],
+      ['', '', '2닥터', '', '', '20001', '홍길동'],
+      ['H002', 'B거래처', '3닥터', '병원사업부', 'A팀', '20001', '홍길동'],
+    ];
+    const { targets } = targetsFromRows(merged, 'camp2');
+    expect(targets).toHaveLength(3);
+    expect(targets.map((t) => `${t.name}-${t.drName}`)).toEqual([
+      'A거래처-1닥터',
+      'A거래처-2닥터',
+      'B거래처-3닥터',
+    ]);
+    // 병합으로 비었던 칸도 이어받는다
+    expect(targets[1]).toMatchObject({ code: 'H001', division: '병원사업부', team: 'A팀' });
+    expect(new Set(targets.map((t) => t.id)).size).toBe(3);
+  });
+
+  it('Dr. 열 헤더 표기가 달라도(의사명 등) 의사별로 분리된다', () => {
+    const rows: string[][] = [
+      ['거래처코드', '거래처명', '의사명', '사업부명', '팀명', '담당자사번'],
+      ['H001', 'A거래처', '1닥터', '병원사업부', 'A팀', '20001'],
+      ['H001', 'A거래처', '2닥터', '병원사업부', 'A팀', '20001'],
+    ];
+    const { format, targets } = targetsFromRows(rows, 'camp2');
+    expect(format).toBe('병원');
+    expect(targets).toHaveLength(2);
+    expect(targets.map((t) => t.drName)).toEqual(['1닥터', '2닥터']);
+  });
+
+  it('id 는 같지만 내용이 다른 행은 접미사로 분리돼 사라지지 않는다', () => {
+    // 같은 거래처·사번인데 팀명이 다른 행 → 예전엔 뒤 행이 조용히 사라졌다.
+    const rows: string[][] = [
+      ['거래처코드', '거래처명', '사업부명', '팀명', '담당자사번'],
+      ['C001', '행복의원', '서울사업부', '1팀', '10001'],
+      ['C001', '행복의원', '서울사업부', '2팀', '10001'],
+    ];
+    const { targets } = targetsFromRows(rows, 'camp1');
+    expect(targets).toHaveLength(2);
+    expect(new Set(targets.map((t) => t.id)).size).toBe(2);
+  });
+
+  it('사번/거래처가 없어 건너뛴 행 수를 알려준다', () => {
+    const rows: string[][] = [
+      ['거래처코드', '거래처명', '사업부명', '팀명', '담당자사번'],
+      ['C001', '행복의원', '서울사업부', '1팀', '10001'],
+      ['C002', '건강의원', '서울사업부', '1팀', ''], // 사번 없음
+    ];
+    const { targets, skippedRows } = targetsFromRows(rows, 'camp1');
+    expect(targets).toHaveLength(1);
+    expect(skippedRows).toBe(1);
+  });
+
   it('사업부명에 병원/의원이 들어있으면 그것으로 기관유형을 분류한다', () => {
     // 파일 포맷은 Dr.명이 없어 의원이지만, 사업부명에 '병원'이 있으면 병원으로.
     const rows: string[][] = [

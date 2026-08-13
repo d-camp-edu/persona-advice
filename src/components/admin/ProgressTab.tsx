@@ -180,10 +180,15 @@ export default function ProgressTab() {
     }
     setImporting(true);
     try {
-      const { format, targets } = await parseTargetsXlsx(file, uploadCampaignId);
+      const { format, targets, skippedRows } = await parseTargetsXlsx(file, uploadCampaignId);
       if (replaceExisting) await deleteTargetsByCampaign(uploadCampaignId);
       await uploadTargets(targets);
-      showFlash(`${format} 타겟처 ${targets.length}건 업로드됨`);
+      const drCount = targets.filter((t) => t.drName).length;
+      showFlash(
+        `${format} 타겟처 ${targets.length}건 업로드됨` +
+          (drCount > 0 ? ` (Dr.명 ${drCount}건)` : '') +
+          (skippedRows > 0 ? ` · 사번/거래처 없는 행 ${skippedRows}건 건너뜀` : ''),
+      );
       void loadDashboard();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);

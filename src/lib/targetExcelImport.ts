@@ -2,6 +2,8 @@
 //   의원: 거래처코드 · 거래처명 · 사업부명 · 팀명 · 담당자사번 · 담당자명
 //   병원: 거래처코드 · 거래처명 · Dr.명 · 사업부명 · 팀명 · 담당자사번
 // 컬럼 순서가 달라도 헤더 이름으로 매핑하므로 안전하다.
+// 한 병원에 Dr.가 여러 명이면 의사별로 별도 타겟이 된다(id 에 Dr.명 포함).
+// 거래처/사업부/팀 칸이 세로 병합된 파일도 위 행 값을 이어받아 2번째 Dr.부터 누락되지 않는다.
 
 import { readXlsxRows } from './xlsxReader';
 import type { Target, TargetInstitution } from '../types';
@@ -9,6 +11,8 @@ import type { Target, TargetInstitution } from '../types';
 export interface ParsedTargets {
   format: TargetInstitution;
   targets: Target[];
+  /** 거래처/사번이 비어 건너뛴 데이터 행 수 (조용한 누락을 화면에 알리기 위함) */
+  skippedRows: number;
 }
 
 /** Firestore 문서 id 로 안전하게: '/'·공백·특수문자를 '_' 로 치환 */
@@ -61,7 +65,20 @@ export function targetsFromRows(rows: string[][], campaignId: string): ParsedTar
   const teamCol = findCol(headers, ['팀']);
   const empNoCol = findCol(headers, ['담당자사번', '사번']);
   const empNameCol = findCol(headers, ['담당자명']);
-  const drCol = findCol(headers, ['dr명', 'dr', '닥터', '원장', '진료의', '처방의']);
+  // Dr. 열 헤더는 파일마다 표기가 제각각이다. 여기서 못 잡으면 모든 행의 drName 이 ''이 되어
+  // 같은 거래처의 의사들이 하나로 합쳐지므로(중복 제거) 후보를 넉넉히 둔다.
+  const drCol = findCol(headers, [
+    'dr명',
+    'dr',
+    'doctor',
+    '닥터',
+    '원장',
+    '진료의',
+    '처방의',
+    '의사',
+    '전문의',
+    '교수',
+  ]);
 
   if (codeCol < 0 && nameCol < 0) {
     throw new Error('‘거래처코드/거래처명’ 헤더를 찾지 못했습니다.');
@@ -83,24 +100,58 @@ export function targetsFromRows(rows: string[][], campaignId: string): ParsedTar
   };
 
   const targets: Target[] = [];
-  const seen = new Set<string>();
+  const seenRow = new Set<string>(); // 완전히 동일한 행 → 진짜 중복
+  const usedIds = new Set<string>(); // id 충돌 시 접미사로 분리
+  let skippedRows = 0;
+
+  // 병합 셀 대비: 한 병원에 Dr.가 여러 명이면 거래처코드/거래처명/사업부/팀 칸을 세로 병합해두는
+  // 파일이 흔하다. 병합 셀은 첫 행에만 값이 있으므로 이어받지 않으면 2번째 Dr.부터 통째로 누락된다.
+  // (담당자사번은 배정 주체라 이어받지 않는다 — 비면 그 행은 건너뛰고 skippedRows 로 알린다.)
+  const carryCols = [codeCol, nameCol, divCol, teamCol, empNameCol].filter((c) => c >= 0);
+  const carry: Record<number, string> = {};
+
   for (let r = headerIdx + 1; r < rows.length; r++) {
     const row = rows[r];
     if (!row) continue;
-    const code = cell(row, codeCol);
-    const name = cell(row, nameCol);
+
+    // 매핑된 컬럼이 전부 빈 행은 데이터 행이 아니다(병합 이어받기도 하지 않는다).
+    const mapped = [...carryCols, empNoCol, drCol].filter((c) => c >= 0);
+    if (!mapped.some((c) => cell(row, c) !== '')) continue;
+
+    for (const c of carryCols) {
+      const v = cell(row, c);
+      if (v) carry[c] = v;
+    }
+    const filled = (col: number) => (col >= 0 ? cell(row, col) || carry[col] || '' : '');
+
+    const code = filled(codeCol);
+    const name = filled(nameCol);
     const empNo = cell(row, empNoCol);
     // 최소한 거래처(코드 또는 명)와 사번이 있어야 유효 행
-    if ((!code && !name) || !empNo) continue;
+    if ((!code && !name) || !empNo) {
+      skippedRows++;
+      continue;
+    }
 
     const drName = cell(row, drCol);
+    const division = filled(divCol);
+    const team = filled(teamCol);
+    const empName = filled(empNameCol);
+
+    // 내용이 완전히 같은 행만 진짜 중복으로 보고 제거한다.
+    const sig = [code, name, drName, division, team, empNo, empName].join('');
+    if (seenRow.has(sig)) continue;
+    seenRow.add(sig);
+
     // id/중복키에 Dr.명 포함 → 같은 병원(거래처+사번)에 의사가 여러 명이면 각각 별도 타겟이 된다.
     // 의원(drName='')은 키가 그대로라 동작 변화 없음.
-    const id = sanitizeId(`${campaignId}__${code || name}__${drName}__${empNo}`);
-    if (seen.has(id)) continue; // 동일 캠페인 내 (거래처, Dr.명, 사번) 중복 제거
-    seen.add(id);
+    const baseId = sanitizeId(`${campaignId}__${code || name}__${drName}__${empNo}`);
+    // 내용은 다른데 id 가 겹치면(Dr.명 열이 없거나 비어 구분이 안 되는 파일, 또는 120자 절단)
+    // 조용히 사라지지 않도록 접미사를 붙여 분리한다.
+    let id = baseId;
+    for (let n = 2; usedIds.has(id); n++) id = `${baseId}__${n}`;
+    usedIds.add(id);
 
-    const division = cell(row, divCol);
     targets.push({
       id,
       campaignId,
@@ -109,16 +160,16 @@ export function targetsFromRows(rows: string[][], campaignId: string): ParsedTar
       institutionType: institutionFor(division),
       drName,
       division,
-      team: cell(row, teamCol),
+      team,
       empNo,
-      empName: cell(row, empNameCol),
+      empName,
     });
   }
 
   if (targets.length === 0) {
     throw new Error('유효한 타겟처 데이터를 한 건도 읽지 못했습니다. 엑셀 형식을 확인하세요.');
   }
-  return { format, targets };
+  return { format, targets, skippedRows };
 }
 
 export async function parseTargetsXlsx(
