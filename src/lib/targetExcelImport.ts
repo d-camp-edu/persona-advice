@@ -93,8 +93,11 @@ export function targetsFromRows(rows: string[][], campaignId: string): ParsedTar
     // 최소한 거래처(코드 또는 명)와 사번이 있어야 유효 행
     if ((!code && !name) || !empNo) continue;
 
-    const id = sanitizeId(`${campaignId}__${code || name}__${empNo}`);
-    if (seen.has(id)) continue; // 동일 캠페인 내 (거래처, 사번) 중복 제거
+    const drName = cell(row, drCol);
+    // id/중복키에 Dr.명 포함 → 같은 병원(거래처+사번)에 의사가 여러 명이면 각각 별도 타겟이 된다.
+    // 의원(drName='')은 키가 그대로라 동작 변화 없음.
+    const id = sanitizeId(`${campaignId}__${code || name}__${drName}__${empNo}`);
+    if (seen.has(id)) continue; // 동일 캠페인 내 (거래처, Dr.명, 사번) 중복 제거
     seen.add(id);
 
     const division = cell(row, divCol);
@@ -104,7 +107,7 @@ export function targetsFromRows(rows: string[][], campaignId: string): ParsedTar
       code,
       name,
       institutionType: institutionFor(division),
-      drName: cell(row, drCol),
+      drName,
       division,
       team: cell(row, teamCol),
       empNo,

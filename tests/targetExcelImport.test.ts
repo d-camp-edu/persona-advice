@@ -80,6 +80,23 @@ describe('targetsFromRows', () => {
     expect(other.targets[0].id).not.toBe(targets[0].id);
   });
 
+  it('같은 병원(거래처+사번)에 Dr.명이 다르면 의사별로 각각 별도 타겟이 된다', () => {
+    const multiDr: string[][] = [
+      ['거래처코드', '거래처명', 'Dr.명', '사업부명', '팀명', '담당자사번', '담당자명'],
+      ['H001', '서울대병원', '이순신', '병원사업부', 'A팀', '20001', '홍길동'],
+      ['H001', '서울대병원', '강감찬', '병원사업부', 'A팀', '20001', '홍길동'],
+      ['H001', '서울대병원', '을지문덕', '병원사업부', 'A팀', '20001', '홍길동'],
+    ];
+    const { targets } = targetsFromRows(multiDr, 'camp2');
+    expect(targets).toHaveLength(3);
+    expect(targets.map((t) => t.drName).sort()).toEqual(['강감찬', '을지문덕', '이순신']);
+    // 의사별로 id 가 서로 달라야 한다
+    expect(new Set(targets.map((t) => t.id)).size).toBe(3);
+    // 하지만 완전히 동일한 (거래처, Dr, 사번) 행은 여전히 하나로 합쳐진다
+    const withDup = targetsFromRows([...multiDr, multiDr[1]], 'camp2');
+    expect(withDup.targets).toHaveLength(3);
+  });
+
   it('사업부명에 병원/의원이 들어있으면 그것으로 기관유형을 분류한다', () => {
     // 파일 포맷은 Dr.명이 없어 의원이지만, 사업부명에 '병원'이 있으면 병원으로.
     const rows: string[][] = [
