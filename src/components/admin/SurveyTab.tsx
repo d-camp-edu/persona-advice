@@ -110,6 +110,16 @@ function QuestionEditor({
       <label className="mb-1 flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
         <input
           type="checkbox"
+          checked={!!draft.required}
+          onChange={(e) => set('required', e.target.checked)}
+          className="h-3.5 w-3.5"
+        />
+        필수 응답 (선택·복수형 질문에서 응답해야 다음으로 진행 · 주관식은 제외)
+      </label>
+
+      <label className="mb-1 flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
+        <input
+          type="checkbox"
           checked={!!draft.surveyOnly}
           onChange={(e) => set('surveyOnly', e.target.checked)}
           className="h-3.5 w-3.5"
@@ -295,6 +305,11 @@ export default function SurveyTab() {
                 <span className="flex-shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
                   {typeLabel[q.type]}
                 </span>
+                {q.required && q.type !== 'text' && (
+                  <span className="flex-shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-500">
+                    필수
+                  </span>
+                )}
                 {q.surveyOnly && (
                   <span className="flex-shrink-0 rounded-full bg-indigo-50 px-2 py-0.5 text-xs text-indigo-600">
                     서베이 전용

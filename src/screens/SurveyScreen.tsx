@@ -46,8 +46,15 @@ export default function SurveyScreen() {
     setAnswer(q, next);
   };
 
-  // 필수 질문 개념을 제거 — 모든 질문은 선택 응답이며 언제든 다음으로 진행 가능.
-  const canProceed = () => true;
+  // 현재 질문의 required 를 존중한다. 주관식(text)은 관례상 선택 응답이라 필수여도 통과.
+  const canProceed = () => {
+    if (!current) return true;
+    if (!current.required || current.type === 'text') return true;
+    const a = getAnswer(current);
+    if (current.type === 'multi') return (a as string[]).length > 0;
+    return String(a).trim().length > 0;
+  };
+  const blockedByRequired = !!current && !canProceed();
 
   const handleNext = async () => {
     if (!canProceed()) return;
@@ -110,6 +117,9 @@ export default function SurveyScreen() {
             </p>
             <p className="mb-5 text-base font-semibold text-gray-900 leading-snug">
               {current.text}
+              {current.required && current.type !== 'text' && (
+                <span className="ml-1 text-red-500" aria-label="필수">*</span>
+              )}
             </p>
 
             {/* Single choice */}
@@ -191,6 +201,13 @@ export default function SurveyScreen() {
           </div>
         )}
       </div>
+
+      {/* 필수 미응답 안내 */}
+      {blockedByRequired && (
+        <p className="px-6 -mb-2 text-center text-xs font-medium text-white/90">
+          필수 문항입니다. 응답을 선택해 주세요.
+        </p>
+      )}
 
       {/* Navigation buttons */}
       <div className="flex gap-3 px-6 pb-8 pt-4 lg:mx-auto lg:w-full lg:max-w-3xl">
