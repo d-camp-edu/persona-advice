@@ -220,8 +220,9 @@ export function buildUnifiedSheet(input: UnifiedInput): Sheet {
       const v = sv[i];
       const gift = gl[i];
 
-      const drugs = Array.from({ length: 5 }, (_, slot) => {
-        const found = p?.prescribedDrugs.find((d) => d.slot === slot);
+      // prescribedDrugs.slot 은 1-based(1~5, prescription.ts 참조). 급여 1~3 / 본인부담 4~5.
+      const drugs = Array.from({ length: 5 }, (_, i) => {
+        const found = p?.prescribedDrugs.find((d) => d.slot === i + 1);
         return found ? found.name : '';
       });
 

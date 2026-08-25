@@ -159,9 +159,10 @@ describe('buildUnifiedSheet', () => {
         session({
           prescriptions: [
             rx({
+              // slot 은 1-based (급여 1~3 / 본인부담 4~5)
               prescribedDrugs: [
-                { slot: 0, id: 'm1', name: '자누비아', classes: [], isSelfPay: false },
-                { slot: 1, id: 'm2', name: '메트포르민', classes: [], isSelfPay: false },
+                { slot: 1, id: 'm1', name: '자누비아', classes: [], isSelfPay: false },
+                { slot: 2, id: 'm2', name: '메트포르민', classes: [], isSelfPay: false },
               ],
             }),
           ],
@@ -191,6 +192,33 @@ describe('buildUnifiedSheet', () => {
     expect(cell(sheet, 0, '캠페인')).toBe('8월 자디앙 디테일');
     expect(cell(sheet, 0, '거래처코드')).toBe('A1023');
     expect(cell(sheet, 0, '타겟완료일시')).toBe('2026-08-25 10:06');
+  });
+
+  it('약제1~5 컬럼이 급여1~3·본인부담1~2 슬롯과 1:1로 맞는다', () => {
+    // prescribedDrugs.slot 은 1-based. 0-based 로 조회하면 약제1 이 비고 본인부담2 가 누락된다.
+    const sheet = buildUnifiedSheet({
+      ...empty,
+      sessions: [
+        session({
+          prescriptions: [
+            rx({
+              prescribedDrugs: [
+                { slot: 1, id: 'a', name: '급여1약', classes: [], isSelfPay: false },
+                { slot: 2, id: 'b', name: '급여2약', classes: [], isSelfPay: false },
+                { slot: 3, id: 'c', name: '급여3약', classes: [], isSelfPay: false },
+                { slot: 4, id: 'd', name: '본인부담1약', classes: [], isSelfPay: true },
+                { slot: 5, id: 'e', name: '본인부담2약', classes: [], isSelfPay: true },
+              ],
+            }),
+          ],
+        }),
+      ],
+    });
+    expect(cell(sheet, 0, '약제1')).toBe('급여1약');
+    expect(cell(sheet, 0, '약제2')).toBe('급여2약');
+    expect(cell(sheet, 0, '약제3')).toBe('급여3약');
+    expect(cell(sheet, 0, '약제4')).toBe('본인부담1약');
+    expect(cell(sheet, 0, '약제5')).toBe('본인부담2약');
   });
 
   it('서베이만 있으면 처방 칸은 공란', () => {

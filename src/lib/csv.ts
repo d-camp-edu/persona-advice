@@ -22,8 +22,9 @@ export function sessionsToCSV(sessions: RxSession[]): string {
 
   const rows = sessions.flatMap((s) =>
     s.prescriptions.map((p) => {
+      // prescribedDrugs.slot 은 1-based(1~5, prescription.ts 참조)다.
       const drugs = Array.from({ length: 5 }, (_, i) => {
-        const found = p.prescribedDrugs.find((d) => d.slot === i);
+        const found = p.prescribedDrugs.find((d) => d.slot === i + 1);
         return found ? found.name : '';
       });
       return [
