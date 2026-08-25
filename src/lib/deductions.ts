@@ -24,6 +24,12 @@ const BUILT_IN_COMBO_RULES: ComboRule[] = [
  *   `allowed`에 동일 클래스 집합이 등록돼 있으면 해당 규칙은 면제.
  * - E11 상병이 들어있으면 4가지 sub-rule 추가 검사.
  *
+ * **허용 조합(`allowed`)은 삭감 규칙보다 상위다.** 처방된 계열 집합이 허용 조합으로
+ * 등록돼 있으면 '계열 조합'을 근거로 하는 삭감(동일 계열 중복 · 급여 N제 초과 ·
+ * 병용 금지 · E11의 1차 메트포르민 미사용/병용 요법 1차약제 미포함)은 전부 면제된다.
+ * 다만 HbA1c 수치를 근거로 하는 삭감(초기 6.5% 미만 · 2제/추가 병용 기준 미달)은
+ * 조합과 무관하므로 면제되지 않는다.
+ *
  * `priorClassCount`는 이 처방 직전 환자가 이미 복용 중이던 보험 약제의 계열 수다.
  * - 0보다 크면 "이미 처방받던 환자"로 보고 2제 병용 기준을 초진 기준(dualTherapyThreshold)이
  *   아닌 추가 병용 기준(addOnTherapyThreshold)으로 적용한다.
@@ -55,14 +61,24 @@ export function checkDeductions(
 
   const reasons: string[] = [];
 
+  // ── 허용 조합(예외)은 삭감 규칙보다 상위다 ────────────────────────────
+  // 처방된 계열 집합 전체가 허용 조합으로 등록돼 있으면, '계열 조합'을 근거로 하는
+  // 삭감은 모두 면제한다(동일 계열 중복 · 급여 N제 초과 · 병용 금지 · E11 조합 규칙).
+  // HbA1c 수치를 근거로 하는 삭감은 조합과 무관하므로 그대로 유지한다.
+  //
+  // 판정은 병용 금지 규칙과 같은 isExempted() 규칙을 쓰되 '규칙 계열' 자리에 처방 계열
+  // 전체를 넣는다 → 허용 조합과 처방 계열 집합이 정확히 일치할 때만 면제.
+  // (넉넉하게 등록한 조합 하나가 급여 한도까지 통째로 풀어버리는 걸 막는다.)
+  const regimenExempt = isExempted([...distinctClasses], distinctClasses, allowed);
+
   // 동일 계열 중복 처방 (단일제 + 같은 계열 복합제, 복합제 간 계열 겹침 등)
-  if ([...classCounts.values()].some((n) => n >= 2)) {
+  if (!regimenExempt && [...classCounts.values()].some((n) => n >= 2)) {
     reasons.push('동일 계열 중복 처방 삭감!');
   }
 
   // 급여 병용 계열 수 초과 (기본 3제 초과 = 4제 이상)
   const maxClasses = settings.maxInsuranceClasses ?? 3;
-  if (distinctClasses.size > maxClasses) {
+  if (!regimenExempt && distinctClasses.size > maxClasses) {
     reasons.push(`급여 ${maxClasses}제 초과 병용 삭감!`);
   }
 
@@ -92,9 +108,13 @@ export function checkDeductions(
     // 직전보다 계열 수가 늘어나는 신규·증량 처방인지. 유지/감량이면 HbA1c 기준 삭감 미적용.
     const escalating = classCount > priorClassCount;
 
+    // '1차 메트포르민 미사용'·'병용 요법 1차약제 미포함'은 계열 조합을 근거로 하므로
+    // 허용 조합에 걸리면 면제한다. HbA1c 기준 두 규칙은 조합과 무관하니 그대로 둔다.
+    // (두 조합 규칙은 classCount 조건이 서로 배타적이라 건너뛰어도 아래 가지가
+    //  잘못 열리지 않는다: 2번은 classCount===1, 3·4번은 classCount>=2)
     if (escalating && currentHba1c < 6.5) {
       reasons.push('당뇨(E11) 초기 HbA1c 6.5% 미만 처방 삭감!');
-    } else if (classCount === 1 && !includesMet) {
+    } else if (classCount === 1 && !includesMet && !regimenExempt) {
       reasons.push('1차 메트포르민 미사용 삭감!');
     } else if (escalating && classCount >= 2 && currentHba1c < dualThreshold) {
       reasons.push(
@@ -102,7 +122,7 @@ export function checkDeductions(
           ? '추가 병용 기준 미달 삭감!'
           : '초기 급여 2제 병용 기준 미달 삭감!',
       );
-    } else if (classCount >= 2 && currentHba1c >= dualThreshold && !includesMet) {
+    } else if (classCount >= 2 && currentHba1c >= dualThreshold && !includesMet && !regimenExempt) {
       reasons.push('병용 요법 1차약제 미포함 삭감!');
     }
   }

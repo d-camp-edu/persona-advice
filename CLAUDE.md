@@ -33,7 +33,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - `lib/patientState.ts` — `getPatientCurrentState()` (기획.md §5-1 literal 해석, A안): 같은 시연 세션 내 이전 처방이 있으면 마지막 결과를 누적해서 현재 상태로 사용. 없을 때는 **type='초진'에 한해서만** `prevDrugs` 효과를 `initialHba1c`에서 차감하고(현 seed 상 초진은 prevDrugs가 비어 있어 사실상 no-op), 재진/리핏은 `initialHba1c`를 그대로 현재 HbA1c로 사용한다. 기획.md §3-4 결과 리포트 예시(p2+m_30 → 5.6)는 이 산식과 정확히 일치하지 않는 illustrative 수치다.
 - `lib/prescription.ts` — `calculatePrescription()` (기획.md §5-2~5-4): 약제 효과 합산, 부작용 확률 적용, **병포장 보너스**(전 약제 `pkg='bottle'`이면 HbA1c +0.3 추가 강하), **순응도 '나쁨' + 비병포장 + 약물 처방 → HbA1c가 오히려 +0.4 상승**, 결과 메시지 조합. **`rng?: () => number` 파라미터를 받아 외부 주입형으로 만들어 테스트에서 결정성 확보.**
-- `lib/deductions.ts` — `checkDeductions()` (기획.md §6): E11 상병 4규칙 + DPP-4i/GLP-1 RA 병용 금지. `isInsuranceException=true` 약제와 `isNotDrug=true` 약제는 검사에서 제외.
+- `lib/deductions.ts` — `checkDeductions()` (기획.md §6): E11 상병 4규칙 + DPP-4i/GLP-1 RA 병용 금지. `isInsuranceException=true` 약제와 `isNotDrug=true` 약제는 검사에서 제외. **허용 조합(`allowedCombinations`)은 삭감 규칙보다 상위** — 아래 항목 참조.
 - `lib/nonDmCoverage.ts` — `checkNonDmCoverage()` (기획.md §7): `initialHba1c < 6.5`인 비당뇨 환자에게 SGLT-2i 처방 시 HFrEF/HFpEF/CKD 특례 충족 여부.
 - `lib/messages.ts` — 5-4 메시지 분기 (비약물 전용 / 부작용 발생 / 정상 / 순응도 나쁨).
 
@@ -95,6 +95,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **행 기준 = 세션 × 환자.** 같은 환자에게 처방을 2번 하면 회차별 2행. 서베이/룰렛은 같은 (세션, 환자)의 같은 순번 행에 붙고 남으면 아래 행으로 흐른다. **서베이만 했으면 처방 칸이 공란인 1행.**
 - 사업부·팀·품목·캠페인·거래처코드는 매칭된 `TargetCompletion`에서 오며 그 세션의 모든 행에 반복된다. **'타겟완료일시'는 완료 1건당 딱 한 행에만** 찍는다(중복 합산 방지).
 - 완료 ↔ 세션 매칭은 `TargetCompletion.sessionDocId`(optional, 신규 기록부터). **이 필드가 없는 기존 기록은 `사번+거래처명+의사명`으로 폴백 매칭**한다 — 옛 데이터도 그대로 나온다.
+
+### 허용 조합은 삭감 규칙보다 상위 (`lib/deductions.ts`)
+
+Admin '허용 조합' 탭(`allowedCombinations`)이 삭감의 최상위 예외다. 처방된 계열 집합이 허용 조합으로 등록돼 있으면 **계열 조합을 근거로 하는 삭감은 전부 면제**된다.
+
+| 구분 | 규칙 | 허용 조합으로 면제? |
+|---|---|---|
+| 조합 기준 | 관리자 병용 금지 규칙, 내장 DPP-4i+GLP-1, 동일 계열 중복, 급여 N제 초과, 1차 메트포르민 미사용, 병용 요법 1차약제 미포함 | ✅ 면제 |
+| HbA1c 기준 | 초기 HbA1c 6.5% 미만, 2제·추가 병용 기준 미달 | ❌ 유지 (조합과 무관) |
+
+- 판정은 `isExempted()` 하나로 통일한다. 병용 금지 규칙은 `규칙 계열 ⊆ 허용조합 A ⊆ 처방 계열`, 조합 기준 나머지(`regimenExempt`)는 '규칙 계열' 자리에 **처방 계열 전체**를 넣어 판정한다 → **허용 조합과 처방 계열 집합이 정확히 일치할 때만** 면제. 넉넉히 등록한 조합 하나가 급여 한도까지 통째로 푸는 걸 막는다.
+- ⚠️ **가장 흔한 함정**: 허용 조합에 처방보다 계열이 하나라도 더 있으면 면제가 안 된다. 예로 `[메폴민+SGLT2i+DPP4i+TZD]` 하나로 묶어 등록하면 어떤 처방에도 안 걸린다 — 실제 처방 단위로 따로 등록해야 한다. AllowedTab 화면에 이 내용을 명시해 두었다.
+- E11 else-if 체인에서 조합 규칙(2·4번 가지)만 건너뛰어도 안전하다: 2번은 `classCount===1`, 3·4번은 `classCount>=2`로 조건이 배타적이라 아래 가지가 잘못 열리지 않는다.
+- 삭감 메시지는 관리자가 자유 입력하므로 **내장 메시지와 같은 텍스트를 등록할 수 있다.** 화면 문구만 보고 내장/관리자 규칙을 구분하지 말 것 — 실제로 이것 때문에 원인 추적이 크게 헤맨 적이 있다.
 
 ### 선물 룰렛 확률 (`lib/giftWin.ts`)
 

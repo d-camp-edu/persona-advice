@@ -120,10 +120,22 @@ export default function AllowedTab() {
 
   return (
     <div>
-      <p className="mb-3 text-xs text-gray-500">
-        삭감 규칙 예외 조합입니다. 여기에 등록된 <strong className="text-gray-700">계열 조합 전체가
-        처방에 포함</strong>되어 있으면, 그 안에 들어 있는 병용 금지 규칙(부분 집합 포함)은 삭감 검사에서 면제됩니다.
-      </p>
+      <div className="mb-3 rounded-lg border border-indigo-100 bg-indigo-50/50 px-3 py-2.5 text-xs leading-relaxed text-gray-600">
+        <p className="mb-1 font-semibold text-gray-700">허용 조합은 삭감 규칙보다 상위입니다.</p>
+        <p className="mb-1.5">
+          여기에 등록된 <strong className="text-gray-800">계열 조합 전체가 처방에 포함</strong>되어야
+          면제됩니다. 처방에 없는 계열이 하나라도 섞여 있으면 그 조합은 적용되지 않으니, 실제 처방
+          단위로 정확히 등록하세요.
+        </p>
+        <p className="mb-0.5">
+          <span className="font-medium text-emerald-700">면제됨</span> — 계열 조합을 근거로 하는 삭감:
+          병용 금지 규칙, 동일 계열 중복, 급여 N제 초과, 1차 메트포르민 미사용, 병용 요법 1차약제 미포함
+        </p>
+        <p>
+          <span className="font-medium text-amber-700">유지됨</span> — HbA1c 수치를 근거로 하는 삭감:
+          초기 HbA1c 6.5% 미만, 2제·추가 병용 기준 미달
+        </p>
+      </div>
       <button
         type="button"
         onClick={handleAdd}

@@ -265,3 +265,125 @@ describe('checkDeductions — 검사 제외 약제', () => {
     expect(res).toEqual([]);
   });
 });
+
+describe('checkDeductions — 허용 조합은 삭감 규칙보다 상위', () => {
+  const allow = (...classIds: string[]): AllowedCombination[] => [
+    { id: 'a1', name: '허용', classIds, note: '' },
+  ];
+  const metSglt2Tzd = byClasses('dc_met', 'dc_sglt2', 'dc_tzd');
+
+  const userRules: DeductionRule[] = [
+    {
+      id: 'r1',
+      name: 'SGLT2i+TZD 메폴민 미포함',
+      classIds: ['dc_sglt2', 'dc_tzd'],
+      message: 'SGLT2i+TZD 삭감!',
+      enabled: true,
+    },
+  ];
+
+  it('관리자 병용 금지 규칙 — 허용 조합이 있으면 면제 (기존 동작)', () => {
+    expect(
+      checkDeductions([metSglt2Tzd], ['E11'], 8.0, userRules, NO_ALLOW, settings, 0),
+    ).toContain('SGLT2i+TZD 삭감!');
+    expect(
+      checkDeductions(
+        [metSglt2Tzd],
+        ['E11'],
+        8.0,
+        userRules,
+        allow('dc_met', 'dc_sglt2', 'dc_tzd'),
+        settings,
+        0,
+      ),
+    ).toEqual([]);
+  });
+
+  it('동일 계열 중복 처방도 허용 조합이면 면제', () => {
+    const slots = [sglt2Single, sglt2Single];
+    expect(checkDeductions(slots, [], 8.0, NO_RULES, NO_ALLOW, settings, 0)).toContain(
+      '동일 계열 중복 처방 삭감!',
+    );
+    expect(checkDeductions(slots, [], 8.0, NO_RULES, allow('dc_sglt2'), settings, 0)).toEqual([]);
+  });
+
+  it('급여 N제 초과도 허용 조합이면 면제', () => {
+    const slots = [metSingle, sglt2Single, tzdSingle, dppSingle];
+    expect(checkDeductions(slots, [], 8.0, NO_RULES, NO_ALLOW, settings, 0)).toContain(
+      '급여 3제 초과 병용 삭감!',
+    );
+    expect(
+      checkDeductions(
+        slots,
+        [],
+        8.0,
+        NO_RULES,
+        allow('dc_met', 'dc_sglt2', 'dc_tzd', 'dc_dpp4'),
+        settings,
+        0,
+      ),
+    ).toEqual([]);
+  });
+
+  it('E11 1차 메트포르민 미사용도 허용 조합이면 면제', () => {
+    expect(checkDeductions([tzdSingle], ['E11'], 8.0, NO_RULES, NO_ALLOW, settings, 0)).toContain(
+      '1차 메트포르민 미사용 삭감!',
+    );
+    expect(
+      checkDeductions([tzdSingle], ['E11'], 8.0, NO_RULES, allow('dc_tzd'), settings, 0),
+    ).toEqual([]);
+  });
+
+  it('E11 병용 요법 1차약제 미포함도 허용 조합이면 면제', () => {
+    const slots = [sglt2Single, tzdSingle];
+    expect(checkDeductions(slots, ['E11'], 8.0, NO_RULES, NO_ALLOW, settings, 0)).toContain(
+      '병용 요법 1차약제 미포함 삭감!',
+    );
+    expect(
+      checkDeductions(slots, ['E11'], 8.0, NO_RULES, allow('dc_sglt2', 'dc_tzd'), settings, 0),
+    ).toEqual([]);
+  });
+
+  it('HbA1c 기준 삭감은 허용 조합이어도 유지된다', () => {
+    // 초기 HbA1c 6.5% 미만
+    expect(
+      checkDeductions(
+        [metSglt2Tzd],
+        ['E11'],
+        6.2,
+        userRules,
+        allow('dc_met', 'dc_sglt2', 'dc_tzd'),
+        settings,
+        0,
+      ),
+    ).toEqual(['당뇨(E11) 초기 HbA1c 6.5% 미만 처방 삭감!']);
+
+    // 초기 급여 2제 병용 기준 미달 (dualTherapyThreshold = 7.5)
+    expect(
+      checkDeductions(
+        [metSglt2Tzd],
+        ['E11'],
+        7.0,
+        userRules,
+        allow('dc_met', 'dc_sglt2', 'dc_tzd'),
+        settings,
+        0,
+      ),
+    ).toEqual(['초기 급여 2제 병용 기준 미달 삭감!']);
+  });
+
+  it('처방에 없는 계열이 섞인 허용 조합은 적용되지 않는다', () => {
+    // 허용 조합에 DPP-4i 가 더 붙어 있으면 처방(메폴민+SGLT2i+TZD)과 맞지 않아 면제 안 됨
+    expect(
+      checkDeductions(
+        [metSglt2Tzd],
+        ['E11'],
+        8.0,
+        userRules,
+        allow('dc_met', 'dc_sglt2', 'dc_tzd', 'dc_dpp4'),
+        settings,
+        0,
+      ),
+    ).toContain('SGLT2i+TZD 삭감!');
+  });
+});
