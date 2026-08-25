@@ -247,6 +247,7 @@ function buildMed(cells: string[], order: number): Medication {
   return {
     id: `m_${order}`,
     name,
+    ingredient: String(cells[4] ?? '').trim(), // 주성분 (복합제는 '/' 구분)
     categoryId: categoryFromRow(pkg, classes),
     pkg,
     classes,
@@ -279,6 +280,7 @@ function lifestyleMed(order: number): Medication {
   return {
     id: 'm_lifestyle',
     name: '생활습관 교정 (운동/식단)',
+    ingredient: '',
     categoryId: 'cat_lifestyle',
     pkg: 'ptp',
     classes: [],

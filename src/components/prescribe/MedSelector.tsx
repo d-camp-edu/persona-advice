@@ -1,9 +1,29 @@
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, ChevronLeft, Star, X } from 'lucide-react';
-import type { MedCategory, Medication } from '../../types';
+import type { DrugClass, MedCategory, Medication } from '../../types';
 
 const CAT_ALL = '__all__';
+
+/**
+ * 약제의 계열 기전 표기. 계열 순서(order)대로 정렬해 ' + '로 잇는다.
+ * 계열 문서를 못 찾으면(옛 데이터·삭제된 계열) id 를 그대로 노출해 데이터 이상을 눈에 보이게 한다.
+ */
+function classLabel(med: Medication, byId: Map<string, DrugClass>): string {
+  return [...med.classes]
+    .sort((a, b) => (byId.get(a)?.order ?? 999) - (byId.get(b)?.order ?? 999))
+    .map((id) => byId.get(id)?.name ?? id)
+    .join(' + ');
+}
+
+/** 주성분 표기. 엑셀 원문은 '/' 구분이라 복합제는 '가나다 + 라마바'로 보여준다. */
+function ingredientLabel(med: Medication): string {
+  return (med.ingredient ?? '')
+    .split('/')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .join(' + ');
+}
 
 interface MedSelectorProps {
   open: boolean;
@@ -11,6 +31,7 @@ interface MedSelectorProps {
   currentMedId: string | null;
   medications: Medication[];
   categories: MedCategory[];
+  drugClasses: DrugClass[];
   currentEgfr: number;
   onClose: () => void;
   onPick: (slotIndex: number, medId: string) => void;
@@ -23,6 +44,7 @@ export default function MedSelector({
   currentMedId,
   medications,
   categories,
+  drugClasses,
   currentEgfr,
   onClose,
   onPick,
@@ -48,6 +70,11 @@ export default function MedSelector({
   const catOrder = useMemo(
     () => new Map(categories.map((c) => [c.id, c.order])),
     [categories],
+  );
+
+  const classById = useMemo(
+    () => new Map(drugClasses.map((c) => [c.id, c])),
+    [drugClasses],
   );
 
   const filteredMeds = useMemo(() => {
@@ -166,6 +193,8 @@ export default function MedSelector({
                   const isCurrent = m.id === currentMedId;
                   const egfrWarn =
                     m.egfrLimit > 0 && currentEgfr > 0 && currentEgfr < m.egfrLimit;
+                  const classes = classLabel(m, classById);
+                  const ingredient = ingredientLabel(m);
                   return (
                     <li key={m.id}>
                       <button
@@ -177,19 +206,18 @@ export default function MedSelector({
                             : 'border-gray-200 bg-white hover:border-indigo-300 hover:bg-indigo-50'
                         }`}
                       >
-                        <span className="flex items-center justify-between gap-2">
-                          <span className="flex min-w-0 items-center gap-1">
-                            {m.isAsaProduct && (
-                              <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400" />
-                            )}
-                            <span className="truncate font-medium text-gray-900">{m.name}</span>
-                          </span>
-                          {m.effect > 0 && (
-                            <span className="shrink-0 text-xs text-gray-500">
-                              HbA1c −{m.effect.toFixed(1)}
-                            </span>
+                        <span className="flex min-w-0 items-center gap-1">
+                          {m.isAsaProduct && (
+                            <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400" />
                           )}
+                          <span className="truncate font-medium text-gray-900">{m.name}</span>
                         </span>
+                        {classes && (
+                          <span className="text-[11px] font-medium text-indigo-600">{classes}</span>
+                        )}
+                        {ingredient && (
+                          <span className="text-[11px] leading-snug text-gray-500">{ingredient}</span>
+                        )}
                         {egfrWarn && (
                           <span className="flex items-center gap-1 text-[11px] text-amber-700">
                             <AlertTriangle size={12} />

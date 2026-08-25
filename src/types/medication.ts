@@ -3,6 +3,12 @@ export type Pkg = 'ptp' | 'bottle' | 'injection';
 export interface Medication {
   id: string;
   name: string;
+  /**
+   * 주성분. 엑셀 '주성분' 열(4열) 원문으로, 복합제는 '/'로 구분된다.
+   * 예: '로베글리타존/엠파글리플로진/메트포르민(서방)'
+   * 처방 화면에서 ' + '로 바꿔 표시한다. 이 필드가 추가되기 전 문서엔 없으므로 optional.
+   */
+  ingredient?: string;
   categoryId: string;
   pkg: Pkg;
   classes: string[];

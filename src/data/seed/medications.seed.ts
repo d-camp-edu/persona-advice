@@ -5,7 +5,7 @@ import type { Medication } from '../../types';
 
 export const seedMedications: Medication[] = [
   {
-    id: "m_1", name: "자누비아정 25mg", categoryId: "cat_single", pkg: "ptp",
+    id: "m_1", name: "자누비아정 25mg", ingredient: "시타글립틴", categoryId: "cat_single", pkg: "ptp",
     classes: ["dc_dpp4"], isNotDrug: false,
     effect: 0.4, effectWeight: 0, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -22.5,
     beneficialComorb: [], worseningComorb: [],
@@ -14,7 +14,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 1,
   },
   {
-    id: "m_2", name: "자누비아정 50mg", categoryId: "cat_single", pkg: "ptp",
+    id: "m_2", name: "자누비아정 50mg", ingredient: "시타글립틴", categoryId: "cat_single", pkg: "ptp",
     classes: ["dc_dpp4"], isNotDrug: false,
     effect: 0.5, effectWeight: 0, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -22.5,
     beneficialComorb: [], worseningComorb: [],
@@ -23,7 +23,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 2,
   },
   {
-    id: "m_3", name: "자누비아정 100mg", categoryId: "cat_single", pkg: "ptp",
+    id: "m_3", name: "자누비아정 100mg", ingredient: "시타글립틴", categoryId: "cat_single", pkg: "ptp",
     classes: ["dc_dpp4"], isNotDrug: false,
     effect: 0.6, effectWeight: 0, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -22.5,
     beneficialComorb: [], worseningComorb: [],
@@ -32,7 +32,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 3,
   },
   {
-    id: "m_4", name: "자누메트정 50/500mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_4", name: "자누메트정 50/500mg", ingredient: "시타글립틴/메트포르민(속방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_dpp4","dc_met"], isNotDrug: false,
     effect: 1.8, effectWeight: 0, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -22.5,
     beneficialComorb: ["비만","MASH"], worseningComorb: ["위장장애"],
@@ -41,7 +41,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: true, order: 4,
   },
   {
-    id: "m_5", name: "자누메트정 50/850mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_5", name: "자누메트정 50/850mg", ingredient: "시타글립틴/메트포르민(속방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_dpp4","dc_met"], isNotDrug: false,
     effect: 1.9, effectWeight: 0, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -22.5,
     beneficialComorb: ["비만","MASH"], worseningComorb: ["위장장애"],
@@ -50,7 +50,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: true, order: 5,
   },
   {
-    id: "m_6", name: "자누메트정 50/1000mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_6", name: "자누메트정 50/1000mg", ingredient: "시타글립틴/메트포르민(속방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_dpp4","dc_met"], isNotDrug: false,
     effect: 2, effectWeight: 0, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -22.5,
     beneficialComorb: ["비만","MASH"], worseningComorb: ["위장장애"],
@@ -59,7 +59,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: true, order: 6,
   },
   {
-    id: "m_7", name: "자누메트엑스알서방정 50/500mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_7", name: "자누메트엑스알서방정 50/500mg", ingredient: "시타글립틴/메트포르민(서방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_dpp4","dc_met"], isNotDrug: false,
     effect: 1.8, effectWeight: 0, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -22.5,
     beneficialComorb: ["비만","MASH"], worseningComorb: ["위장장애"],
@@ -68,7 +68,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 7,
   },
   {
-    id: "m_8", name: "자누메트엑스알서방정 50/1000mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_8", name: "자누메트엑스알서방정 50/1000mg", ingredient: "시타글립틴/메트포르민(서방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_dpp4","dc_met"], isNotDrug: false,
     effect: 2, effectWeight: 0, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -22.5,
     beneficialComorb: ["비만","MASH"], worseningComorb: ["위장장애"],
@@ -77,7 +77,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 8,
   },
   {
-    id: "m_9", name: "자누메트엑스알서방정 100/1000mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_9", name: "자누메트엑스알서방정 100/1000mg", ingredient: "시타글립틴/메트포르민(서방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_dpp4","dc_met"], isNotDrug: false,
     effect: 2.1, effectWeight: 0, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -22.5,
     beneficialComorb: ["비만","MASH"], worseningComorb: ["위장장애"],
@@ -86,7 +86,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 9,
   },
   {
-    id: "m_10", name: "엑시글루정 10mg", categoryId: "cat_single", pkg: "bottle",
+    id: "m_10", name: "엑시글루정 10mg", ingredient: "다파글리플로진", categoryId: "cat_single", pkg: "bottle",
     classes: ["dc_sglt2"], isNotDrug: false,
     effect: 0.7, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["생식기감염"],
@@ -95,7 +95,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 10,
   },
   {
-    id: "m_11", name: "엑시글루엠서방정 5/500mg", categoryId: "cat_combo_met", pkg: "bottle",
+    id: "m_11", name: "엑시글루엠서방정 5/500mg", ingredient: "다파글리플로진/메트포르민(서방)", categoryId: "cat_combo_met", pkg: "bottle",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -104,7 +104,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 11,
   },
   {
-    id: "m_12", name: "엑시글루엠서방정 5/1000mg", categoryId: "cat_combo_met", pkg: "bottle",
+    id: "m_12", name: "엑시글루엠서방정 5/1000mg", ingredient: "다파글리플로진/메트포르민(서방)", categoryId: "cat_combo_met", pkg: "bottle",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.2, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -113,7 +113,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 12,
   },
   {
-    id: "m_13", name: "엑시글루엠서방정 10/500mg", categoryId: "cat_combo_met", pkg: "bottle",
+    id: "m_13", name: "엑시글루엠서방정 10/500mg", ingredient: "다파글리플로진/메트포르민(서방)", categoryId: "cat_combo_met", pkg: "bottle",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -122,7 +122,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 13,
   },
   {
-    id: "m_14", name: "엑시글루엠서방정 10/1000mg", categoryId: "cat_combo_met", pkg: "bottle",
+    id: "m_14", name: "엑시글루엠서방정 10/1000mg", ingredient: "다파글리플로진/메트포르민(서방)", categoryId: "cat_combo_met", pkg: "bottle",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.2, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -131,7 +131,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 14,
   },
   {
-    id: "m_15", name: "엠파맥스정 10mg", categoryId: "cat_single", pkg: "bottle",
+    id: "m_15", name: "엠파맥스정 10mg", ingredient: "엠파글리플로진", categoryId: "cat_single", pkg: "bottle",
     classes: ["dc_sglt2"], isNotDrug: false,
     effect: 0.7, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["생식기감염"],
@@ -140,7 +140,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 15,
   },
   {
-    id: "m_16", name: "엠파맥스정 25mg", categoryId: "cat_single", pkg: "bottle",
+    id: "m_16", name: "엠파맥스정 25mg", ingredient: "엠파글리플로진", categoryId: "cat_single", pkg: "bottle",
     classes: ["dc_sglt2"], isNotDrug: false,
     effect: 0.8, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["생식기감염"],
@@ -149,7 +149,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 16,
   },
   {
-    id: "m_17", name: "엠파맥스엠정 5/500mg", categoryId: "cat_combo_met", pkg: "bottle",
+    id: "m_17", name: "엠파맥스엠정 5/500mg", ingredient: "엠파글리플로진/메트포르민(속방)", categoryId: "cat_combo_met", pkg: "bottle",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -158,7 +158,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: true, order: 17,
   },
   {
-    id: "m_18", name: "엠파맥스엠정 5/850mg", categoryId: "cat_combo_met", pkg: "bottle",
+    id: "m_18", name: "엠파맥스엠정 5/850mg", ingredient: "엠파글리플로진/메트포르민(속방)", categoryId: "cat_combo_met", pkg: "bottle",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.1, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -167,7 +167,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: true, order: 18,
   },
   {
-    id: "m_19", name: "엠파맥스엠정 5/1000mg", categoryId: "cat_combo_met", pkg: "bottle",
+    id: "m_19", name: "엠파맥스엠정 5/1000mg", ingredient: "엠파글리플로진/메트포르민(속방)", categoryId: "cat_combo_met", pkg: "bottle",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.2, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -176,7 +176,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: true, order: 19,
   },
   {
-    id: "m_20", name: "엠파맥스엠정 12.5/500mg", categoryId: "cat_combo_met", pkg: "bottle",
+    id: "m_20", name: "엠파맥스엠정 12.5/500mg", ingredient: "엠파글리플로진/메트포르민(속방)", categoryId: "cat_combo_met", pkg: "bottle",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -185,7 +185,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: true, order: 20,
   },
   {
-    id: "m_21", name: "엠파맥스엠정 12.5/850mg", categoryId: "cat_combo_met", pkg: "bottle",
+    id: "m_21", name: "엠파맥스엠정 12.5/850mg", ingredient: "엠파글리플로진/메트포르민(속방)", categoryId: "cat_combo_met", pkg: "bottle",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.1, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -194,7 +194,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: true, order: 21,
   },
   {
-    id: "m_22", name: "엠파맥스엠정 12.5/1000mg", categoryId: "cat_combo_met", pkg: "bottle",
+    id: "m_22", name: "엠파맥스엠정 12.5/1000mg", ingredient: "엠파글리플로진/메트포르민(속방)", categoryId: "cat_combo_met", pkg: "bottle",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.2, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -203,7 +203,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: true, order: 22,
   },
   {
-    id: "m_23", name: "엠파맥스엠서방정 10/1000mg", categoryId: "cat_combo_met", pkg: "bottle",
+    id: "m_23", name: "엠파맥스엠서방정 10/1000mg", ingredient: "엠파글리플로진/메트포르민(서방)", categoryId: "cat_combo_met", pkg: "bottle",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.2, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -212,7 +212,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 23,
   },
   {
-    id: "m_24", name: "엠파맥스엠서방정 12.5/750mg", categoryId: "cat_combo_met", pkg: "bottle",
+    id: "m_24", name: "엠파맥스엠서방정 12.5/750mg", ingredient: "엠파글리플로진/메트포르민(서방)", categoryId: "cat_combo_met", pkg: "bottle",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.1, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -221,7 +221,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 24,
   },
   {
-    id: "m_25", name: "엠파맥스엠서방정 12.5/1000mg", categoryId: "cat_combo_met", pkg: "bottle",
+    id: "m_25", name: "엠파맥스엠서방정 12.5/1000mg", ingredient: "엠파글리플로진/메트포르민(서방)", categoryId: "cat_combo_met", pkg: "bottle",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.2, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -230,7 +230,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 25,
   },
   {
-    id: "m_26", name: "엠파맥스엠서방정 25/1000mg", categoryId: "cat_combo_met", pkg: "bottle",
+    id: "m_26", name: "엠파맥스엠서방정 25/1000mg", ingredient: "엠파글리플로진/메트포르민(서방)", categoryId: "cat_combo_met", pkg: "bottle",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.3, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -239,7 +239,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 26,
   },
   {
-    id: "m_27", name: "엠파맥스에스정 10/100mg", categoryId: "cat_combo2", pkg: "bottle",
+    id: "m_27", name: "엠파맥스에스정 10/100mg", ingredient: "엠파글리플로진/시타글립틴", categoryId: "cat_combo2", pkg: "bottle",
     classes: ["dc_dpp4","dc_sglt2"], isNotDrug: false,
     effect: 1.3, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["생식기감염"],
@@ -248,7 +248,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 27,
   },
   {
-    id: "m_28", name: "엠파맥스에스정 25/100mg", categoryId: "cat_combo2", pkg: "bottle",
+    id: "m_28", name: "엠파맥스에스정 25/100mg", ingredient: "엠파글리플로진/시타글립틴", categoryId: "cat_combo2", pkg: "bottle",
     classes: ["dc_dpp4","dc_sglt2"], isNotDrug: false,
     effect: 1.4, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["생식기감염"],
@@ -257,7 +257,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 28,
   },
   {
-    id: "m_29", name: "엠시폴민서방정 5/50/750mg", categoryId: "cat_combo3", pkg: "bottle",
+    id: "m_29", name: "엠시폴민서방정 5/50/750mg", ingredient: "엠파글리플로진/시타글립틴/메트포르민", categoryId: "cat_combo3", pkg: "bottle",
     classes: ["dc_dpp4","dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.6, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -266,7 +266,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 29,
   },
   {
-    id: "m_30", name: "엠시폴민서방정 12.5/50/750mg", categoryId: "cat_combo3", pkg: "bottle",
+    id: "m_30", name: "엠시폴민서방정 12.5/50/750mg", ingredient: "엠파글리플로진/시타글립틴/메트포르민", categoryId: "cat_combo3", pkg: "bottle",
     classes: ["dc_dpp4","dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.6, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -275,7 +275,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 30,
   },
   {
-    id: "m_31", name: "엠시폴민서방정 25/100/1000mg", categoryId: "cat_combo3", pkg: "bottle",
+    id: "m_31", name: "엠시폴민서방정 25/100/1000mg", ingredient: "엠파글리플로진/시타글립틴/메트포르민", categoryId: "cat_combo3", pkg: "bottle",
     classes: ["dc_dpp4","dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.9, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -284,7 +284,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 31,
   },
   {
-    id: "m_32", name: "듀비에정 0.5mg", categoryId: "cat_single", pkg: "bottle",
+    id: "m_32", name: "듀비에정 0.5mg", ingredient: "로베글리타존", categoryId: "cat_single", pkg: "bottle",
     classes: ["dc_tzd"], isNotDrug: false,
     effect: 1, effectWeight: 3, effectLvef: 0, effectBnp: 9, effectNtprobnp: 30, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -30,
     beneficialComorb: ["MASH"], worseningComorb: ["심부전","비만"],
@@ -293,7 +293,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 32,
   },
   {
-    id: "m_33", name: "듀비메트서방정 0.25/1000mg", categoryId: "cat_combo_met", pkg: "bottle",
+    id: "m_33", name: "듀비메트서방정 0.25/1000mg", ingredient: "로베글리타존/메트포르민(서방)", categoryId: "cat_combo_met", pkg: "bottle",
     classes: ["dc_met","dc_tzd"], isNotDrug: false,
     effect: 2.5, effectWeight: 3, effectLvef: 0, effectBnp: 9, effectNtprobnp: 30, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -30,
     beneficialComorb: ["MASH"], worseningComorb: ["위장장애","심부전","비만"],
@@ -302,7 +302,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 33,
   },
   {
-    id: "m_34", name: "듀비메트서방정 0.5/1000mg", categoryId: "cat_combo_met", pkg: "bottle",
+    id: "m_34", name: "듀비메트서방정 0.5/1000mg", ingredient: "로베글리타존/메트포르민(서방)", categoryId: "cat_combo_met", pkg: "bottle",
     classes: ["dc_met","dc_tzd"], isNotDrug: false,
     effect: 2.5, effectWeight: 3, effectLvef: 0, effectBnp: 9, effectNtprobnp: 30, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -30,
     beneficialComorb: ["MASH"], worseningComorb: ["위장장애","심부전","비만"],
@@ -311,7 +311,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 34,
   },
   {
-    id: "m_35", name: "듀비에에스정 0.5/100mg", categoryId: "cat_combo2", pkg: "bottle",
+    id: "m_35", name: "듀비에에스정 0.5/100mg", ingredient: "로베글리타존/시타글립틴", categoryId: "cat_combo2", pkg: "bottle",
     classes: ["dc_dpp4","dc_tzd"], isNotDrug: false,
     effect: 1.6, effectWeight: 3, effectLvef: 0, effectBnp: 9, effectNtprobnp: 30, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -30,
     beneficialComorb: ["MASH"], worseningComorb: ["심부전","비만"],
@@ -320,7 +320,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 35,
   },
   {
-    id: "m_36", name: "듀비메트에스서방정 0.25/50/500mg", categoryId: "cat_combo3", pkg: "bottle",
+    id: "m_36", name: "듀비메트에스서방정 0.25/50/500mg", ingredient: "로베글리타존/시타글립틴/메트포르민(서방)", categoryId: "cat_combo3", pkg: "bottle",
     classes: ["dc_dpp4","dc_met","dc_tzd"], isNotDrug: false,
     effect: 2.8, effectWeight: 3, effectLvef: 0, effectBnp: 9, effectNtprobnp: 30, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -30,
     beneficialComorb: ["MASH"], worseningComorb: ["위장장애","심부전","비만"],
@@ -329,7 +329,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 36,
   },
   {
-    id: "m_37", name: "듀비메트에스서방정 0.25/50/750mg", categoryId: "cat_combo3", pkg: "bottle",
+    id: "m_37", name: "듀비메트에스서방정 0.25/50/750mg", ingredient: "로베글리타존/시타글립틴/메트포르민(서방)", categoryId: "cat_combo3", pkg: "bottle",
     classes: ["dc_dpp4","dc_met","dc_tzd"], isNotDrug: false,
     effect: 2.9, effectWeight: 3, effectLvef: 0, effectBnp: 9, effectNtprobnp: 30, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -30,
     beneficialComorb: ["MASH"], worseningComorb: ["위장장애","심부전","비만"],
@@ -338,7 +338,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 37,
   },
   {
-    id: "m_38", name: "듀비메트에스서방정 0.25/50/1000mg", categoryId: "cat_combo3", pkg: "bottle",
+    id: "m_38", name: "듀비메트에스서방정 0.25/50/1000mg", ingredient: "로베글리타존/시타글립틴/메트포르민(서방)", categoryId: "cat_combo3", pkg: "bottle",
     classes: ["dc_dpp4","dc_met","dc_tzd"], isNotDrug: false,
     effect: 3, effectWeight: 3, effectLvef: 0, effectBnp: 9, effectNtprobnp: 30, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -30,
     beneficialComorb: ["MASH"], worseningComorb: ["위장장애","심부전","비만"],
@@ -347,7 +347,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 38,
   },
   {
-    id: "m_39", name: "듀비메트에스서방정 0.5/100/1000mg", categoryId: "cat_combo3", pkg: "bottle",
+    id: "m_39", name: "듀비메트에스서방정 0.5/100/1000mg", ingredient: "로베글리타존/시타글립틴/메트포르민(서방)", categoryId: "cat_combo3", pkg: "bottle",
     classes: ["dc_dpp4","dc_met","dc_tzd"], isNotDrug: false,
     effect: 3.1, effectWeight: 3, effectLvef: 0, effectBnp: 9, effectNtprobnp: 30, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -30,
     beneficialComorb: ["MASH"], worseningComorb: ["위장장애","심부전","비만"],
@@ -356,7 +356,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 39,
   },
   {
-    id: "m_40", name: "듀비엠파정 0.5/10mg", categoryId: "cat_combo2", pkg: "bottle",
+    id: "m_40", name: "듀비엠파정 0.5/10mg", ingredient: "로베글리타존/엠파글리플로진", categoryId: "cat_combo2", pkg: "bottle",
     classes: ["dc_sglt2","dc_tzd"], isNotDrug: false,
     effect: 1.7, effectWeight: 3, effectLvef: 0, effectBnp: 9, effectNtprobnp: 30, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -30,
     beneficialComorb: ["만성신장질환(CKD)","심혈관","MASH"], worseningComorb: ["생식기감염","심부전","비만"],
@@ -365,7 +365,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 40,
   },
   {
-    id: "m_41", name: "듀비엠파정 0.5/25mg", categoryId: "cat_combo2", pkg: "bottle",
+    id: "m_41", name: "듀비엠파정 0.5/25mg", ingredient: "로베글리타존/엠파글리플로진", categoryId: "cat_combo2", pkg: "bottle",
     classes: ["dc_sglt2","dc_tzd"], isNotDrug: false,
     effect: 1.8, effectWeight: 3, effectLvef: 0, effectBnp: 9, effectNtprobnp: 30, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -30,
     beneficialComorb: ["만성신장질환(CKD)","심혈관","MASH"], worseningComorb: ["생식기감염","심부전","비만"],
@@ -374,7 +374,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 41,
   },
   {
-    id: "m_42", name: "듀비엠폴서방정 0.25/12.5/1000mg", categoryId: "cat_combo3", pkg: "bottle",
+    id: "m_42", name: "듀비엠폴서방정 0.25/12.5/1000mg", ingredient: "로베글리타존/엠파글리플로진/메트포르민(서방)", categoryId: "cat_combo3", pkg: "bottle",
     classes: ["dc_met","dc_sglt2","dc_tzd"], isNotDrug: false,
     effect: 3.2, effectWeight: 3, effectLvef: 0, effectBnp: 9, effectNtprobnp: 30, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -30,
     beneficialComorb: ["MASH","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염","심부전","비만"],
@@ -383,7 +383,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 42,
   },
   {
-    id: "m_43", name: "듀비엠폴서방정 0.5/10/1000mg", categoryId: "cat_combo3", pkg: "bottle",
+    id: "m_43", name: "듀비엠폴서방정 0.5/10/1000mg", ingredient: "로베글리타존/엠파글리플로진/메트포르민(서방)", categoryId: "cat_combo3", pkg: "bottle",
     classes: ["dc_met","dc_sglt2","dc_tzd"], isNotDrug: false,
     effect: 3.2, effectWeight: 3, effectLvef: 0, effectBnp: 9, effectNtprobnp: 30, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -30,
     beneficialComorb: ["MASH","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염","심부전","비만"],
@@ -392,7 +392,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 43,
   },
   {
-    id: "m_44", name: "듀비엠폴서방정 0.5/25/1000mg", categoryId: "cat_combo3", pkg: "bottle",
+    id: "m_44", name: "듀비엠폴서방정 0.5/25/1000mg", ingredient: "로베글리타존/엠파글리플로진/메트포르민(서방)", categoryId: "cat_combo3", pkg: "bottle",
     classes: ["dc_met","dc_sglt2","dc_tzd"], isNotDrug: false,
     effect: 3.3, effectWeight: 3, effectLvef: 0, effectBnp: 9, effectNtprobnp: 30, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -30,
     beneficialComorb: ["MASH","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염","심부전","비만"],
@@ -401,7 +401,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 44,
   },
   {
-    id: "m_45", name: "네오마릴정 1mg", categoryId: "cat_single", pkg: "ptp",
+    id: "m_45", name: "네오마릴정 1mg", ingredient: "글리메피리드", categoryId: "cat_single", pkg: "ptp",
     classes: ["dc_su"], isNotDrug: false,
     effect: 1.3, effectWeight: 2, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: [], worseningComorb: ["저혈당","비만"],
@@ -410,7 +410,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 45,
   },
   {
-    id: "m_46", name: "네오마릴정 2mg", categoryId: "cat_single", pkg: "ptp",
+    id: "m_46", name: "네오마릴정 2mg", ingredient: "글리메피리드", categoryId: "cat_single", pkg: "ptp",
     classes: ["dc_su"], isNotDrug: false,
     effect: 1.5, effectWeight: 2, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: [], worseningComorb: ["저혈당","비만"],
@@ -419,7 +419,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 46,
   },
   {
-    id: "m_47", name: "네오마릴정 4mg", categoryId: "cat_single", pkg: "ptp",
+    id: "m_47", name: "네오마릴정 4mg", ingredient: "글리메피리드", categoryId: "cat_single", pkg: "ptp",
     classes: ["dc_su"], isNotDrug: false,
     effect: 1.7, effectWeight: 2, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: [], worseningComorb: ["저혈당","비만"],
@@ -428,7 +428,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: true, order: 47,
   },
   {
-    id: "m_48", name: "네오마릴엠정 1/500mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_48", name: "네오마릴엠정 1/500mg", ingredient: "글리메피리드/메트포르민", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_met","dc_su"], isNotDrug: false,
     effect: 2.6, effectWeight: 2, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: ["MASH"], worseningComorb: ["위장장애","저혈당","비만"],
@@ -437,7 +437,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: true, order: 48,
   },
   {
-    id: "m_49", name: "네오마릴엠정 2/500mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_49", name: "네오마릴엠정 2/500mg", ingredient: "글리메피리드/메트포르민", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_met","dc_su"], isNotDrug: false,
     effect: 2.8, effectWeight: 2, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: ["MASH"], worseningComorb: ["위장장애","저혈당","비만"],
@@ -446,7 +446,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: true, order: 49,
   },
   {
-    id: "m_50", name: "제미글로정 50mg", categoryId: "cat_single", pkg: "ptp",
+    id: "m_50", name: "제미글로정 50mg", ingredient: "제미글립틴", categoryId: "cat_single", pkg: "ptp",
     classes: ["dc_dpp4"], isNotDrug: false,
     effect: 0.5, effectWeight: 0, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -22.5,
     beneficialComorb: [], worseningComorb: [],
@@ -455,7 +455,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 50,
   },
   {
-    id: "m_51", name: "제미메트서방정 25/500mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_51", name: "제미메트서방정 25/500mg", ingredient: "제미글립틴/메트포르민(서방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_dpp4","dc_met"], isNotDrug: false,
     effect: 1.8, effectWeight: 0, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -22.5,
     beneficialComorb: ["비만","MASH"], worseningComorb: ["위장장애"],
@@ -464,7 +464,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: false, order: 51,
   },
   {
-    id: "m_52", name: "제미메트서방정 25/1000mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_52", name: "제미메트서방정 25/1000mg", ingredient: "제미글립틴/메트포르민(서방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_dpp4","dc_met"], isNotDrug: false,
     effect: 2, effectWeight: 0, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -22.5,
     beneficialComorb: ["비만","MASH"], worseningComorb: ["위장장애"],
@@ -473,7 +473,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: false, order: 52,
   },
   {
-    id: "m_53", name: "제미메트서방정 50/500mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_53", name: "제미메트서방정 50/500mg", ingredient: "제미글립틴/메트포르민(서방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_dpp4","dc_met"], isNotDrug: false,
     effect: 1.8, effectWeight: 0, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -22.5,
     beneficialComorb: ["비만","MASH"], worseningComorb: ["위장장애"],
@@ -482,7 +482,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: false, order: 53,
   },
   {
-    id: "m_54", name: "제미메트서방정 50/1000mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_54", name: "제미메트서방정 50/1000mg", ingredient: "제미글립틴/메트포르민(서방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_dpp4","dc_met"], isNotDrug: false,
     effect: 2, effectWeight: 0, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -22.5,
     beneficialComorb: ["비만","MASH"], worseningComorb: ["위장장애"],
@@ -491,7 +491,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: false, order: 54,
   },
   {
-    id: "m_55", name: "제미다파정 50/10mg", categoryId: "cat_combo2", pkg: "ptp",
+    id: "m_55", name: "제미다파정 50/10mg", ingredient: "제미글립틴/다파글리플로진", categoryId: "cat_combo2", pkg: "ptp",
     classes: ["dc_dpp4","dc_sglt2"], isNotDrug: false,
     effect: 1.2, effectWeight: 0, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -22.5,
     beneficialComorb: ["심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["생식기감염"],
@@ -500,7 +500,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 55,
   },
   {
-    id: "m_56", name: "트라젠타정 5mg", categoryId: "cat_single", pkg: "ptp",
+    id: "m_56", name: "트라젠타정 5mg", ingredient: "리나글립틴", categoryId: "cat_single", pkg: "ptp",
     classes: ["dc_dpp4"], isNotDrug: false,
     effect: 0.5, effectWeight: 0, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -22.5,
     beneficialComorb: [], worseningComorb: [],
@@ -509,7 +509,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 56,
   },
   {
-    id: "m_57", name: "트라젠타듀오정 2.5/500mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_57", name: "트라젠타듀오정 2.5/500mg", ingredient: "리나글립틴/메트포르민(속방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_dpp4","dc_met"], isNotDrug: false,
     effect: 1.8, effectWeight: 0, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -22.5,
     beneficialComorb: ["비만","MASH"], worseningComorb: ["위장장애"],
@@ -518,7 +518,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: false, order: 57,
   },
   {
-    id: "m_58", name: "트라젠타듀오정 2.5/850mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_58", name: "트라젠타듀오정 2.5/850mg", ingredient: "리나글립틴/메트포르민(속방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_dpp4","dc_met"], isNotDrug: false,
     effect: 1.9, effectWeight: 0, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -22.5,
     beneficialComorb: ["비만","MASH"], worseningComorb: ["위장장애"],
@@ -527,7 +527,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: false, order: 58,
   },
   {
-    id: "m_59", name: "트라젠타듀오정 2.5/1000mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_59", name: "트라젠타듀오정 2.5/1000mg", ingredient: "리나글립틴/메트포르민(속방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_dpp4","dc_met"], isNotDrug: false,
     effect: 2, effectWeight: 0, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -22.5,
     beneficialComorb: ["비만","MASH"], worseningComorb: ["위장장애"],
@@ -536,7 +536,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: false, order: 59,
   },
   {
-    id: "m_60", name: "트루다파정 10mg", categoryId: "cat_single", pkg: "ptp",
+    id: "m_60", name: "트루다파정 10mg", ingredient: "다파글리플로진", categoryId: "cat_single", pkg: "ptp",
     classes: ["dc_sglt2"], isNotDrug: false,
     effect: 0.7, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["생식기감염"],
@@ -545,7 +545,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 60,
   },
   {
-    id: "m_61", name: "트루다파엠서방정 10/500mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_61", name: "트루다파엠서방정 10/500mg", ingredient: "다파글리플로진/메트포르민(서방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -554,7 +554,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 61,
   },
   {
-    id: "m_62", name: "트루다파엠서방정 10/1000mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_62", name: "트루다파엠서방정 10/1000mg", ingredient: "다파글리플로진/메트포르민(서방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.2, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -563,7 +563,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 62,
   },
   {
-    id: "m_63", name: "트루버디정 10/15mg", categoryId: "cat_combo2", pkg: "bottle",
+    id: "m_63", name: "트루버디정 10/15mg", ingredient: "다파글리플로진/피오글리타존", categoryId: "cat_combo2", pkg: "bottle",
     classes: ["dc_sglt2","dc_tzd"], isNotDrug: false,
     effect: 1.6, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["만성신장질환(CKD)","심혈관","MASH"], worseningComorb: ["생식기감염","심부전","비만"],
@@ -572,7 +572,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 63,
   },
   {
-    id: "m_64", name: "트루버디정 10/30mg", categoryId: "cat_combo2", pkg: "bottle",
+    id: "m_64", name: "트루버디정 10/30mg", ingredient: "다파글리플로진/피오글리타존", categoryId: "cat_combo2", pkg: "bottle",
     classes: ["dc_sglt2","dc_tzd"], isNotDrug: false,
     effect: 1.8, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["만성신장질환(CKD)","심혈관","MASH"], worseningComorb: ["생식기감염","심부전","비만"],
@@ -581,7 +581,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 64,
   },
   {
-    id: "m_65", name: "실다파엠서방정 5/50/500mg", categoryId: "cat_combo3", pkg: "bottle",
+    id: "m_65", name: "실다파엠서방정 5/50/500mg", ingredient: "다파글리플로진/시타글립틴/메트포르민(서방)", categoryId: "cat_combo3", pkg: "bottle",
     classes: ["dc_dpp4","dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.5, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -590,7 +590,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 65,
   },
   {
-    id: "m_66", name: "실다파엠서방정 5/50/750mg", categoryId: "cat_combo3", pkg: "bottle",
+    id: "m_66", name: "실다파엠서방정 5/50/750mg", ingredient: "다파글리플로진/시타글립틴/메트포르민(서방)", categoryId: "cat_combo3", pkg: "bottle",
     classes: ["dc_dpp4","dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.6, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -599,7 +599,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 66,
   },
   {
-    id: "m_67", name: "실다파엠서방정 5/50/1000mg", categoryId: "cat_combo3", pkg: "bottle",
+    id: "m_67", name: "실다파엠서방정 5/50/1000mg", ingredient: "다파글리플로진/시타글립틴/메트포르민(서방)", categoryId: "cat_combo3", pkg: "bottle",
     classes: ["dc_dpp4","dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.7, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -608,7 +608,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 67,
   },
   {
-    id: "m_68", name: "자디앙정 10mg", categoryId: "cat_single", pkg: "ptp",
+    id: "m_68", name: "자디앙정 10mg", ingredient: "엠파글리플로진", categoryId: "cat_single", pkg: "ptp",
     classes: ["dc_sglt2"], isNotDrug: false,
     effect: 0.7, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["생식기감염"],
@@ -617,7 +617,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 68,
   },
   {
-    id: "m_69", name: "자디앙정 25mg", categoryId: "cat_single", pkg: "ptp",
+    id: "m_69", name: "자디앙정 25mg", ingredient: "엠파글리플로진", categoryId: "cat_single", pkg: "ptp",
     classes: ["dc_sglt2"], isNotDrug: false,
     effect: 0.8, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["생식기감염"],
@@ -626,7 +626,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 69,
   },
   {
-    id: "m_70", name: "자디앙듀오정 5/500mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_70", name: "자디앙듀오정 5/500mg", ingredient: "엠파글리플로진/메트포르민(속방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -635,7 +635,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: false, order: 70,
   },
   {
-    id: "m_71", name: "자디앙듀오정 5/850mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_71", name: "자디앙듀오정 5/850mg", ingredient: "엠파글리플로진/메트포르민(속방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.1, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -644,7 +644,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: false, order: 71,
   },
   {
-    id: "m_72", name: "자디앙듀오정 5/1000mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_72", name: "자디앙듀오정 5/1000mg", ingredient: "엠파글리플로진/메트포르민(속방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.2, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -653,7 +653,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: false, order: 72,
   },
   {
-    id: "m_73", name: "자디앙듀오정 12.5/500mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_73", name: "자디앙듀오정 12.5/500mg", ingredient: "엠파글리플로진/메트포르민(속방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -662,7 +662,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: false, order: 73,
   },
   {
-    id: "m_74", name: "자디앙듀오정 12.5/850mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_74", name: "자디앙듀오정 12.5/850mg", ingredient: "엠파글리플로진/메트포르민(속방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.1, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -671,7 +671,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: false, order: 74,
   },
   {
-    id: "m_75", name: "자디앙듀오정 12.5/1000mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_75", name: "자디앙듀오정 12.5/1000mg", ingredient: "엠파글리플로진/메트포르민(속방)", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_met","dc_sglt2"], isNotDrug: false,
     effect: 2.2, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["비만","MASH","심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["위장장애","생식기감염"],
@@ -680,7 +680,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: false, order: 75,
   },
   {
-    id: "m_76", name: "에스글리토정 10/5mg", categoryId: "cat_combo2", pkg: "ptp",
+    id: "m_76", name: "에스글리토정 10/5mg", ingredient: "엠파글리플로진/리나글립틴", categoryId: "cat_combo2", pkg: "ptp",
     classes: ["dc_dpp4","dc_sglt2"], isNotDrug: false,
     effect: 1.2, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["생식기감염"],
@@ -689,7 +689,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 76,
   },
   {
-    id: "m_77", name: "에스글리토정 25/5mg", categoryId: "cat_combo2", pkg: "ptp",
+    id: "m_77", name: "에스글리토정 25/5mg", ingredient: "엠파글리플로진/리나글립틴", categoryId: "cat_combo2", pkg: "ptp",
     classes: ["dc_dpp4","dc_sglt2"], isNotDrug: false,
     effect: 1.3, effectWeight: -2, effectLvef: 0.8, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -4, effectUacr: -52.5,
     beneficialComorb: ["심부전","만성신장질환(CKD)","심혈관"], worseningComorb: ["생식기감염"],
@@ -698,7 +698,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 77,
   },
   {
-    id: "m_78", name: "액토스정 15mg", categoryId: "cat_single", pkg: "ptp",
+    id: "m_78", name: "액토스정 15mg", ingredient: "피오글리타존", categoryId: "cat_single", pkg: "ptp",
     classes: ["dc_tzd"], isNotDrug: false,
     effect: 0.9, effectWeight: 3, effectLvef: 0, effectBnp: 9, effectNtprobnp: 30, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -30,
     beneficialComorb: ["MASH"], worseningComorb: ["심부전","비만"],
@@ -707,7 +707,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 78,
   },
   {
-    id: "m_79", name: "액토스정 30mg", categoryId: "cat_single", pkg: "ptp",
+    id: "m_79", name: "액토스정 30mg", ingredient: "피오글리타존", categoryId: "cat_single", pkg: "ptp",
     classes: ["dc_tzd"], isNotDrug: false,
     effect: 1.1, effectWeight: 3, effectLvef: 0, effectBnp: 9, effectNtprobnp: 30, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -30,
     beneficialComorb: ["MASH"], worseningComorb: ["심부전","비만"],
@@ -716,7 +716,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 79,
   },
   {
-    id: "m_80", name: "액토스메트정 15/500mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_80", name: "액토스메트정 15/500mg", ingredient: "피오글리타존/메트포르민", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_met","dc_tzd"], isNotDrug: false,
     effect: 2.2, effectWeight: 3, effectLvef: 0, effectBnp: 9, effectNtprobnp: 30, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -30,
     beneficialComorb: ["MASH"], worseningComorb: ["위장장애","심부전","비만"],
@@ -725,7 +725,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: false, order: 80,
   },
   {
-    id: "m_81", name: "액토스메트정 15/850mg", categoryId: "cat_combo_met", pkg: "ptp",
+    id: "m_81", name: "액토스메트정 15/850mg", ingredient: "피오글리타존/메트포르민", categoryId: "cat_combo_met", pkg: "ptp",
     classes: ["dc_met","dc_tzd"], isNotDrug: false,
     effect: 2.3, effectWeight: 3, effectLvef: 0, effectBnp: 9, effectNtprobnp: 30, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -30,
     beneficialComorb: ["MASH"], worseningComorb: ["위장장애","심부전","비만"],
@@ -734,7 +734,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: false, order: 81,
   },
   {
-    id: "m_82", name: "네시나액트정 25/15mg", categoryId: "cat_combo2", pkg: "ptp",
+    id: "m_82", name: "네시나액트정 25/15mg", ingredient: "알로글립틴/피오글리타존", categoryId: "cat_combo2", pkg: "ptp",
     classes: ["dc_dpp4","dc_tzd"], isNotDrug: false,
     effect: 1.4, effectWeight: 3, effectLvef: 0, effectBnp: 9, effectNtprobnp: 30, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -30,
     beneficialComorb: ["MASH"], worseningComorb: ["심부전","비만"],
@@ -743,7 +743,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 82,
   },
   {
-    id: "m_83", name: "네시나액트정 25/30mg", categoryId: "cat_combo2", pkg: "ptp",
+    id: "m_83", name: "네시나액트정 25/30mg", ingredient: "알로글립틴/피오글리타존", categoryId: "cat_combo2", pkg: "ptp",
     classes: ["dc_dpp4","dc_tzd"], isNotDrug: false,
     effect: 1.6, effectWeight: 3, effectLvef: 0, effectBnp: 9, effectNtprobnp: 30, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: -30,
     beneficialComorb: ["MASH"], worseningComorb: ["심부전","비만"],
@@ -752,7 +752,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 83,
   },
   {
-    id: "m_84", name: "오젬픽프리필드펜 0.25mg", categoryId: "cat_injection", pkg: "injection",
+    id: "m_84", name: "오젬픽프리필드펜 0.25mg", ingredient: "세마글루타이드", categoryId: "cat_injection", pkg: "injection",
     classes: ["dc_glp1"], isNotDrug: false,
     effect: 0.3, effectWeight: -5, effectLvef: 0, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -1, effectUacr: -37.5,
     beneficialComorb: ["비만","심혈관"], worseningComorb: ["위장장애"],
@@ -761,7 +761,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 84,
   },
   {
-    id: "m_85", name: "오젬픽프리필드펜 0.5mg", categoryId: "cat_injection", pkg: "injection",
+    id: "m_85", name: "오젬픽프리필드펜 0.5mg", ingredient: "세마글루타이드", categoryId: "cat_injection", pkg: "injection",
     classes: ["dc_glp1"], isNotDrug: false,
     effect: 1.3, effectWeight: -5, effectLvef: 0, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -1, effectUacr: -37.5,
     beneficialComorb: ["비만","심혈관"], worseningComorb: ["위장장애"],
@@ -770,7 +770,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 85,
   },
   {
-    id: "m_86", name: "오젬픽프리필드펜 1.0mg", categoryId: "cat_injection", pkg: "injection",
+    id: "m_86", name: "오젬픽프리필드펜 1.0mg", ingredient: "세마글루타이드", categoryId: "cat_injection", pkg: "injection",
     classes: ["dc_glp1"], isNotDrug: false,
     effect: 1.5, effectWeight: -5, effectLvef: 0, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -1, effectUacr: -37.5,
     beneficialComorb: ["비만","심혈관"], worseningComorb: ["위장장애"],
@@ -779,7 +779,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 86,
   },
   {
-    id: "m_87", name: "오젬픽프리필드펜 2.0mg", categoryId: "cat_injection", pkg: "injection",
+    id: "m_87", name: "오젬픽프리필드펜 2.0mg", ingredient: "세마글루타이드", categoryId: "cat_injection", pkg: "injection",
     classes: ["dc_glp1"], isNotDrug: false,
     effect: 1.7, effectWeight: -5, effectLvef: 0, effectBnp: -9, effectNtprobnp: -30, effectEgfr: -1.5, effectEgfrDip: -1, effectUacr: -37.5,
     beneficialComorb: ["비만","심혈관"], worseningComorb: ["위장장애"],
@@ -788,7 +788,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 87,
   },
   {
-    id: "m_88", name: "다이아벡스정 250mg", categoryId: "cat_single", pkg: "ptp",
+    id: "m_88", name: "다이아벡스정 250mg", ingredient: "메트포르민(속방 IR)", categoryId: "cat_single", pkg: "ptp",
     classes: ["dc_met"], isNotDrug: false,
     effect: 1, effectWeight: -1, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: ["비만","MASH"], worseningComorb: ["위장장애"],
@@ -797,7 +797,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 88,
   },
   {
-    id: "m_89", name: "다이아벡스정 500mg", categoryId: "cat_single", pkg: "ptp",
+    id: "m_89", name: "다이아벡스정 500mg", ingredient: "메트포르민(속방 IR)", categoryId: "cat_single", pkg: "ptp",
     classes: ["dc_met"], isNotDrug: false,
     effect: 1.3, effectWeight: -1, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: ["비만","MASH"], worseningComorb: ["위장장애"],
@@ -806,7 +806,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 89,
   },
   {
-    id: "m_90", name: "다이아벡스정 850mg", categoryId: "cat_single", pkg: "ptp",
+    id: "m_90", name: "다이아벡스정 850mg", ingredient: "메트포르민(속방 IR)", categoryId: "cat_single", pkg: "ptp",
     classes: ["dc_met"], isNotDrug: false,
     effect: 1.4, effectWeight: -1, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: ["비만","MASH"], worseningComorb: ["위장장애"],
@@ -815,7 +815,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 90,
   },
   {
-    id: "m_91", name: "다이아벡스정 1000mg", categoryId: "cat_single", pkg: "ptp",
+    id: "m_91", name: "다이아벡스정 1000mg", ingredient: "메트포르민(속방 IR)", categoryId: "cat_single", pkg: "ptp",
     classes: ["dc_met"], isNotDrug: false,
     effect: 1.5, effectWeight: -1, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: ["비만","MASH"], worseningComorb: ["위장장애"],
@@ -824,7 +824,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 91,
   },
   {
-    id: "m_92", name: "다이아벡스엑스알서방정 500mg", categoryId: "cat_single", pkg: "ptp",
+    id: "m_92", name: "다이아벡스엑스알서방정 500mg", ingredient: "메트포르민(서방 XR)", categoryId: "cat_single", pkg: "ptp",
     classes: ["dc_met"], isNotDrug: false,
     effect: 1.3, effectWeight: -1, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: ["비만","MASH"], worseningComorb: ["위장장애"],
@@ -833,7 +833,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 92,
   },
   {
-    id: "m_93", name: "다이아벡스엑스알서방정 1000mg", categoryId: "cat_single", pkg: "ptp",
+    id: "m_93", name: "다이아벡스엑스알서방정 1000mg", ingredient: "메트포르민(서방 XR)", categoryId: "cat_single", pkg: "ptp",
     classes: ["dc_met"], isNotDrug: false,
     effect: 1.5, effectWeight: -1, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: ["비만","MASH"], worseningComorb: ["위장장애"],
@@ -842,7 +842,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 93,
   },
   {
-    id: "m_94", name: "란투스주(글라진 U100) 100 IU/mL", categoryId: "cat_injection", pkg: "injection",
+    id: "m_94", name: "란투스주(글라진 U100) 100 IU/mL", ingredient: "인슐린글라진 U100", categoryId: "cat_injection", pkg: "injection",
     classes: ["dc_ins_basal"], isNotDrug: false,
     effect: 1.5, effectWeight: 1.5, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: ["전반적 개선"], worseningComorb: ["비만","저혈당"],
@@ -851,7 +851,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 94,
   },
   {
-    id: "m_95", name: "투제오주(글라진 U300) 300 IU/mL", categoryId: "cat_injection", pkg: "injection",
+    id: "m_95", name: "투제오주(글라진 U300) 300 IU/mL", ingredient: "인슐린글라진 U300", categoryId: "cat_injection", pkg: "injection",
     classes: ["dc_ins_basal"], isNotDrug: false,
     effect: 1.5, effectWeight: 1.5, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: ["전반적 개선"], worseningComorb: ["비만","저혈당"],
@@ -860,7 +860,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 95,
   },
   {
-    id: "m_96", name: "트레시바주(데글루덱) 100·200 IU/mL", categoryId: "cat_injection", pkg: "injection",
+    id: "m_96", name: "트레시바주(데글루덱) 100·200 IU/mL", ingredient: "인슐린데글루덱", categoryId: "cat_injection", pkg: "injection",
     classes: ["dc_ins_basal"], isNotDrug: false,
     effect: 1.5, effectWeight: 1.5, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: ["전반적 개선"], worseningComorb: ["비만","저혈당"],
@@ -869,7 +869,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 96,
   },
   {
-    id: "m_97", name: "레버미어주(디터미어) 100 IU/mL", categoryId: "cat_injection", pkg: "injection",
+    id: "m_97", name: "레버미어주(디터미어) 100 IU/mL", ingredient: "인슐린디터미어", categoryId: "cat_injection", pkg: "injection",
     classes: ["dc_ins_basal"], isNotDrug: false,
     effect: 1.5, effectWeight: 1.5, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: ["전반적 개선"], worseningComorb: ["비만","저혈당"],
@@ -878,7 +878,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: false, order: 97,
   },
   {
-    id: "m_98", name: "휴물린엔주(NPH) 100 IU/mL", categoryId: "cat_injection", pkg: "injection",
+    id: "m_98", name: "휴물린엔주(NPH) 100 IU/mL", ingredient: "이소판 인슐린 NPH", categoryId: "cat_injection", pkg: "injection",
     classes: ["dc_ins_basal"], isNotDrug: false,
     effect: 1.5, effectWeight: 1.5, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: ["전반적 개선"], worseningComorb: ["비만","저혈당"],
@@ -887,7 +887,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: false, order: 98,
   },
   {
-    id: "m_99", name: "휴물린알주(Regular) 100 IU/mL", categoryId: "cat_injection", pkg: "injection",
+    id: "m_99", name: "휴물린알주(Regular) 100 IU/mL", ingredient: "레귤러 인슐린", categoryId: "cat_injection", pkg: "injection",
     classes: ["dc_ins_mdi"], isNotDrug: false,
     effect: 1.5, effectWeight: 1.5, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: ["전반적 개선"], worseningComorb: ["비만","저혈당"],
@@ -896,7 +896,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 99,
   },
   {
-    id: "m_100", name: "노보래피드주(아스파트) 100 IU/mL", categoryId: "cat_injection", pkg: "injection",
+    id: "m_100", name: "노보래피드주(아스파트) 100 IU/mL", ingredient: "인슐린아스파트", categoryId: "cat_injection", pkg: "injection",
     classes: ["dc_ins_mdi"], isNotDrug: false,
     effect: 1.5, effectWeight: 1.5, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: ["전반적 개선"], worseningComorb: ["비만","저혈당"],
@@ -905,7 +905,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 100,
   },
   {
-    id: "m_101", name: "휴마로그주(리스프로) 100 IU/mL", categoryId: "cat_injection", pkg: "injection",
+    id: "m_101", name: "휴마로그주(리스프로) 100 IU/mL", ingredient: "인슐린리스프로", categoryId: "cat_injection", pkg: "injection",
     classes: ["dc_ins_mdi"], isNotDrug: false,
     effect: 1.5, effectWeight: 1.5, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: ["전반적 개선"], worseningComorb: ["비만","저혈당"],
@@ -914,7 +914,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 101,
   },
   {
-    id: "m_102", name: "애피드라주(글루리진) 100 IU/mL", categoryId: "cat_injection", pkg: "injection",
+    id: "m_102", name: "애피드라주(글루리진) 100 IU/mL", ingredient: "인슐린글루리진", categoryId: "cat_injection", pkg: "injection",
     classes: ["dc_ins_mdi"], isNotDrug: false,
     effect: 1.5, effectWeight: 1.5, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: ["전반적 개선"], worseningComorb: ["비만","저혈당"],
@@ -923,7 +923,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: false, isAsaProduct: false, order: 102,
   },
   {
-    id: "m_103", name: "노보믹스30주 100 IU/mL", categoryId: "cat_injection", pkg: "injection",
+    id: "m_103", name: "노보믹스30주 100 IU/mL", ingredient: "아스파트/프로타민아스파트 30/70", categoryId: "cat_injection", pkg: "injection",
     classes: ["dc_ins_premix"], isNotDrug: false,
     effect: 2, effectWeight: 2, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: ["전반적 개선"], worseningComorb: ["비만","저혈당"],
@@ -932,7 +932,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: false, order: 103,
   },
   {
-    id: "m_104", name: "휴마로그믹스25주 100 IU/mL", categoryId: "cat_injection", pkg: "injection",
+    id: "m_104", name: "휴마로그믹스25주 100 IU/mL", ingredient: "리스프로/프로타민리스프로 25/75", categoryId: "cat_injection", pkg: "injection",
     classes: ["dc_ins_premix"], isNotDrug: false,
     effect: 2, effectWeight: 2, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: -3.5, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: ["전반적 개선"], worseningComorb: ["비만","저혈당"],
@@ -941,7 +941,7 @@ export const seedMedications: Medication[] = [
     isInsuranceException: false, allow2TQD: true, isAsaProduct: false, order: 104,
   },
   {
-    id: "m_lifestyle", name: "생활습관 교정 (운동/식단)", categoryId: "cat_lifestyle", pkg: "ptp",
+    id: "m_lifestyle", name: "생활습관 교정 (운동/식단)", ingredient: "", categoryId: "cat_lifestyle", pkg: "ptp",
     classes: [], isNotDrug: true,
     effect: 0.3, effectWeight: -1, effectLvef: 0, effectBnp: 0, effectNtprobnp: 0, effectEgfr: 0, effectEgfrDip: 0, effectUacr: 0,
     beneficialComorb: ["전반적 개선","비만"], worseningComorb: [],

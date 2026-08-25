@@ -229,6 +229,7 @@ function buildMed(cells, order) {
   return {
     id: `m_${order}`,
     name,
+    ingredient: String(cells[4] ?? '').trim(), // 주성분 (복합제는 '/' 구분)
     categoryId: categoryFromRow(cells, pkg, classes),
     pkg,
     classes,
@@ -263,6 +264,7 @@ function lifestyleMed(order) {
   return {
     id: 'm_lifestyle',
     name: '생활습관 교정 (운동/식단)',
+    ingredient: '',
     categoryId: 'cat_lifestyle',
     pkg: 'ptp',
     classes: [],
@@ -297,7 +299,7 @@ function j(v) {
 }
 function serializeMed(m) {
   return `  {
-    id: ${j(m.id)}, name: ${j(m.name)}, categoryId: ${j(m.categoryId)}, pkg: ${j(m.pkg)},
+    id: ${j(m.id)}, name: ${j(m.name)}, ingredient: ${j(m.ingredient ?? '')}, categoryId: ${j(m.categoryId)}, pkg: ${j(m.pkg)},
     classes: ${j(m.classes)}, isNotDrug: ${m.isNotDrug},
     effect: ${m.effect}, effectWeight: ${m.effectWeight}, effectLvef: ${m.effectLvef}, effectBnp: ${m.effectBnp}, effectNtprobnp: ${m.effectNtprobnp}, effectEgfr: ${m.effectEgfr}, effectEgfrDip: ${m.effectEgfrDip}, effectUacr: ${m.effectUacr},
     beneficialComorb: ${j(m.beneficialComorb)}, worseningComorb: ${j(m.worseningComorb)},

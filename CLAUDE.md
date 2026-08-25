@@ -61,6 +61,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **`src/data/seed/medications.seed.ts`는 자동 생성 파일이다. 직접 손대지 말 것.** 출처는 레포 루트의 **`기본 약제 초기화.xlsx`**.
 - 재생성: `node scripts/genMedications.mjs` (의존성 없음, Node 내장 zlib만 사용). 엑셀 → `medications.seed.ts`.
 - **워크플로:** 사용자가 `기본 약제 초기화.xlsx`를 수정하고 커밋/푸시를 요청하면 → 위 스크립트를 다시 실행 → `medications.seed.ts` 변경분과 함께 커밋한다. 그러면 Admin "기본 초기화" 버튼이 업로드하는 기본 약제가 그대로 바뀐다.
+- **주성분(`ingredient`)은 엑셀 4열 '주성분' 원문**을 그대로 담는다(복합제는 `/` 구분: `로베글리타존/엠파글리플로진/메트포르민(서방)`). 처방 약제 선택 화면(`MedSelector`)이 계열 기전과 함께 ` + `로 바꿔 보여준다. optional 필드라 이 값이 없는 기존 Firestore 문서도 그대로 동작한다(성분 줄만 숨김) — 화면에 성분이 뜨게 하려면 Admin '엑셀 반영' 또는 '기본 초기화'로 약제를 다시 올려야 한다.
 - 엑셀 열 매핑·계열 파생·지표 환산 상수(LVEF/BNP/NT-proBNP/UACR %→절대량, HbA1c/eGFR 절대)는 `scripts/genMedications.mjs` 상단 주석 참조. 엑셀에 없는 값(공병증 호전/악화, eGFR 하한, 생활습관 비약물)은 계열 기준 표에서 파생·추가한다.
 - **약제 구분(카테고리)은 엑셀 '카테고리' 열이 아니라 체크된 계열 수로 파생**한다: 1개→`cat_single`(단일제), 2개(biguanide 제외)→`cat_combo2`(2제 복합제), 2개(biguanide 포함)→`cat_combo_met`(메폴민 2제 복합제), 3개 이상→`cat_combo3`(3제 복합제). 포장=injection은 계열 수 무관 `cat_injection`(주사제), 생활습관 비약물은 `cat_lifestyle`. 카테고리 목록은 `medCategories.seed.ts`.
 - **아사(자사) 표시(`isAsaProduct`)는 엑셀 판매사 열(0열)이 '종근당'인 행 전체**. 처방 화면(`MedSelector`)에서 아사 제품이 목록 최상단으로 정렬된다.
