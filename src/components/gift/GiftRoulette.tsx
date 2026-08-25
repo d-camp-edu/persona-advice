@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import type { Gift } from '../../types';
 import type { InstitutionType } from '../../store/useSessionStore';
-import { pickWinnerWithRate } from '../../lib/giftWin';
+import { giftProbs, pickWinnerByProbs, pickWinnerWithRate } from '../../lib/giftWin';
 
 const ITEM_H = 88;
 const VISIBLE = 3;
@@ -18,34 +18,30 @@ function pickWinner(
   gifts: Gift[],
   institutionType: InstitutionType,
   winRateOverride: number | null,
+  campaignId?: string,
 ): Gift | null {
-  // 공병별 총 당첨 확률이 지정된 경우: 해당 확률로 당첨 여부 결정 후, 선물은 기존 확률 비율로 추첨.
+  // 공병별 총 당첨 확률이 지정된 경우: 해당 확률로 당첨 여부 결정 후, 선물은 확률 비율로 추첨.
   if (winRateOverride !== null) {
-    return pickWinnerWithRate(gifts, institutionType, winRateOverride, Math.random(), Math.random());
+    return pickWinnerWithRate(
+      gifts,
+      institutionType,
+      winRateOverride,
+      Math.random(),
+      Math.random(),
+      campaignId,
+    );
   }
-
-  const probs = gifts.map((g) =>
-    institutionType === '병원' ? g.probHospital : g.probClinic,
-  );
-  const totalGift = probs.reduce((s, p) => s + p, 0);
-  const kwangProb = Math.max(0, 100 - totalGift);
-
-  const rand = Math.random() * 100;
-  let cum = 0;
-  for (let i = 0; i < gifts.length; i++) {
-    cum += probs[i];
-    if (rand < cum) return gifts[i];
-  }
-  if (rand < cum + kwangProb) return null; // 꽝
-  return null;
+  // 기본: 선물별 확률(캠페인 오버라이드 반영) 합이 당첨률, 나머지가 꽝.
+  return pickWinnerByProbs(gifts, giftProbs(gifts, institutionType, campaignId), Math.random());
 }
 
 function buildStrip(
   gifts: Gift[],
   institutionType: InstitutionType,
   winRateOverride: number | null,
+  campaignId?: string,
 ): { items: RouletteItem[]; winnerIdx: number } {
-  const winner = pickWinner(gifts, institutionType, winRateOverride);
+  const winner = pickWinner(gifts, institutionType, winRateOverride, campaignId);
 
   // 스트립에 흘러가는 "장식용" 아이템: 실제 당첨 확률과 무관하게 보이는 비율은 선물:꽝 = 반반.
   // (당첨 결과는 winner = pickWinner 로 이미 확률대로 결정됨)
@@ -112,6 +108,8 @@ interface Props {
   institutionType: InstitutionType;
   /** 공병별로 지정된 총 당첨 확률(%). null이면 선물별 확률 합(기존 동작). */
   winRateOverride?: number | null;
+  /** 타겟처 세션의 캠페인 id. 선물에 이 캠페인 확률이 지정돼 있으면 기본 확률 대신 사용. */
+  campaignId?: string;
   onClose: () => void;
   /** 룰렛 1회가 끝났을 때 결과(당첨 선물 또는 null=꽝)를 알려준다. 로깅용. */
   onResult?: (gift: Gift | null) => void;
@@ -121,6 +119,7 @@ export default function GiftRoulette({
   gifts,
   institutionType,
   winRateOverride = null,
+  campaignId,
   onClose,
   onResult,
 }: Props) {
@@ -133,7 +132,12 @@ export default function GiftRoulette({
 
   const spin = () => {
     if (phase === 'spinning') return;
-    const { items: strip, winnerIdx: wIdx } = buildStrip(gifts, institutionType, winRateOverride);
+    const { items: strip, winnerIdx: wIdx } = buildStrip(
+      gifts,
+      institutionType,
+      winRateOverride,
+      campaignId,
+    );
     setItems(strip);
     setWinnerIdx(wIdx);
     setWinner(undefined);

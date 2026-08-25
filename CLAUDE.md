@@ -84,7 +84,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **진행 완료 기준 = 서베이 완료**: `useSessionStore.completeSurvey`가 타겟처 세션(`targetId` 존재)이면 `recordTargetCompletionOnSurvey`로 완료 기록(문서 id `campaignId__targetId`, upsert).
 - 로그인: `components/login/TargetLoginPanel.tsx`(품목 선택 → 사번 검색 → 담당자 진행률 바 → 지정처 선택 → `loginWithTarget`). 캠페인·품목은 `useDataStore`로 실시간 구독.
 - 관리자: `components/admin/ProgressTab.tsx`(Admin '진행률' 탭) — 품목 관리, 캠페인 CRUD(품목 연결)·진행기간·활성 토글, 의원/병원 엑셀 업로드(교체/추가), **월·품목별** 사업부→팀 진행률 대시보드 + 담당자별 상세 + 엑셀 내보내기.
-- 세션 이력(`HistoryTab`): 처방 세션 + **타겟 진행 완료 목록** + 서베이 응답 목록을 화면에 표시하고, 엑셀 내보내기에 '타겟진행' 시트와 사번·담당자 컬럼 포함.
+- **타겟처 개별 관리**: `components/admin/TargetListSection.tsx`(ProgressTab 안의 '타겟처 목록 관리' 섹션) — 캠페인별 조회·검색·사업부/팀 필터, 추가 폼, 행 인라인 수정, 다중 선택 삭제. 문서 id 는 엑셀 업로드와 **동일한 `makeTargetId(campaignId, code, name, drName, empNo)`**(`targetExcelImport.ts`)를 써서, 수동 추가분이 나중에 같은 엑셀에 들어와도 중복 문서가 생기지 않는다. 단 엑셀 '교체' 업로드는 수동 추가분도 지운다(화면에 경고 문구 있음). 식별정보(거래처·Dr.·사번)를 수정하면 id 가 바뀌므로 옛 문서를 지우고 그 타겟처의 완료 기록도 초기화한다.
+- 세션 이력(`HistoryTab`): 처방 세션 + **타겟 진행 완료 목록** + 서베이 응답 목록을 화면에 표시. 엑셀 내보내기는 **`lib/historyExport.ts`의 통합 시트 1장**(아래 참조).
+
+#### 이력 엑셀 = 통합 시트 1장 (`lib/historyExport.ts`)
+
+처방·서베이·룰렛·타겟진행을 탭 4개로 나누던 걸 시트 1장으로 합쳤다. `buildUnifiedSheet()`는 순수 함수(`tests/historyExport.test.ts`).
+
+- **행 기준 = 세션 × 환자.** 같은 환자에게 처방을 2번 하면 회차별 2행. 서베이/룰렛은 같은 (세션, 환자)의 같은 순번 행에 붙고 남으면 아래 행으로 흐른다. **서베이만 했으면 처방 칸이 공란인 1행.**
+- 사업부·팀·품목·캠페인·거래처코드는 매칭된 `TargetCompletion`에서 오며 그 세션의 모든 행에 반복된다. **'타겟완료일시'는 완료 1건당 딱 한 행에만** 찍는다(중복 합산 방지).
+- 완료 ↔ 세션 매칭은 `TargetCompletion.sessionDocId`(optional, 신규 기록부터). **이 필드가 없는 기존 기록은 `사번+거래처명+의사명`으로 폴백 매칭**한다 — 옛 데이터도 그대로 나온다.
+
+### 선물 룰렛 확률 (`lib/giftWin.ts`)
+
+확률은 3층이다. 아래로 갈수록 우선한다.
+
+1. **기본 확률** — `Gift.probHospital` / `probClinic`.
+2. **캠페인(진행기간)별 확률** — `Gift.campaignProbs?: Record<campaignId, {hospital, clinic}>` (optional). 타겟처 세션의 `campaignId`에 해당 키가 있으면 기본 확률 대신 쓴다. 직접 입력 로그인은 `campaignId=''`라 항상 기본 확률. `giftProb()` / `giftProbs()`가 이 해석을 담당하고, 화면(`GiftsTab`)·집계·룰렛이 전부 이 함수를 거친다.
+3. **공병별 총 당첨률 오버라이드** — `resolveComorbWinRate()`. 이건 "당첨이냐 꽝이냐"만 정하고, **어떤 선물이 나올지는 여전히 2층 확률의 비율**로 뽑는다(`pickWinnerWithRate`).
+
+`GiftsTab` 상단의 캠페인 드롭다운은 "어느 캠페인 기준으로 볼지"이며, 합계 100% 초과 검증도 그 기준으로 계산된다. 저장 시 `campaignProbs`가 없으면 `{}`로 채워 넣는다 — Firestore 가 `undefined` 를 거부하기 때문.
 
 ### 이미지 업로드(Storage 완전 비의존)
 

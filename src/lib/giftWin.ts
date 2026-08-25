@@ -28,8 +28,51 @@ export function resolveComorbWinRate(
 }
 
 /**
- * 총 당첨 확률이 정해졌을 때, 당첨 시 어떤 선물이 나올지 선물별 기존 확률 비율로 추첨한다.
+ * 선물 1개의 적용 확률(%)을 구한다.
+ * 캠페인(진행기간)별 확률이 지정돼 있으면 그것을, 없으면 기본 확률을 쓴다.
+ * campaignId가 비어 있으면(직접 입력 로그인 등) 항상 기본 확률.
+ */
+export function giftProb(
+  g: Gift,
+  institutionType: InstitutionType,
+  campaignId?: string,
+): number {
+  const over = campaignId ? g.campaignProbs?.[campaignId] : undefined;
+  if (over) {
+    const v = institutionType === '병원' ? over.hospital : over.clinic;
+    if (typeof v === 'number' && !Number.isNaN(v)) return Math.max(0, Math.min(100, v));
+  }
+  const base = institutionType === '병원' ? g.probHospital : g.probClinic;
+  return typeof base === 'number' && !Number.isNaN(base) ? Math.max(0, Math.min(100, base)) : 0;
+}
+
+/** 선물 목록의 적용 확률 배열 (giftProb 를 그대로 map) */
+export function giftProbs(
+  gifts: Gift[],
+  institutionType: InstitutionType,
+  campaignId?: string,
+): number[] {
+  return gifts.map((g) => giftProb(g, institutionType, campaignId));
+}
+
+/**
+ * 기본 동작: 선물별 확률의 합이 곧 총 당첨 확률이고, 나머지(100-합)가 꽝.
+ * rand01 은 [0,1) 난수(테스트 주입용).
+ */
+export function pickWinnerByProbs(gifts: Gift[], probs: number[], rand01: number): Gift | null {
+  const rand = rand01 * 100;
+  let cum = 0;
+  for (let i = 0; i < gifts.length; i++) {
+    cum += probs[i] ?? 0;
+    if (rand < cum) return gifts[i];
+  }
+  return null; // 꽝
+}
+
+/**
+ * 총 당첨 확률이 정해졌을 때, 당첨 시 어떤 선물이 나올지 선물별 확률 비율로 추첨한다.
  * rand01/rand01b 는 [0,1) 난수(테스트 주입용).
+ * campaignId 를 주면 캠페인별 확률 오버라이드가 비율에 반영된다.
  * 반환: 당첨 선물, 또는 null(꽝).
  */
 export function pickWinnerWithRate(
@@ -38,10 +81,11 @@ export function pickWinnerWithRate(
   winRate: number,
   rand01: number,
   rand01b: number,
+  campaignId?: string,
 ): Gift | null {
   if (rand01 * 100 >= winRate) return null; // 꽝
 
-  const probs = gifts.map((g) => (institutionType === '병원' ? g.probHospital : g.probClinic));
+  const probs = giftProbs(gifts, institutionType, campaignId);
   const total = probs.reduce((s, p) => s + p, 0);
   // 선물별 확률이 모두 0이면 균등 추첨으로 폴백.
   if (total <= 0) {

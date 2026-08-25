@@ -24,6 +24,8 @@ export default function ResultReportScreen() {
   const gifts = useDataStore((s) => s.gifts);
   const comorbidities = useDataStore((s) => s.settings.comorbidities);
   const institutionType = useSessionStore((s) => s.institutionType);
+  // 타겟처 세션이면 캠페인별 선물 확률이 적용된다(직접 입력 로그인은 '' → 기본 확률).
+  const campaignId = useSessionStore((s) => s.campaignId);
   const [showBrochure, setShowBrochure] = useState(false);
   const [showRoulette, setShowRoulette] = useState(false);
   // 환자당 룰렛 1회 제한: 한 번 돌리고 나면 이 환자 결과 화면에서는 더 못 돌린다.
@@ -257,6 +259,7 @@ export default function ResultReportScreen() {
           gifts={gifts}
           institutionType={institutionType}
           winRateOverride={giftWinRate}
+          campaignId={campaignId}
           onResult={(g) => {
             logGiftSpin(g);
             setRouletteUsed(true);
