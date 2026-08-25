@@ -24,6 +24,21 @@ function sanitizeId(s: string): string {
     .slice(0, 120);
 }
 
+/**
+ * 타겟처 문서 id 규칙 (캠페인 + 거래처 + Dr.명 + 사번).
+ * 관리자 화면에서 수동으로 추가한 타겟처도 이 규칙을 써야, 나중에 같은 거래처가 담긴
+ * 엑셀을 다시 올려도 같은 문서로 덮어써지고 중복이 생기지 않는다.
+ */
+export function makeTargetId(
+  campaignId: string,
+  code: string,
+  name: string,
+  drName: string,
+  empNo: string,
+): string {
+  return sanitizeId(`${campaignId}__${code || name}__${drName}__${empNo}`);
+}
+
 /** 헤더 정규화: 공백·점 제거 + 소문자 */
 function norm(s: string): string {
   return String(s ?? '').replace(/[\s.]+/g, '').toLowerCase();
@@ -145,7 +160,7 @@ export function targetsFromRows(rows: string[][], campaignId: string): ParsedTar
 
     // id/중복키에 Dr.명 포함 → 같은 병원(거래처+사번)에 의사가 여러 명이면 각각 별도 타겟이 된다.
     // 의원(drName='')은 키가 그대로라 동작 변화 없음.
-    const baseId = sanitizeId(`${campaignId}__${code || name}__${drName}__${empNo}`);
+    const baseId = makeTargetId(campaignId, code, name, drName, empNo);
     // 내용은 다른데 id 가 겹치면(Dr.명 열이 없거나 비어 구분이 안 되는 파일, 또는 120자 절단)
     // 조용히 사라지지 않도록 접미사를 붙여 분리한다.
     let id = baseId;

@@ -13,6 +13,7 @@ import {
 } from '../../lib/targetsRepo';
 import { parseTargetsXlsx } from '../../lib/targetExcelImport';
 import { downloadWorkbook } from '../../lib/excel';
+import TargetListSection from './TargetListSection';
 import type { Product, Target, TargetCampaign, TargetCompletion } from '../../types';
 
 const inp =
@@ -605,6 +606,15 @@ export default function ProgressTab() {
           </p>
         )}
       </section>
+
+      {/* ── 타겟처 목록 관리(추가·수정·삭제) ── */}
+      <TargetListSection
+        campaigns={sortedCampaigns}
+        targets={targets}
+        completions={completions}
+        onChanged={loadDashboard}
+        showFlash={showFlash}
+      />
 
       {/* ── 대시보드 ── */}
       <section className="rounded-lg bg-white p-4 shadow-sm">

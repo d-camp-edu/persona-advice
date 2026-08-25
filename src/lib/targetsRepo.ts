@@ -71,6 +71,55 @@ export async function uploadTargets(targets: Target[]): Promise<void> {
   }
 }
 
+/** 타겟처 1건 저장(추가·수정 공용). 같은 id면 덮어쓴다. */
+export async function saveTarget(t: Target): Promise<void> {
+  const db = getDb();
+  if (!db) throw new Error('Firebase 미구성 — 타겟처를 저장할 수 없습니다.');
+  const { id, ...rest } = t;
+  await setDoc(doc(db, docPath(TARGETS, id)), rest);
+}
+
+/** 타겟처 1건 삭제 */
+export async function deleteTarget(id: string): Promise<void> {
+  const db = getDb();
+  if (!db) throw new Error('Firebase 미구성 — 타겟처를 삭제할 수 없습니다.');
+  await deleteDoc(doc(db, docPath(TARGETS, id)));
+}
+
+/** 타겟처 여러 건 삭제 (batch 400개 청크) */
+export async function deleteTargets(ids: string[]): Promise<void> {
+  const db = getDb();
+  if (!db) throw new Error('Firebase 미구성 — 타겟처를 삭제할 수 없습니다.');
+  const CHUNK = 400;
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const batch = writeBatch(db);
+    for (const id of ids.slice(i, i + CHUNK)) {
+      batch.delete(doc(db, docPath(TARGETS, id)));
+    }
+    await batch.commit();
+  }
+}
+
+/**
+ * 지정한 타겟처들의 '진행 완료' 기록을 삭제한다.
+ * 완료 문서 id 는 `${campaignId}__${targetId}` 규칙이라 조회 없이 바로 지울 수 있다.
+ */
+export async function deleteCompletionsByTargets(
+  campaignId: string,
+  targetIds: string[],
+): Promise<void> {
+  const db = getDb();
+  if (!db) return;
+  const CHUNK = 400;
+  for (let i = 0; i < targetIds.length; i += CHUNK) {
+    const batch = writeBatch(db);
+    for (const tid of targetIds.slice(i, i + CHUNK)) {
+      batch.delete(doc(db, docPath(COMPLETIONS, `${campaignId}__${tid}`)));
+    }
+    await batch.commit();
+  }
+}
+
 /** 특정 캠페인의 기존 타겟처를 모두 삭제(엑셀 재업로드로 교체할 때) */
 export async function deleteTargetsByCampaign(campaignId: string): Promise<void> {
   const db = getDb();
