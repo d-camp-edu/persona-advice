@@ -629,6 +629,7 @@ function recordTargetCompletionOnSurvey(s: SessionState): void {
     team: s.team,
     doctorName: s.doctorName,
     completedAt: new Date().toISOString(),
+    sessionDocId: s.sessionDocId,
   };
   void saveTargetCompletion(completion).catch((e) => {
     console.warn('[target] saveTargetCompletion failed', e);

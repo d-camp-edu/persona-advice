@@ -9,175 +9,16 @@ import {
 } from '../../lib/logsRepo';
 import { loadAllCompletions } from '../../lib/targetsRepo';
 import { sessionsToCSV, downloadCSV } from '../../lib/csv';
-import { downloadWorkbook, type Sheet, type CellValue } from '../../lib/excel';
+import { downloadWorkbook } from '../../lib/excel';
+import { buildUnifiedSheet, fmtTs as fmt } from '../../lib/historyExport';
 import { useDataStore } from '../../store/useDataStore';
-import type { GiftLog, RxSession, SurveyResponse, SurveyQuestion, LoginFieldDef, TargetCompletion } from '../../types';
+import type { GiftLog, RxSession, SurveyResponse, TargetCompletion } from '../../types';
 
-/** ISO 문자열 → 'YYYY-MM-DD HH:mm' */
-function fmt(iso: string): string {
-  if (!iso) return '';
-  return iso.slice(0, 16).replace('T', ' ');
-}
-
-function answerText(v: string | string[] | undefined): string {
-  if (Array.isArray(v)) return v.join(', ');
-  return v ?? '';
-}
-
-function buildSheets(
-  sessions: RxSession[],
-  surveys: SurveyResponse[],
-  giftLogs: GiftLog[],
-  completions: TargetCompletion[],
-  questions: SurveyQuestion[],
-  loginFields: LoginFieldDef[],
-): Sheet[] {
-  const fields = [...loginFields].sort((a, b) => a.order - b.order);
-  const fieldVals = (fv?: Record<string, string>): CellValue[] =>
-    fields.map((f) => fv?.[f.id] ?? '');
-  const fieldHeaders = fields.map((f) => f.label);
-  // 타겟 세션이면 loginFieldValues 에 사번·담당자가 들어있다.
-  const empNo = (fv?: Record<string, string>) => fv?.['사번'] ?? '';
-  const empName = (fv?: Record<string, string>) => fv?.['담당자'] ?? '';
-
-  // 1) 처방 기록
-  const rxHeaders = [
-    '일시',
-    '사번',
-    '담당자',
-    '병원',
-    '분과',
-    '의사',
-    '환자',
-    '약제1',
-    '약제2',
-    '약제3',
-    '약제4',
-    '약제5',
-    '이전HbA1c',
-    '새HbA1c',
-    '부작용',
-    '삭감사유',
-    '병포장보너스',
-    '순응도나쁨',
-    ...fieldHeaders,
-  ];
-  const rxRows: CellValue[][] = sessions.flatMap((s) =>
-    s.prescriptions.map((p) => {
-      const drugs = Array.from({ length: 5 }, (_, i) => {
-        const found = p.prescribedDrugs.find((d) => d.slot === i);
-        return found ? found.name : '';
-      });
-      return [
-        fmt(p.timestamp),
-        empNo(s.loginFieldValues),
-        empName(s.loginFieldValues),
-        s.hospitalName,
-        s.department ?? '',
-        s.doctorName,
-        p.patientName,
-        ...drugs,
-        Number(p.oldHba1c.toFixed(1)),
-        Number(p.newHba1c.toFixed(1)),
-        p.sideEffects.join('; '),
-        p.deductionReasons.join('; '),
-        p.isPackagingBonus ? 'O' : '',
-        p.isPoorAdherence ? 'O' : '',
-        ...fieldVals(s.loginFieldValues),
-      ];
-    }),
-  );
-
-  // 2) 서베이
-  const sortedQ = [...questions].sort((a, b) => a.order - b.order);
-  const surveyHeaders = [
-    '일시',
-    '사번',
-    '담당자',
-    '병원',
-    '분과',
-    '의사',
-    '환자',
-    '기관유형',
-    ...sortedQ.map((q) => q.text),
-    ...fieldHeaders,
-  ];
-  const surveyRows: CellValue[][] = surveys.map((sv) => [
-    fmt(sv.answeredAt),
-    empNo(sv.loginFieldValues),
-    empName(sv.loginFieldValues),
-    sv.hospitalName,
-    sv.department ?? '',
-    sv.doctorName,
-    sv.patientName ?? '',
-    sv.institutionType ?? '',
-    ...sortedQ.map((q) => answerText(sv.answers?.[q.id])),
-    ...fieldVals(sv.loginFieldValues),
-  ]);
-
-  // 3) 룰렛 보상
-  const giftHeaders = [
-    '일시',
-    '병원',
-    '분과',
-    '의사',
-    '환자',
-    '기관유형',
-    '결과',
-    '당첨여부',
-    ...fieldHeaders,
-  ];
-  const giftRows: CellValue[][] = giftLogs.map((g) => [
-    fmt(g.spunAt),
-    g.hospitalName,
-    g.department ?? '',
-    g.doctorName,
-    g.patientName,
-    g.institutionType ?? '',
-    g.giftName,
-    g.isWin ? '당첨' : '꽝',
-    ...fieldVals(g.loginFieldValues),
-  ]);
-
-  // 4) 타겟 진행(완료)
-  const targetHeaders = [
-    '완료일시',
-    '품목',
-    '사업부',
-    '팀',
-    '사번',
-    '담당자',
-    '연락처',
-    '기관유형',
-    '거래처코드',
-    '거래처명',
-    'Dr/의사',
-  ];
-  const targetRows: CellValue[][] = completions.map((c) => [
-    fmt(c.completedAt),
-    c.productName ?? '',
-    c.division,
-    c.team,
-    c.empNo,
-    c.empName,
-    c.empPhone ?? '',
-    c.institutionType,
-    c.code,
-    c.name,
-    c.doctorName,
-  ]);
-
-  return [
-    { name: '처방기록', headers: rxHeaders, rows: rxRows },
-    { name: '서베이', headers: surveyHeaders, rows: surveyRows },
-    { name: '룰렛보상', headers: giftHeaders, rows: giftRows },
-    { name: '타겟진행', headers: targetHeaders, rows: targetRows },
-  ];
-}
 
 export default function HistoryTab() {
   const questions = useDataStore((s) => s.surveyQuestions);
   const loginFields = useDataStore((s) => s.settings.loginFields ?? []);
+  const campaigns = useDataStore((s) => s.targetCampaigns);
 
   const [sessions, setSessions] = useState<RxSession[] | null>(null);
   const [surveys, setSurveys] = useState<SurveyResponse[]>([]);
@@ -214,9 +55,18 @@ export default function HistoryTab() {
 
   const handleExportExcel = () => {
     if (!sessions) return;
-    const sheets = buildSheets(sessions, surveys, giftLogs, completions, questions, loginFields);
+    // 처방·서베이·룰렛·타겟진행을 세션×환자 1행으로 합친 시트 1장.
+    const sheet = buildUnifiedSheet({
+      sessions,
+      surveys,
+      giftLogs,
+      completions,
+      questions,
+      loginFields,
+      campaigns,
+    });
     const now = new Date().toISOString().slice(0, 10);
-    downloadWorkbook(`persona_rx_기록_${now}.xls`, sheets);
+    downloadWorkbook(`persona_rx_기록_${now}.xls`, [sheet]);
   };
 
   const handleExportCSV = () => {
@@ -273,7 +123,7 @@ export default function HistoryTab() {
               className="flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
             >
               <FileSpreadsheet className="h-3.5 w-3.5" />
-              엑셀 전체 내보내기 (탭별)
+              엑셀 전체 내보내기 (통합 1시트)
             </button>
             <button
               type="button"

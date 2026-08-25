@@ -56,4 +56,9 @@ export interface TargetCompletion {
   team: string;
   doctorName: string;
   completedAt: string; // ISO
+  /**
+   * 완료를 만든 시연 세션 문서 id. 이력 엑셀에서 처방·서베이·룰렛과 같은 행으로 묶는 데 쓴다.
+   * 이 필드가 추가되기 전 기록에는 없으므로 optional (없으면 사번+거래처명으로 폴백 매칭).
+   */
+  sessionDocId?: string;
 }
