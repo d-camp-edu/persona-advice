@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useDataStore } from '../../store/useDataStore';
 import { saveDoc, removeDoc } from '../../lib/firestoreApi';
+import { useDraftAutoSave, SaveStatusBadge } from './useDraftAutoSave';
 import type { DeductionRule } from '../../types';
 
 const inp =
@@ -95,6 +96,8 @@ function RuleCard({
   onDelete: () => void;
 }) {
   const [draft, setDraft] = useState<DeductionRule>(() => structuredClone(rule));
+  // 체크만 하고 저장을 안 눌러 설정이 유실되던 문제 → 자동 저장.
+  const { status, saveNow } = useDraftAutoSave(draft, onSave);
 
   const toggleClass = (id: string) => {
     const cur = draft.classIds;
@@ -103,6 +106,9 @@ function RuleCard({
 
   return (
     <div className="rounded-lg bg-white p-4 shadow-sm">
+      <div className="mb-2 flex items-center justify-end">
+        <SaveStatusBadge status={status} />
+      </div>
       <div className="mb-2 flex items-center gap-2">
         <input
           className={`${inp} flex-1`}
@@ -150,11 +156,11 @@ function RuleCard({
       <div className="flex gap-2">
         <button
           type="button"
-          onClick={() => onSave(draft)}
-          disabled={saving}
+          onClick={() => void saveNow()}
+          disabled={saving || status === 'saving'}
           className="flex-1 rounded bg-indigo-600 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
         >
-          {saving ? '저장 중…' : '저장'}
+          {saving || status === 'saving' ? '저장 중…' : '지금 저장'}
         </button>
         <button
           type="button"

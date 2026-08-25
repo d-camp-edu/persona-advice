@@ -96,6 +96,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 사업부·팀·품목·캠페인·거래처코드는 매칭된 `TargetCompletion`에서 오며 그 세션의 모든 행에 반복된다. **'타겟완료일시'는 완료 1건당 딱 한 행에만** 찍는다(중복 합산 방지).
 - 완료 ↔ 세션 매칭은 `TargetCompletion.sessionDocId`(optional, 신규 기록부터). **이 필드가 없는 기존 기록은 `사번+거래처명+의사명`으로 폴백 매칭**한다 — 옛 데이터도 그대로 나온다.
 
+### 관리자 카드 편집은 자동 저장 (`components/admin/useDraftAutoSave.tsx`)
+
+허용 조합·삭감 규칙·부작용 면제 탭은 카드마다 로컬 `draft`를 두고 '저장' 버튼을 눌러야 반영되는 구조였다. **체크박스를 켜도 화면만 바뀌고 저장은 안 되는데 표시가 없어서, 설정해뒀다고 믿었지만 실제로는 `classIds: []`였던 사고가 실제로 났다.**
+
+`useDraftAutoSave(draft, onSave)`가 ① 변경 후 800ms 멈추면 자동 저장, ② `SaveStatusBadge`로 상태 표시(변경됨·저장 중·저장됨·실패), ③ **언마운트(카드 접기·탭 이동) 시 미저장분 강제 flush**를 담당한다. ③이 핵심 — 타이머가 끊겨 유실되는 경로를 막는다. 기존 '저장' 버튼은 '지금 저장'으로 남겨 즉시 저장용으로 쓴다.
+
+새 카드 편집 UI를 만들 때도 이 훅을 쓸 것. draft + 수동 저장 버튼만 두는 패턴은 금지.
+
 ### 허용 조합은 삭감 규칙보다 상위 (`lib/deductions.ts`)
 
 Admin '허용 조합' 탭(`allowedCombinations`)이 삭감의 최상위 예외다. 처방된 계열 집합이 허용 조합으로 등록돼 있으면 **계열 조합을 근거로 하는 삭감은 전부 면제**된다.

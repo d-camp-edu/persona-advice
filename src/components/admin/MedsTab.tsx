@@ -1,7 +1,8 @@
 import { useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronUp, FileUp, GripVertical, Plus, Star, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Download, FileUp, GripVertical, Plus, Star, Trash2 } from 'lucide-react';
 import { useDataStore } from '../../store/useDataStore';
 import { saveDoc, removeDoc } from '../../lib/firestoreApi';
+import { downloadWorkbook } from '../../lib/excel';
 import { uploadMedications, uploadMedicationList } from '../../data/seedRunner';
 import { parseMedicationsXlsx } from '../../lib/medExcelImport';
 import { ensureMaterialized } from '../../lib/persistSeed';
@@ -410,6 +411,38 @@ export default function MedsTab() {
     }
   };
 
+  /**
+   * 지금 Firestore 에 있는 약제를 그대로 엑셀로 내려받는다.
+   * '엑셀 반영'·'기본 초기화'는 약제 문서를 통째로 덮어쓰므로, 관리자에서 손으로 고쳐둔
+   * 값이 있으면 되돌릴 방법이 없다. 덮어쓰기 전 백업용.
+   */
+  const handleBackup = () => {
+    const classNameOf = (id: string) => drugClasses.find((c) => c.id === id)?.name ?? id;
+    downloadWorkbook(`약제백업_${new Date().toISOString().slice(0, 10)}.xls`, [
+      {
+        name: '약제',
+        headers: [
+          'id', '약제명', '주성분', '카테고리', '포장', '계열(이름)', '계열(id)', '비약물',
+          'HbA1c강하', '체중', 'LVEF', 'BNP', 'NT-proBNP', 'eGFR연간', 'eGFR딥', 'UACR',
+          '호전공병', '악화공병', '부작용확률', '부작용페널티', '부작용메시지',
+          'eGFR하한', 'HFrEF특례', 'HFpEF특례', 'CKD특례', '보험예외', '2TQD', '아사제품', '정렬',
+        ],
+        rows: medications.map((m) => [
+          m.id, m.name, m.ingredient ?? '', m.categoryId, m.pkg,
+          m.classes.map(classNameOf).join(' + '), m.classes.join('|'), m.isNotDrug ? 'O' : '',
+          m.effect, m.effectWeight, m.effectLvef, m.effectBnp, m.effectNtprobnp,
+          m.effectEgfr, m.effectEgfrDip, m.effectUacr,
+          m.beneficialComorb.join('; '), m.worseningComorb.join('; '),
+          m.sideEffectProb, m.sideEffectPenalty, m.sideEffectMsg,
+          m.egfrLimit, m.allowHFrEFCoverage ? 'O' : '', m.allowHFpEFCoverage ? 'O' : '',
+          m.allowCkdCoverage ? 'O' : '', m.isInsuranceException ? 'O' : '',
+          m.allow2TQD ? 'O' : '', m.isAsaProduct ? 'O' : '', m.order,
+        ]),
+      },
+    ]);
+    showFlash(`현재 약제 ${medications.length}종 백업 저장됨`);
+  };
+
   /** 사용자가 수정한 '기본 약제 초기화.xlsx' 를 선택 → 파싱 → 업로드 */
   const handleXlsxImport = async (file: File) => {
     setImporting(true);
@@ -523,12 +556,32 @@ export default function MedsTab() {
         <button
           type="button"
           onClick={() => setExpanded(expanded === m.id ? null : m.id)}
-          className="flex flex-1 items-center justify-between py-3 pr-4 text-left hover:bg-gray-50"
+          className="flex flex-1 items-center justify-between gap-2 py-3 pr-4 text-left hover:bg-gray-50"
         >
-          <div className="flex items-center gap-1.5">
-            {m.isAsaProduct && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />}
-            <span className="text-sm font-medium text-gray-900">{m.name}</span>
-            <span className="text-xs text-gray-400">↓{m.effect}</span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              {m.isAsaProduct && <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400" />}
+              <span className="text-sm font-medium text-gray-900">{m.name}</span>
+              <span className="text-xs text-gray-400">↓{m.effect}</span>
+            </div>
+            {/* 계열·성분을 목록에서 바로 보여준다 — 계열이 빠진 약제는 삭감 판정이 조용히
+                어긋나므로(실제로 겪었다) 펼치지 않고도 눈에 띄어야 한다. */}
+            <div className="mt-0.5 text-[11px] leading-snug">
+              {m.isNotDrug ? (
+                <span className="text-gray-400">비약물</span>
+              ) : m.classes.length === 0 ? (
+                <span className="font-medium text-red-500">⚠ 계열 미지정 — 삭감 판정이 어긋납니다</span>
+              ) : (
+                <span className="text-indigo-600">
+                  {m.classes.map((id) => drugClasses.find((c) => c.id === id)?.name ?? `?${id}`).join(' + ')}
+                </span>
+              )}
+              {m.ingredient ? (
+                <span className="ml-1.5 text-gray-500">{m.ingredient.split('/').join(' + ')}</span>
+              ) : (
+                !m.isNotDrug && <span className="ml-1.5 text-amber-600">성분 미등록</span>
+              )}
+            </div>
           </div>
           {expanded === m.id ? (
             <ChevronUp className="h-4 w-4 text-gray-400" />
@@ -564,6 +617,16 @@ export default function MedsTab() {
         </button>
         <button
           type="button"
+          onClick={handleBackup}
+          disabled={medications.length === 0}
+          title="지금 Firestore 에 있는 약제를 엑셀로 내려받습니다 (덮어쓰기 전 백업)"
+          className="flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+        >
+          <Download className="h-3.5 w-3.5" />
+          현재 약제 백업
+        </button>
+        <button
+          type="button"
           onClick={() => fileRef.current?.click()}
           disabled={seeding || importing || applying}
           className="flex items-center gap-1 rounded-lg border border-emerald-300 px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
@@ -595,8 +658,12 @@ export default function MedsTab() {
         바꾸세요. 계열 그룹 순서는 <strong>설정 › 약물 계열 관리</strong>에서 조정합니다.
         <br />
         <strong className="text-emerald-700">엑셀 반영</strong>: 수정한 <strong>‘기본 약제 초기화.xlsx’</strong>를
-        선택하면 계열 수로 구분(단일제·2제·메폴민 2제·3제)을 자동 판정하고 판매사 ‘종근당’ 제품을 아사로
-        표시해 그대로 업로드합니다.
+        선택하면 계열 수로 구분(단일제·2제·메폴민 2제·3제)을 자동 판정하고, <strong>계열·주성분</strong>을
+        엑셀 기준으로 채워 업로드합니다. 처방 화면에 <strong>성분</strong>이 안 보이거나 <strong>계열</strong>이
+        비어 있으면 이 버튼으로 한 번 올리면 채워집니다.
+        <br />
+        <strong className="text-red-500">주의</strong>: 엑셀 반영·기본 초기화는 약제 문서를 통째로 덮어씁니다.
+        여기서 손으로 고쳐둔 값이 있으면 먼저 <strong>‘현재 약제 백업’</strong>으로 내려받아 두세요.
       </p>
       {flash && <p className="mb-2 text-sm font-medium text-indigo-600">{flash}</p>}
 

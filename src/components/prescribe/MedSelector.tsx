@@ -12,7 +12,7 @@ const CAT_ALL = '__all__';
 function classLabel(med: Medication, byId: Map<string, DrugClass>): string {
   return [...med.classes]
     .sort((a, b) => (byId.get(a)?.order ?? 999) - (byId.get(b)?.order ?? 999))
-    .map((id) => byId.get(id)?.name ?? id)
+    .map((id) => byId.get(id)?.name ?? `?${id}`)
     .join(' + ');
 }
 
@@ -212,8 +212,14 @@ export default function MedSelector({
                           )}
                           <span className="truncate font-medium text-gray-900">{m.name}</span>
                         </span>
-                        {classes && (
+                        {classes ? (
                           <span className="text-[11px] font-medium text-indigo-600">{classes}</span>
+                        ) : (
+                          !m.isNotDrug && (
+                            <span className="text-[11px] font-medium text-red-500">
+                              ⚠ 계열 미지정 (관리자 › 약제 관리에서 확인)
+                            </span>
+                          )
                         )}
                         {ingredient && (
                           <span className="text-[11px] leading-snug text-gray-500">{ingredient}</span>
