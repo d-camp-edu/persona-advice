@@ -23,10 +23,35 @@ import type {
 } from '../types';
 import type { CellValue, Sheet } from './excel';
 
-/** ISO 문자열 → 'YYYY-MM-DD HH:mm' */
+/** 한국 표준시 오프셋. 한국은 서머타임이 없어 고정 +9로 안전하다. */
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+/**
+ * ISO 문자열 → 한국시간 'YYYY-MM-DD HH:mm'.
+ *
+ * 저장값은 전부 `new Date().toISOString()` = UTC 다. 예전엔 이 문자열을 그냥 잘라 써서
+ * 엑셀의 모든 시각이 KST 보다 9시간 일렀고, 자정 넘어 진행한 건은 날짜까지 하루 밀렸다.
+ * (예: 8/25 13:15 진행 → '2026-08-25 04:15')
+ *
+ * 타임존 표기가 없는 값은 이미 로컬 시각으로 보고 그대로 둔다(옛/외부 데이터 방어).
+ */
 export function fmtTs(iso: string | undefined): string {
   if (!iso) return '';
+  if (/(Z|[+-]d{2}:?d{2})$/.test(iso)) {
+    const t = Date.parse(iso);
+    if (Number.isFinite(t)) {
+      return new Date(t + KST_OFFSET_MS).toISOString().slice(0, 16).replace('T', ' ');
+    }
+  }
   return iso.slice(0, 16).replace('T', ' ');
+}
+
+/** 두 ISO 시각의 절대 차이(ms). 하나라도 못 읽으면 '가장 먼 것'으로 취급. */
+function timeDiff(a: string, b: string): number {
+  const ta = Date.parse(a);
+  const tb = Date.parse(b);
+  if (!Number.isFinite(ta) || !Number.isFinite(tb)) return Number.MAX_SAFE_INTEGER;
+  return Math.abs(ta - tb);
 }
 
 function answerText(v: string | string[] | undefined): string {
@@ -127,24 +152,97 @@ export function buildUnifiedSheet(input: UnifiedInput): Sheet {
   }
 
   // ── 2) 타겟 완료 매칭 ──────────────────────────────────────────────────
-  // 신규 기록은 sessionDocId 로, 옛 기록은 사번+거래처명+의사명으로 붙인다.
-  const compBySession = new Map<string, TargetCompletion>();
-  const compByLegacy = new Map<string, TargetCompletion>();
-  for (const c of completions) {
-    if (c.sessionDocId) compBySession.set(c.sessionDocId, c);
-    else compByLegacy.set(legacyCompletionKey(c.empNo, c.name, c.doctorName), c);
+  // **완료 1건은 세션 1개에만 붙는다** (그 세션의 여러 환자 행에는 반복 표기).
+  //
+  // 옛 기록(sessionDocId 없음)의 폴백 키는 사번+거래처명+의사명뿐이라 품목·캠페인이
+  // 들어있지 않다. 예전엔 이걸 Map.set 으로 담아 키가 겹치면 마지막 1건만 남았고,
+  //   ① 살아남은 1건이 다른 품목의 세션에도 그대로 붙어 같은 시각이 양쪽에 찍혔고
+  //   ② 밀려난 건은 실제 시연 행이 아니라 아래쪽 단독 행으로만 나왔다.
+  // 이제 (완료 × 세션) 후보 쌍을 시각 차이 오름차순으로 그리디 배정하고, 완료도
+  // 세션도 한 번씩만 쓴다. 정렬 기준이 전역이라 순회 순서에 결과가 흔들리지 않는다.
+  interface SessionMeta {
+    sessionDocId: string;
+    empNo: string;
+    hospital: string;
+    doctor: string;
+    /** 그 세션의 가장 이른 활동 시각 (완료 시각과의 근접도 비교용) */
+    time: string;
   }
-
-  const completionFor = (g: Group): TargetCompletion | undefined => {
-    const bySession = compBySession.get(g.sessionDocId);
-    if (bySession) return bySession;
+  const metaById = new Map<string, SessionMeta>();
+  for (const g of groups.values()) {
     const s = g.session;
     const sv = g.surveys[0];
-    const empNo = s?.empNo || s?.loginFieldValues?.['사번'] || sv?.empNo || sv?.loginFieldValues?.['사번'] || '';
-    const hospital = s?.hospitalName || sv?.hospitalName || '';
-    const doctor = s?.doctorName || sv?.doctorName || '';
-    return compByLegacy.get(legacyCompletionKey(empNo, hospital, doctor));
-  };
+    const times = [
+      s?.createdAt,
+      ...g.prescriptions.map((p) => p.timestamp),
+      ...g.surveys.map((x) => x.answeredAt),
+      ...g.giftLogs.map((x) => x.spunAt),
+    ].filter((t): t is string => Boolean(t));
+    times.sort();
+    const meta: SessionMeta = {
+      sessionDocId: g.sessionDocId,
+      empNo:
+        s?.empNo || s?.loginFieldValues?.['사번'] || sv?.empNo || sv?.loginFieldValues?.['사번'] || '',
+      hospital: s?.hospitalName || sv?.hospitalName || '',
+      doctor: s?.doctorName || sv?.doctorName || '',
+      time: times[0] ?? '',
+    };
+    const prev = metaById.get(g.sessionDocId);
+    if (!prev) {
+      metaById.set(g.sessionDocId, meta);
+    } else {
+      // 같은 세션의 다른 환자 그룹에서 빠진 값을 채우고, 시각은 더 이른 쪽을 쓴다.
+      prev.empNo ||= meta.empNo;
+      prev.hospital ||= meta.hospital;
+      prev.doctor ||= meta.doctor;
+      if (meta.time && (!prev.time || meta.time < prev.time)) prev.time = meta.time;
+    }
+  }
+
+  const compForSession = new Map<string, TargetCompletion>();
+  const usedCompIds = new Set<string>();
+
+  // 1순위: sessionDocId 직접 매칭 (신규 기록)
+  for (const c of completions) {
+    if (!c.sessionDocId) continue;
+    if (!metaById.has(c.sessionDocId)) continue; // 시연 기록이 없는 완료 → 아래 4)에서 단독 행
+    if (compForSession.has(c.sessionDocId)) continue;
+    compForSession.set(c.sessionDocId, c);
+    usedCompIds.add(c.id);
+  }
+
+  // 2순위: 폴백 키 후보쌍을 시각 차이순으로 그리디 배정
+  const metaByLegacy = new Map<string, SessionMeta[]>();
+  for (const m of metaById.values()) {
+    const k = legacyCompletionKey(m.empNo, m.hospital, m.doctor);
+    if (!metaByLegacy.has(k)) metaByLegacy.set(k, []);
+    metaByLegacy.get(k)!.push(m);
+  }
+  const pairs: { comp: TargetCompletion; meta: SessionMeta; diff: number }[] = [];
+  for (const c of completions) {
+    if (usedCompIds.has(c.id)) continue;
+    const cands = metaByLegacy.get(legacyCompletionKey(c.empNo, c.name, c.doctorName)) ?? [];
+    for (const m of cands) {
+      pairs.push({ comp: c, meta: m, diff: timeDiff(c.completedAt, m.time) });
+    }
+  }
+  const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+  pairs.sort(
+    (a, b) =>
+      a.diff - b.diff ||
+      cmp(a.comp.completedAt, b.comp.completedAt) ||
+      cmp(a.comp.id, b.comp.id) ||
+      cmp(a.meta.sessionDocId, b.meta.sessionDocId),
+  );
+  for (const p of pairs) {
+    if (usedCompIds.has(p.comp.id)) continue;
+    if (compForSession.has(p.meta.sessionDocId)) continue;
+    compForSession.set(p.meta.sessionDocId, p.comp);
+    usedCompIds.add(p.comp.id);
+  }
+
+  const completionFor = (g: Group): TargetCompletion | undefined =>
+    compForSession.get(g.sessionDocId);
 
   // ── 3) 행 생성 ────────────────────────────────────────────────────────
   const headers = [

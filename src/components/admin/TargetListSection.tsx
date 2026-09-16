@@ -9,6 +9,7 @@ import { Building2, Check, Download, Pencil, Plus, Search, Trash2, X } from 'luc
 import { makeTargetId } from '../../lib/targetExcelImport';
 import { downloadWorkbook } from '../../lib/excel';
 import { todayLocalISO } from '../../lib/campaignPeriod';
+import { fmtTs } from '../../lib/historyExport';
 import {
   saveTarget,
   deleteTarget,
@@ -278,8 +279,7 @@ export default function TargetListSection({
     if (filtered.length === 0) return;
     const campaign = campaigns.find((c) => c.id === campaignId);
     const campaignLabel = campaign?.name || campaignId;
-    const fmt = (iso: string | undefined) =>
-      iso ? new Date(iso).toLocaleString('ko-KR', { hour12: false }) : '';
+    // 이력 엑셀과 같은 한국시간 표기를 쓴다(브라우저 타임존에 좌우되지 않게).
     downloadWorkbook(
       `타겟처목록_${campaignLabel.replace(/[\/:*?"<>|]/g, '_')}_${todayLocalISO()}.xls`,
       [
@@ -309,7 +309,7 @@ export default function TargetListSection({
             t.empNo,
             t.empName,
             doneIds.has(t.id) ? '완료' : '미완료',
-            fmt(completedAtById.get(t.id)),
+            fmtTs(completedAtById.get(t.id)),
           ]),
         },
       ],

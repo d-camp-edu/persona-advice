@@ -191,7 +191,7 @@ describe('buildUnifiedSheet', () => {
     expect(cell(sheet, 0, '품목')).toBe('자디앙');
     expect(cell(sheet, 0, '캠페인')).toBe('8월 자디앙 디테일');
     expect(cell(sheet, 0, '거래처코드')).toBe('A1023');
-    expect(cell(sheet, 0, '타겟완료일시')).toBe('2026-08-25 10:06');
+    expect(cell(sheet, 0, '타겟완료일시')).toBe('2026-08-25 19:06');
   });
 
   it('약제1~5 컬럼이 급여1~3·본인부담1~2 슬롯과 1:1로 맞는다', () => {
@@ -317,7 +317,7 @@ describe('buildUnifiedSheet', () => {
       completions: [completion({ sessionDocId: undefined })],
     });
     expect(sheet.rows).toHaveLength(1);
-    expect(cell(sheet, 0, '타겟완료일시')).toBe('2026-08-25 10:06');
+    expect(cell(sheet, 0, '타겟완료일시')).toBe('2026-08-25 19:06');
     expect(cell(sheet, 0, '거래처코드')).toBe('A1023');
   });
 
@@ -328,7 +328,7 @@ describe('buildUnifiedSheet', () => {
     });
     expect(sheet.rows).toHaveLength(1);
     expect(cell(sheet, 0, '사번')).toBe('99999');
-    expect(cell(sheet, 0, '타겟완료일시')).toBe('2026-08-25 10:06');
+    expect(cell(sheet, 0, '타겟완료일시')).toBe('2026-08-25 19:06');
     expect(cell(sheet, 0, '환자')).toBe('');
   });
 
@@ -347,10 +347,135 @@ describe('buildUnifiedSheet', () => {
     }
   });
 
+  // ── 시간대: 저장은 UTC, 표시는 한국시간 ──────────────────────────────
+  describe('시간 표기(KST)', () => {
+    it('UTC 저장값을 +9 한국시간으로 보여준다', () => {
+      const sheet = buildUnifiedSheet({
+        ...empty,
+        sessions: [session({ prescriptions: [rx({ timestamp: '2026-08-25T04:15:24.844Z' })] })],
+      });
+      expect(cell(sheet, 0, '일시')).toBe('2026-08-25 13:15');
+    });
+
+    it('자정을 넘는 시각은 날짜도 하루 넘어간다', () => {
+      const sheet = buildUnifiedSheet({
+        ...empty,
+        sessions: [session({ prescriptions: [rx({ timestamp: '2026-08-25T15:30:00.000Z' })] })],
+      });
+      // UTC 8/25 15:30 = KST 8/26 00:30
+      expect(cell(sheet, 0, '일시')).toBe('2026-08-26 00:30');
+    });
+
+    it('타임존 표기가 없는 옛 값은 그대로 둔다(이중 변환 방지)', () => {
+      const sheet = buildUnifiedSheet({
+        ...empty,
+        sessions: [session({ prescriptions: [rx({ timestamp: '2026-08-25T10:00:00' })] })],
+      });
+      expect(cell(sheet, 0, '일시')).toBe('2026-08-25 10:00');
+    });
+  });
+
+  // ── 완료 1건 = 세션 1개 (품목 간 전이 방지) ───────────────────────────
+  describe('타겟 완료 매칭', () => {
+    // 같은 담당자가 같은 거래처를 두 품목으로 각각 진행한 경우.
+    // 폴백 키(사번+거래처명+의사명)가 동일해 예전엔 한쪽 완료가 양쪽 행에 붙었다.
+    const twoProductInput = {
+      ...empty,
+      campaigns: [
+        { ...campaigns[0], id: 'campA', name: 'A품목 캠페인' },
+        { ...campaigns[0], id: 'campB', name: 'B품목 캠페인' },
+      ],
+      sessions: [
+        session({ id: 'sessA', createdAt: '2026-08-25T01:00:00.000Z',
+          prescriptions: [rx({ id: 'pA', timestamp: '2026-08-25T01:05:00.000Z' })] }),
+        session({ id: 'sessB', createdAt: '2026-08-25T05:00:00.000Z',
+          prescriptions: [rx({ id: 'pB', timestamp: '2026-08-25T05:05:00.000Z' })] }),
+      ],
+      completions: [
+        completion({ id: 'cA', campaignId: 'campA', productName: 'A품목',
+          completedAt: '2026-08-25T01:10:00.000Z' }),
+        completion({ id: 'cB', campaignId: 'campB', productName: 'B품목',
+          completedAt: '2026-08-25T05:10:00.000Z' }),
+      ],
+    };
+
+    it('레거시 완료 2건이 각각 시각이 가까운 세션에 하나씩 붙는다', () => {
+      const sheet = buildUnifiedSheet(twoProductInput);
+      const rows = sheet.rows.map((_, i) => ({
+        일시: cell(sheet, i, '일시'),
+        품목: cell(sheet, i, '품목'),
+        캠페인: cell(sheet, i, '캠페인'),
+        완료: cell(sheet, i, '타겟완료일시'),
+      }));
+      // 시연 기록과 무관한 단독 행이 생기지 않는다 = 완료 2건이 모두 제자리를 찾았다
+      expect(rows).toHaveLength(2);
+
+      const early = rows.find((r) => r.일시 === '2026-08-25 10:05')!; // UTC 01:05
+      const late = rows.find((r) => r.일시 === '2026-08-25 14:05')!; // UTC 05:05
+      expect(early.품목).toBe('A품목');
+      expect(early.캠페인).toBe('A품목 캠페인');
+      expect(early.완료).toBe('2026-08-25 10:10');
+      expect(late.품목).toBe('B품목');
+      expect(late.캠페인).toBe('B품목 캠페인');
+      expect(late.완료).toBe('2026-08-25 14:10');
+    });
+
+    it('한 완료가 두 품목 행에 중복으로 찍히지 않는다', () => {
+      const sheet = buildUnifiedSheet(twoProductInput);
+      const stamps = sheet.rows
+        .map((_, i) => cell(sheet, i, '타겟완료일시'))
+        .filter((v) => v !== '');
+      expect(stamps).toHaveLength(2);
+      expect(new Set(stamps).size).toBe(2); // 같은 시각이 양쪽에 찍히면 1
+    });
+
+    it('입력 순서가 뒤바뀌어도 같은 결과가 나온다', () => {
+      const a = buildUnifiedSheet(twoProductInput);
+      const b = buildUnifiedSheet({
+        ...twoProductInput,
+        sessions: [...twoProductInput.sessions].reverse(),
+        completions: [...twoProductInput.completions].reverse(),
+      });
+      expect(b.rows).toEqual(a.rows);
+    });
+
+    it('sessionDocId 가 있는 완료는 폴백보다 우선한다', () => {
+      const sheet = buildUnifiedSheet({
+        ...twoProductInput,
+        completions: [
+          // 시각상으로는 sessA 에 가깝지만 sessionDocId 가 sessB 를 가리킨다
+          completion({ id: 'cB', campaignId: 'campB', productName: 'B품목',
+            sessionDocId: 'sessB', completedAt: '2026-08-25T01:09:00.000Z' }),
+          completion({ id: 'cA', campaignId: 'campA', productName: 'A품목',
+            completedAt: '2026-08-25T01:10:00.000Z' }),
+        ],
+      });
+      const rows = sheet.rows.map((_, i) => ({
+        일시: cell(sheet, i, '일시'),
+        품목: cell(sheet, i, '품목'),
+      }));
+      expect(rows.find((r) => r.일시 === '2026-08-25 14:05')!.품목).toBe('B품목');
+      expect(rows.find((r) => r.일시 === '2026-08-25 10:05')!.품목).toBe('A품목');
+    });
+
+    it('세션 수보다 완료가 많으면 남는 완료는 단독 행으로 남는다', () => {
+      const sheet = buildUnifiedSheet({
+        ...twoProductInput,
+        sessions: [twoProductInput.sessions[0]],
+      });
+      // 세션 1개 + 짝 못 찾은 완료 1건의 단독 행
+      expect(sheet.rows).toHaveLength(2);
+      const stamps = sheet.rows
+        .map((_, i) => cell(sheet, i, '타겟완료일시'))
+        .filter((v) => v !== '');
+      expect(stamps).toHaveLength(2); // 완료 2건 모두 어딘가에는 찍힌다
+    });
+  });
+
   it('처방·서베이·룰렛이 없는 세션도 방문 기록으로 1행 남는다', () => {
     const sheet = buildUnifiedSheet({ ...empty, sessions: [session({})] });
     expect(sheet.rows).toHaveLength(1);
     expect(cell(sheet, 0, '병원')).toBe('서울내과');
-    expect(cell(sheet, 0, '일시')).toBe('2026-08-25 09:00');
+    expect(cell(sheet, 0, '일시')).toBe('2026-08-25 18:00');
   });
 });
