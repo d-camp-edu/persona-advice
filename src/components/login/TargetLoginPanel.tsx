@@ -3,6 +3,7 @@ import { Search, Loader2, CheckCircle2, ChevronRight, Building2, Stethoscope, Pa
 import { useDataStore } from '../../store/useDataStore';
 import { useSessionStore } from '../../store/useSessionStore';
 import { loadTargetsByEmp, loadCompletionsByEmp } from '../../lib/targetsRepo';
+import { isCampaignOpen } from '../../lib/campaignPeriod';
 import type { Target, TargetCampaign } from '../../types';
 
 const LAST_EMPNO_KEY = 'persona_rx_last_empno';
@@ -47,7 +48,9 @@ export default function TargetLoginPanel() {
   );
   const hasProducts = activeProducts.length > 0;
 
-  const activeCampaigns = useMemo(() => campaigns.filter((c) => c.active), [campaigns]);
+  // 활성 + 진행기간(오늘이 startDate~endDate 안)인 캠페인만 노출한다.
+  // 기간이 지나면 사라지고, 관리자가 종료일을 늘리면 즉시 다시 나타난다.
+  const activeCampaigns = useMemo(() => campaigns.filter((c) => isCampaignOpen(c)), [campaigns]);
   const campaignById = useMemo(() => new Map(campaigns.map((c) => [c.id, c])), [campaigns]);
 
   const [productId, setProductId] = useState('');
@@ -133,6 +136,12 @@ export default function TargetLoginPanel() {
       setError('연결된 캠페인을 찾을 수 없습니다.');
       return;
     }
+    // 목록을 띄워둔 사이에 기간이 끝났거나 관리자가 기간을 바꿨을 수 있다.
+    if (!isCampaignOpen(campaign)) {
+      resetResults(); // error 를 비우므로 먼저 부르고 메시지를 세운다
+      setError('진행기간이 종료된 캠페인입니다. 목록을 다시 검색해 주세요.');
+      return;
+    }
     const productName =
       selectedProductName ||
       products.find((p) => p.id === campaign.productId)?.name ||
@@ -145,7 +154,8 @@ export default function TargetLoginPanel() {
     <div>
       {activeCampaigns.length === 0 && (
         <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-          진행 중인 캠페인이 없습니다. 관리자가 품목·타겟처·진행기간을 등록하면 검색됩니다.
+          진행 중인 캠페인이 없습니다. (진행기간이 끝났거나 아직 시작 전일 수 있습니다)
+          관리자가 품목·타겟처·진행기간을 등록하면 검색됩니다.
         </p>
       )}
 

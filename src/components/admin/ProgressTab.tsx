@@ -13,6 +13,7 @@ import {
 } from '../../lib/targetsRepo';
 import { parseTargetsXlsx } from '../../lib/targetExcelImport';
 import { downloadWorkbook } from '../../lib/excel';
+import { campaignPeriodStatus, CAMPAIGN_STATUS_LABEL } from '../../lib/campaignPeriod';
 import TargetListSection from './TargetListSection';
 import type { Product, Target, TargetCampaign, TargetCompletion } from '../../types';
 
@@ -425,8 +426,11 @@ export default function ProgressTab() {
           <CalendarRange size={15} /> 진행기간(캠페인) 관리
         </h3>
         <p className="mb-3 text-xs text-gray-500">
-          타겟처 배포 단위입니다. <strong>월(月)</strong>은 대시보드 월별 집계 기준,{' '}
-          <strong>활성</strong>이면 로그인 화면 사번 검색에 노출됩니다.
+          타겟처 배포 단위입니다. <strong>월(月)</strong>은 대시보드 월별 집계 기준입니다.
+          <br />
+          <strong>활성</strong>이고 <strong>오늘이 진행기간 안</strong>일 때만 로그인 화면 사번 검색에
+          노출됩니다. 기간이 지나면 자동으로 감춰지고, 종료일을 다시 늘리면 즉시 다시 노출됩니다.
+          <span className="text-gray-400"> (날짜를 비워두면 그 방향은 제한 없음)</span>
         </p>
 
         {/* 새 캠페인 폼 */}
@@ -512,11 +516,12 @@ export default function ProgressTab() {
                       </span>
                     )}
                   </div>
-                  {(c.startDate || c.endDate) && (
-                    <p className="text-[11px] text-gray-400">
-                      {c.startDate || '—'} ~ {c.endDate || '—'}
-                    </p>
-                  )}
+                  <p className="flex items-center gap-1.5 text-[11px] text-gray-400">
+                    <span>
+                      {c.startDate || '제한 없음'} ~ {c.endDate || '제한 없음'}
+                    </span>
+                    <PeriodBadge campaign={c} />
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -809,5 +814,23 @@ export default function ProgressTab() {
         )}
       </section>
     </div>
+  );
+}
+
+/** 캠페인 진행기간 상태 뱃지 — 로그인 화면에 왜 안 뜨는지 관리자가 바로 알 수 있게. */
+function PeriodBadge({ campaign }: { campaign: TargetCampaign }) {
+  const status = campaignPeriodStatus(campaign);
+  if (status === 'inactive') return null; // 활성/비활성 토글이 이미 보여준다
+  const cls =
+    status === 'open'
+      ? 'bg-emerald-50 text-emerald-600'
+      : status === 'upcoming'
+        ? 'bg-amber-50 text-amber-600'
+        : 'bg-red-50 text-red-500';
+  return (
+    <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${cls}`}>
+      {CAMPAIGN_STATUS_LABEL[status]}
+      {status === 'ended' && ' · 로그인 미노출'}
+    </span>
   );
 }

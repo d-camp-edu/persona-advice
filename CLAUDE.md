@@ -80,11 +80,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 엑셀 파싱: `lib/xlsxReader.ts`(범용 xlsx→행 리더, medExcelImport와 별개로 두어 드리프트 테스트 영향 없음) + `lib/targetExcelImport.ts`(헤더명으로 **의원/병원 포맷 자동 감지**, 컬럼 순서 무관). 매핑 순수 로직은 `targetsFromRows()`로 분리, `tests/targetExcelImport.test.ts`가 검증.
   - 의원: 거래처코드·거래처명·사업부명·팀명·담당자사번·담당자명
   - 병원: 거래처코드·거래처명·**Dr.명**·사업부명·팀명·담당자사번·**담당자명** (담당자명은 헤더가 있으면 병원도 매핑됨)
+- **진행기간(캠페인) 노출 판정**: `lib/campaignPeriod.ts`의 `isCampaignOpen()` — `active === true` **그리고** 오늘이 `startDate ~ endDate`(양끝 포함) 안일 때만 로그인 화면(`TargetLoginPanel`)에 노출된다. 날짜가 비었으면 그 방향은 제한 없음. 저장값이 아니라 렌더 시점에 계산하므로 관리자가 종료일을 늘리면 즉시 다시 노출된다. **대시보드·이력·선물 확률은 이 필터를 타지 않는다** — 지난 캠페인 데이터는 계속 조회돼야 하기 때문. Admin 캠페인 목록에 `진행 중/시작 전/기간 종료` 뱃지를 띄워 왜 안 뜨는지 보이게 했다.
 - **품목(Product)**: 담당자가 로그인 1단계에서 먼저 선택. 캠페인에 `productId`를 지정하면 그 품목 담당자에게만 노출. 관리자 '진행률' 탭 '품목 관리'에서 추가/활성/삭제. 대시보드도 품목별 필터 지원.
 - Firestore: `lib/targetsRepo.ts` (컬렉션 `products`/`targetCampaigns`/`targets`/`targetCompletions`, 단일 where 쿼리라 복합 인덱스 불필요, batch는 400개 청크).
 - **진행 완료 기준 = 서베이 완료**: `useSessionStore.completeSurvey`가 타겟처 세션(`targetId` 존재)이면 `recordTargetCompletionOnSurvey`로 완료 기록(문서 id `campaignId__targetId`, upsert).
 - 로그인: `components/login/TargetLoginPanel.tsx`(품목 선택 → 사번 검색 → 담당자 진행률 바 → 지정처 선택 → `loginWithTarget`). 캠페인·품목은 `useDataStore`로 실시간 구독.
 - 관리자: `components/admin/ProgressTab.tsx`(Admin '진행률' 탭) — 품목 관리, 캠페인 CRUD(품목 연결)·진행기간·활성 토글, 의원/병원 엑셀 업로드(교체/추가), **월·품목별** 사업부→팀 진행률 대시보드 + 담당자별 상세 + 엑셀 내보내기.
+- **타겟처 명단 엑셀 내보내기**: `TargetListSection`의 '엑셀 내보내기' 버튼 — 추가·삭제가 반영된 **현재 명단**을 화면 필터(캠페인·검색·사업부·팀) 그대로 1시트로 받는다(보관·공유용, 저장 없는 읽기 전용). 진행상태·완료일시 열이 붙어 있어 업로드 파서가 읽는 포맷과는 다르다 — **되올리는 용도가 아니다.**
 - **타겟처 개별 관리**: `components/admin/TargetListSection.tsx`(ProgressTab 안의 '타겟처 목록 관리' 섹션) — 캠페인별 조회·검색·사업부/팀 필터, 추가 폼, 행 인라인 수정, 다중 선택 삭제. 문서 id 는 엑셀 업로드와 **동일한 `makeTargetId(campaignId, code, name, drName, empNo)`**(`targetExcelImport.ts`)를 써서, 수동 추가분이 나중에 같은 엑셀에 들어와도 중복 문서가 생기지 않는다. 단 엑셀 '교체' 업로드는 수동 추가분도 지운다(화면에 경고 문구 있음). 식별정보(거래처·Dr.·사번)를 수정하면 id 가 바뀌므로 옛 문서를 지우고 그 타겟처의 완료 기록도 초기화한다.
 - 세션 이력(`HistoryTab`): 처방 세션 + **타겟 진행 완료 목록** + 서베이 응답 목록을 화면에 표시. 엑셀 내보내기는 **`lib/historyExport.ts`의 통합 시트 1장**(아래 참조).
 

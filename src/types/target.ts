@@ -20,7 +20,12 @@ export interface TargetCampaign {
   productId?: string;
   /** 대시보드 월별 집계 기준 'YYYY-MM' */
   month: string;
-  /** 진행기간 시작/종료 'YYYY-MM-DD' (표시·필터용, 강제 차단은 안 함) */
+  /**
+   * 진행기간 시작/종료 'YYYY-MM-DD'.
+   * active 와 함께 로그인 화면 노출을 결정한다 — 오늘이 이 기간(양끝 포함) 밖이면
+   * 타겟처 검색에 뜨지 않는다. 판정은 lib/campaignPeriod.ts (저장값이 아니라 매번 계산).
+   * 비워두면 그 방향은 제한 없음(날짜 없이 운영해 온 기존 캠페인은 그대로 노출).
+   */
   startDate: string;
   endDate: string;
   active: boolean;

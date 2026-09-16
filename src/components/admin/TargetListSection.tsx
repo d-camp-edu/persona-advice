@@ -5,8 +5,10 @@
 // → 수동으로 추가한 거래처가 나중에 같은 엑셀에 들어와도 중복 문서가 생기지 않는다.
 
 import { useEffect, useMemo, useState } from 'react';
-import { Building2, Check, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import { Building2, Check, Download, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { makeTargetId } from '../../lib/targetExcelImport';
+import { downloadWorkbook } from '../../lib/excel';
+import { todayLocalISO } from '../../lib/campaignPeriod';
 import {
   saveTarget,
   deleteTarget,
@@ -261,6 +263,60 @@ export default function TargetListSection({
       return next;
     });
 
+  // ── 엑셀 내보내기 ───────────────────────────────────────────────────
+  // 추가·삭제를 거친 '지금의 명단'을 그대로 받는 용도(읽기 전용, 저장 없음).
+  // 화면의 검색·사업부·팀 필터가 걸린 목록(filtered)을 그대로 내보낸다.
+  const completedAtById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of completions) {
+      if (c.campaignId === campaignId) m.set(c.targetId, c.completedAt);
+    }
+    return m;
+  }, [completions, campaignId]);
+
+  const handleExport = () => {
+    if (filtered.length === 0) return;
+    const campaign = campaigns.find((c) => c.id === campaignId);
+    const campaignLabel = campaign?.name || campaignId;
+    const fmt = (iso: string | undefined) =>
+      iso ? new Date(iso).toLocaleString('ko-KR', { hour12: false }) : '';
+    downloadWorkbook(
+      `타겟처목록_${campaignLabel.replace(/[\/:*?"<>|]/g, '_')}_${todayLocalISO()}.xls`,
+      [
+        {
+          name: '타겟처',
+          headers: [
+            '캠페인',
+            '기관유형',
+            '거래처코드',
+            '거래처명',
+            'Dr.명',
+            '사업부명',
+            '팀명',
+            '담당자사번',
+            '담당자명',
+            '진행상태',
+            '완료일시',
+          ],
+          rows: filtered.map((t) => [
+            campaignLabel,
+            t.institutionType,
+            t.code,
+            t.name,
+            t.drName,
+            t.division,
+            t.team,
+            t.empNo,
+            t.empName,
+            doneIds.has(t.id) ? '완료' : '미완료',
+            fmt(completedAtById.get(t.id)),
+          ]),
+        },
+      ],
+    );
+    showFlash(`${filtered.length}건 엑셀로 내보냄`);
+  };
+
   const allVisibleSelected = filtered.length > 0 && filtered.every((t) => selected.has(t.id));
 
   return (
@@ -275,6 +331,8 @@ export default function TargetListSection({
         <span className="text-amber-600">
           단, 엑셀을 '기존 타겟처 교체' 모드로 다시 올리면 여기서 추가한 건도 함께 지워집니다.
         </span>
+        <br />
+        <strong>엑셀 내보내기</strong>는 추가·삭제가 반영된 현재 명단을 그대로 내려받습니다(보관·공유용).
       </p>
 
       {/* 캠페인 선택 + 검색 + 필터 */}
@@ -327,6 +385,15 @@ export default function TargetListSection({
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          onClick={handleExport}
+          disabled={!campaignId || filtered.length === 0}
+          title="화면에 보이는 목록(검색·필터 적용분)을 엑셀로 내려받습니다"
+          className="flex shrink-0 items-center gap-1 rounded-lg border border-emerald-300 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+        >
+          <Download size={14} /> 엑셀 내보내기
+        </button>
         <button
           type="button"
           onClick={() => setShowAdd((v) => !v)}
