@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronUp, Download, FileUp, GripVertical, Plus, Star, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Download, FileUp, FolderTree, GripVertical, Plus, Star, Trash2, Wrench } from 'lucide-react';
 import { useDataStore } from '../../store/useDataStore';
 import { saveDoc, removeDoc } from '../../lib/firestoreApi';
 import { downloadWorkbook } from '../../lib/excel';
@@ -7,7 +7,8 @@ import { uploadMedications, uploadMedicationList } from '../../data/seedRunner';
 import { parseMedicationsXlsx } from '../../lib/medExcelImport';
 import { ensureMaterialized } from '../../lib/persistSeed';
 import { moveItem } from '../../lib/reorder';
-import { seedMedications } from '../../data/seed';
+import { seedMedCategories, seedMedications } from '../../data/seed';
+import { planCategoryTidy } from '../../lib/medCategoryTidy';
 import type { Medication, Pkg } from '../../types';
 
 const inp =
@@ -297,6 +298,8 @@ export default function MedsTab() {
   const [seeding, setSeeding] = useState(false);
   const [applying, setApplying] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [repairing, setRepairing] = useState(false);
+  const [tidying, setTidying] = useState(false);
   const [flash, setFlash] = useState('');
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
@@ -441,6 +444,168 @@ export default function MedsTab() {
       },
     ]);
     showFlash(`현재 약제 ${medications.length}종 백업 저장됨`);
+  };
+
+  /**
+   * 약제 데이터 점검·복구.
+   *
+   * Firestore 약제 문서의 `classes`(계열)·`ingredient`(주성분)가 비어 있거나 시드와
+   * 어긋나면, 그 두 필드만 시드 기준으로 되돌린다. 효과 수치·공병증·부작용 등
+   * 관리자가 손으로 고친 값은 건드리지 않는다('엑셀 반영'은 문서를 통째로 덮어쓴다).
+   *
+   * 계열이 빠지면 화면에 계열이 하나만 보이는 데서 그치지 않고, checkDeductions 의
+   * 계열 수 판정이 어긋나 엉뚱한 삭감이 계속 뜬다. 실제로 그 문제를 겪어서 만든 버튼.
+   */
+  const handleRepair = async () => {
+    const seedById = new Map(seedMedications.map((m) => [m.id, m]));
+    const fixes: { med: Medication; next: Medication; reasons: string[] }[] = [];
+
+    for (const m of medications) {
+      const s = seedById.get(m.id);
+      if (!s) continue; // 시드에 없는(직접 추가한) 약제는 건드리지 않는다
+      const next = { ...m };
+      const reasons: string[] = [];
+
+      if (!m.ingredient && s.ingredient) {
+        next.ingredient = s.ingredient;
+        reasons.push('성분');
+      }
+      const cur = [...m.classes].sort().join('|');
+      const want = [...s.classes].sort().join('|');
+      if (cur !== want) {
+        next.classes = [...s.classes];
+        // 카테고리(단일제/2제/3제…)는 계열 수에서 파생되므로 함께 되돌린다.
+        next.categoryId = s.categoryId;
+        reasons.push(`계열 ${m.classes.length}→${s.classes.length}`);
+      }
+      if (reasons.length > 0) fixes.push({ med: m, next, reasons });
+    }
+
+    if (fixes.length === 0) {
+      showFlash('점검 완료 — 고칠 약제가 없습니다.');
+      return;
+    }
+
+    const classFixes = fixes.filter((f) => f.reasons.some((r) => r.startsWith('계열')));
+    const sample = fixes
+      .slice(0, 8)
+      .map((f) => `  • ${f.med.name} — ${f.reasons.join(', ')}`)
+      .join('\n');
+    const ok = confirm(
+      `약제 ${fixes.length}종을 고칩니다.\n` +
+        `  계열 복구 ${classFixes.length}종 · 성분 채움 ${fixes.length - classFixes.length}종\n\n` +
+        `${sample}${fixes.length > 8 ? `\n  … 외 ${fixes.length - 8}종` : ''}\n\n` +
+        '계열·주성분·카테고리만 시드 기준으로 되돌립니다.\n' +
+        '효과 수치·공병증·부작용 등 직접 고친 값은 그대로 둡니다.\n\n진행할까요?',
+    );
+    if (!ok) return;
+
+    setRepairing(true);
+    try {
+      await ensureMaterialized('medications', medications, medsEmpty);
+      await Promise.all(
+        fixes.map(({ next }) => {
+          const { id, ...rest } = next;
+          return saveDoc('medications', id, rest as unknown as Record<string, unknown>);
+        }),
+      );
+      showFlash(`복구 완료 — ${fixes.length}종 (계열 ${classFixes.length}종)`);
+    } catch (e) {
+      showFlash(`복구 실패: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setRepairing(false);
+    }
+  };
+
+  /**
+   * 카테고리 정리.
+   *
+   * Firestore 약제 데이터는 여러 세대의 시드를 거치며 옛 카테고리 id(cat_combo '복합제' 등)와
+   * 계열 수에 안 맞는 배정이 섞여 있다. 그래서 '지금 어느 카테고리에 있는지'는 보지 않고
+   * **계열 수 → 카테고리** 규칙(deriveCategoryId) 하나로 전부 다시 배정한다.
+   *   - 3계열인데 '2제 복합제'에 있던 약제 → '3제 복합제'로 이동
+   *   - 옛 '복합제'는 그렇게 비워진 뒤 문서째 삭제
+   *   - 시드 제품과 이름은 같은데 계열이 다른 손추가 약제는 삭제 후보로 올려 확인받는다
+   *
+   * 건드리는 필드는 categoryId 뿐이다. 효과 수치·공병증·부작용 등은 그대로 둔다.
+   */
+  const handleTidyCategories = async () => {
+    const plan = planCategoryTidy(medications, categories, seedMedications, seedMedCategories);
+    const { catFixes, missingCategories, staleCategories, suspectMeds } = plan;
+
+    if (
+      catFixes.length === 0 &&
+      missingCategories.length === 0 &&
+      staleCategories.length === 0 &&
+      suspectMeds.length === 0
+    ) {
+      showFlash('정리할 것이 없습니다 — 카테고리가 이미 계열 수와 맞습니다.');
+      return;
+    }
+
+    const catName = (id: string) =>
+      categories.find((c) => c.id === id)?.name ??
+      seedMedCategories.find((c) => c.id === id)?.name ??
+      id;
+
+    const lines: string[] = [];
+    if (catFixes.length > 0) {
+      lines.push(`■ 구분 재배정 ${catFixes.length}종`);
+      const byMove = new Map<string, number>();
+      for (const f of catFixes) {
+        const k = `${catName(f.from)} → ${catName(f.to)}`;
+        byMove.set(k, (byMove.get(k) ?? 0) + 1);
+      }
+      for (const [k, n] of byMove) lines.push(`   ${k} : ${n}종`);
+    }
+    if (missingCategories.length > 0)
+      lines.push(`■ 카테고리 생성 : ${missingCategories.map((c) => c.name).join(', ')}`);
+    if (staleCategories.length > 0)
+      lines.push(`■ 빈 카테고리 삭제 : ${staleCategories.map((c) => c.name).join(', ')}`);
+    if (suspectMeds.length > 0) {
+      lines.push(`■ 중복 의심 약제 삭제 ${suspectMeds.length}종 (시드와 이름은 같은데 계열이 다름)`);
+      for (const s of suspectMeds.slice(0, 8))
+        lines.push(`   ${s.med.name} (계열 ${s.med.classes.length}개) ↔ ${s.twin.name}`);
+      if (suspectMeds.length > 8) lines.push(`   … 외 ${suspectMeds.length - 8}종`);
+    }
+
+    const ok = confirm(
+      `${lines.join('\n')}\n\n` +
+        '약제의 구분(카테고리)만 계열 수 기준으로 다시 배정합니다.\n' +
+        '효과 수치·공병증·부작용 등 직접 고친 값은 그대로 둡니다.\n\n진행할까요?',
+    );
+    if (!ok) return;
+
+    setTidying(true);
+    try {
+      await ensureMaterialized('medications', medications, medsEmpty);
+      await ensureMaterialized('medCategories', categories, medCategoriesEmpty);
+      await ensureMaterialized('drugClasses', drugClasses, drugClassesEmpty);
+
+      // 이동 대상이 들어갈 카테고리를 먼저 만들어 둔다 (없는 구분으로 옮겨 사라지는 일 방지)
+      for (const c of missingCategories) {
+        const { id, ...rest } = c;
+        await saveDoc('medCategories', id, rest as unknown as Record<string, unknown>);
+      }
+      await Promise.all(
+        catFixes.map(({ med, to }) => {
+          const { id, ...rest } = { ...med, categoryId: to };
+          return saveDoc('medications', id, rest as unknown as Record<string, unknown>);
+        }),
+      );
+      await Promise.all(suspectMeds.map(({ med }) => removeDoc('medications', med.id)));
+      await Promise.all(staleCategories.map((c) => removeDoc('medCategories', c.id)));
+
+      showFlash(
+        `정리 완료 — 재배정 ${catFixes.length}종` +
+          (suspectMeds.length > 0 ? ` · 삭제 ${suspectMeds.length}종` : '') +
+          (staleCategories.length > 0 ? ` · 빈 구분 ${staleCategories.length}개 삭제` : ''),
+      );
+    } catch (e) {
+      showFlash(`정리 실패: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setTidying(false);
+    }
   };
 
   /** 사용자가 수정한 '기본 약제 초기화.xlsx' 를 선택 → 파싱 → 업로드 */
@@ -617,6 +782,26 @@ export default function MedsTab() {
         </button>
         <button
           type="button"
+          onClick={() => void handleRepair()}
+          disabled={repairing || seeding || importing || applying || medications.length === 0}
+          title="계열·주성분이 비었거나 어긋난 약제만 시드 기준으로 되돌립니다 (다른 값은 유지)"
+          className="flex items-center gap-1 rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
+        >
+          <Wrench className="h-3.5 w-3.5" />
+          {repairing ? '복구 중…' : '계열·성분 점검·복구'}
+        </button>
+        <button
+          type="button"
+          onClick={() => void handleTidyCategories()}
+          disabled={tidying || repairing || seeding || importing || applying || medications.length === 0}
+          title="약제 구분(단일제·2제·메폴민 2제·3제)을 계열 수 기준으로 다시 배정하고, 비는 옛 카테고리를 지웁니다"
+          className="flex items-center gap-1 rounded-lg bg-orange-600 px-3 py-2 text-xs font-semibold text-white hover:bg-orange-700 disabled:opacity-50"
+        >
+          <FolderTree className="h-3.5 w-3.5" />
+          {tidying ? '정리 중…' : '카테고리 정리'}
+        </button>
+        <button
+          type="button"
           onClick={handleBackup}
           disabled={medications.length === 0}
           title="지금 Firestore 에 있는 약제를 엑셀로 내려받습니다 (덮어쓰기 전 백업)"
@@ -661,6 +846,10 @@ export default function MedsTab() {
         선택하면 계열 수로 구분(단일제·2제·메폴민 2제·3제)을 자동 판정하고, <strong>계열·주성분</strong>을
         엑셀 기준으로 채워 업로드합니다. 처방 화면에 <strong>성분</strong>이 안 보이거나 <strong>계열</strong>이
         비어 있으면 이 버튼으로 한 번 올리면 채워집니다.
+        <br />
+        <strong className="text-orange-600">카테고리 정리</strong>: 약제 구분을 <strong>계열 수</strong>로 다시
+        배정합니다 (1개=단일제, 2개=2제·메폴민 2제, 3개 이상=3제). 3계열 약제가 2제 복합제에 섞여 있거나 옛
+        <strong> ‘복합제’</strong> 구분이 남아 있을 때 쓰세요. 구분만 고치고 효과 수치는 건드리지 않습니다.
         <br />
         <strong className="text-red-500">주의</strong>: 엑셀 반영·기본 초기화는 약제 문서를 통째로 덮어씁니다.
         여기서 손으로 고쳐둔 값이 있으면 먼저 <strong>‘현재 약제 백업’</strong>으로 내려받아 두세요.

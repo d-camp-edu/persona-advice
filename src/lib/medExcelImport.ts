@@ -9,6 +9,7 @@
 // 시트 XML 파싱은 정규식. inlineStr(<is><t>)·공유문자열(sharedStrings, Excel 재저장 시) 모두 지원.
 
 import type { Medication } from '../types';
+import { deriveCategoryId } from './medCategoryTidy';
 
 // ── 지표 변환 상수 (genMedications.mjs 와 동일) ─────────────────────────
 const LVEF_REF = 40;
@@ -201,14 +202,6 @@ function pkgFromRow(pack: unknown): Medication['pkg'] {
   return 'ptp';
 }
 
-function categoryFromRow(pkg: Medication['pkg'], classes: string[]): string {
-  if (pkg === 'injection') return 'cat_injection';
-  const n = classes.length;
-  if (n >= 3) return 'cat_combo3';
-  if (n === 2) return classes.includes('dc_met') ? 'cat_combo_met' : 'cat_combo2';
-  return 'cat_single';
-}
-
 function egfrLimitFromClasses(classes: string[]): number {
   if (classes.includes('dc_sglt2')) return 25;
   if (classes.includes('dc_met')) return 30;
@@ -248,7 +241,7 @@ function buildMed(cells: string[], order: number): Medication {
     id: `m_${order}`,
     name,
     ingredient: String(cells[4] ?? '').trim(), // 주성분 (복합제는 '/' 구분)
-    categoryId: categoryFromRow(pkg, classes),
+    categoryId: deriveCategoryId({ pkg, classes }),
     pkg,
     classes,
     isNotDrug: false,
