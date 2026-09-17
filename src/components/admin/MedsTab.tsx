@@ -763,7 +763,8 @@ export default function MedsTab() {
 
   return (
     <div>
-      <div className="mb-3 flex items-center gap-2">
+      {/* 버튼이 7개라 640px 폭에선 한 줄에 안 들어간다 — flex-wrap 없으면 뒤쪽 버튼이 화면 밖으로 잘린다 */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={() => void handleAdd()}
