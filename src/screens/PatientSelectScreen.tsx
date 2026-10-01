@@ -3,6 +3,7 @@ import { LogOut, ClipboardList, CheckCircle2, X } from 'lucide-react';
 import { useDataStore } from '../store/useDataStore';
 import { useSessionStore } from '../store/useSessionStore';
 import ComorbFilterTabs, { FILTER_ALL } from '../components/patient/ComorbFilterTabs';
+import { surveyOnlyQuestions } from '../lib/surveyScope';
 import PatientCard from '../components/patient/PatientCard';
 
 export default function PatientSelectScreen() {
@@ -16,12 +17,15 @@ export default function PatientSelectScreen() {
   const startSurveyOnly = useSessionStore((s) => s.startSurveyOnly);
   const surveyOnlyDone = useSessionStore((s) => s.surveyOnlyDone);
   const dismissSurveyOnlyDone = useSessionStore((s) => s.dismissSurveyOnlyDone);
+  const productId = useSessionStore((s) => s.productId);
 
   // '서베이만 진행 전용' 질문이 있을 때만 '서베이만 진행' 버튼을 노출한다.
+  // 담당자 품목 기준으로 실제 노출될 질문이 있는지 봐야 한다 — 단순히 surveyOnly 플래그만
+  // 세면, 다른 품목 전용 질문 때문에 버튼이 떴다가 빈 서베이로 들어가게 된다.
   const surveyQuestions = useDataStore((s) => s.surveyQuestions);
   const hasSurveyOnly = useMemo(
-    () => surveyQuestions.some((q) => q.surveyOnly),
-    [surveyQuestions],
+    () => surveyOnlyQuestions(surveyQuestions, productId).length > 0,
+    [surveyQuestions, productId],
   );
 
   const sorted = useMemo(

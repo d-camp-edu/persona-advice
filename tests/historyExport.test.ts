@@ -376,6 +376,53 @@ describe('buildUnifiedSheet', () => {
   });
 
   // ── 완료 1건 = 세션 1개 (품목 간 전이 방지) ───────────────────────────
+  describe('품목 지정 질문의 열 헤더', () => {
+    it('공통 질문은 질문 문구만 쓴다 (기존 엑셀 열 이름 보존)', () => {
+      const sheet = buildUnifiedSheet(empty);
+      expect(sheet.headers).toContain('만족하셨나요?');
+      expect(sheet.headers).toContain('자유 의견');
+    });
+
+    it('품목 지정 질문은 품목명을 접두사로 붙인다', () => {
+      const sheet = buildUnifiedSheet({
+        ...empty,
+        questions: [
+          ...questions,
+          {
+            id: 'q3',
+            order: 3,
+            text: '처방 의향이 있으십니까?',
+            type: 'single',
+            options: ['예'],
+            required: false,
+            productScope: ['prod1'],
+          },
+        ],
+        products: [{ id: 'prod1', name: '자디앙', order: 1, active: true }],
+      });
+      expect(sheet.headers).toContain('[자디앙] 처방 의향이 있으십니까?');
+      expect(sheet.headers).toContain('만족하셨나요?');
+    });
+
+    it('품목 목록을 못 받으면 품목 id 를 그대로 보여준다', () => {
+      const sheet = buildUnifiedSheet({
+        ...empty,
+        questions: [
+          {
+            id: 'q3',
+            order: 3,
+            text: '처방 의향',
+            type: 'single',
+            options: ['예'],
+            required: false,
+            productScope: ['prod1'],
+          },
+        ],
+      });
+      expect(sheet.headers).toContain('[prod1] 처방 의향');
+    });
+  });
+
   describe('타겟 완료 매칭', () => {
     // 같은 담당자가 같은 거래처를 두 품목으로 각각 진행한 경우.
     // 폴백 키(사번+거래처명+의사명)가 동일해 예전엔 한쪽 완료가 양쪽 행에 붙었다.

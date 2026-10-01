@@ -15,6 +15,7 @@ import type {
   GiftLog,
   LoginFieldDef,
   Prescription,
+  Product,
   RxSession,
   SurveyQuestion,
   SurveyResponse,
@@ -86,6 +87,8 @@ export interface UnifiedInput {
   questions: SurveyQuestion[];
   loginFields: LoginFieldDef[];
   campaigns?: TargetCampaign[];
+  /** 품목 지정 질문의 열 헤더에 품목명을 붙이기 위한 목록 (없으면 질문 문구만 쓴다) */
+  products?: Product[];
 }
 
 /**
@@ -93,10 +96,27 @@ export interface UnifiedInput {
  * 반환 시트를 그대로 `downloadWorkbook(filename, [sheet])` 에 넘기면 된다.
  */
 export function buildUnifiedSheet(input: UnifiedInput): Sheet {
-  const { sessions, surveys, giftLogs, completions, questions, loginFields, campaigns = [] } = input;
+  const {
+    sessions,
+    surveys,
+    giftLogs,
+    completions,
+    questions,
+    loginFields,
+    campaigns = [],
+    products = [],
+  } = input;
 
   const fields = [...loginFields].sort((a, b) => a.order - b.order);
   const sortedQ = [...questions].sort((a, b) => a.order - b.order);
+  // 품목별로 문구가 비슷한 질문이 여러 개 생기므로 열 헤더에 품목명을 붙여 구분한다.
+  // 품목 지정이 없는 공통 질문은 종전처럼 질문 문구만 쓴다 (기존 엑셀 열 이름 보존).
+  const questionHeader = (q: SurveyQuestion): string => {
+    const scope = q.productScope ?? [];
+    if (scope.length === 0) return q.text;
+    const names = scope.map((id) => products.find((p) => p.id === id)?.name ?? id);
+    return `[${names.join('·')}] ${q.text}`;
+  };
   const campaignName = (id: string) => campaigns.find((c) => c.id === id)?.name ?? '';
 
   // ── 1) 세션×환자 그룹 수집 ──────────────────────────────────────────────
@@ -273,7 +293,7 @@ export function buildUnifiedSheet(input: UnifiedInput): Sheet {
     '병포장보너스',
     '순응도나쁨',
     '서베이일시',
-    ...sortedQ.map((q) => q.text),
+    ...sortedQ.map(questionHeader),
     '룰렛결과',
     '당첨여부',
     '타겟완료일시',

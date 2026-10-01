@@ -336,10 +336,11 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   selectPatient: (id) => {
     // 재진/리핏: 환자가 현재 복용 중인 약(prevDrugs)을 처방 슬롯에 미리 채워준다.
     const patient = useDataStore.getState().patients.find((p) => p.id === id);
-    // 이 환자의 공병증에 해당하는 서베이 질문이 있으면 시뮬레이션 전에 먼저 진행한다.
+    // 이 환자의 공병증·담당자 품목에 해당하는 서베이 질문이 있으면 시뮬레이션 전에 먼저 진행한다.
     const applicable = surveyQuestionsForPatient(
       useDataStore.getState().surveyQuestions,
       patient?.comorbidities ?? [],
+      get().productId,
     );
     const hasSurvey = applicable.length > 0;
     set({

@@ -91,6 +91,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **타겟처 개별 관리**: `components/admin/TargetListSection.tsx`(ProgressTab 안의 '타겟처 목록 관리' 섹션) — 캠페인별 조회·검색·사업부/팀 필터, 추가 폼, 행 인라인 수정, 다중 선택 삭제. 문서 id 는 엑셀 업로드와 **동일한 `makeTargetId(campaignId, code, name, drName, empNo)`**(`targetExcelImport.ts`)를 써서, 수동 추가분이 나중에 같은 엑셀에 들어와도 중복 문서가 생기지 않는다. 단 엑셀 '교체' 업로드는 수동 추가분도 지운다(화면에 경고 문구 있음). 식별정보(거래처·Dr.·사번)를 수정하면 id 가 바뀌므로 옛 문서를 지우고 그 타겟처의 완료 기록도 초기화한다.
 - 세션 이력(`HistoryTab`): 처방 세션 + **타겟 진행 완료 목록** + 서베이 응답 목록을 화면에 표시. 엑셀 내보내기는 **`lib/historyExport.ts`의 통합 시트 1장**(아래 참조).
 
+#### 품목별 서베이 질문 (`lib/surveyScope.ts`)
+
+`SurveyQuestion.productScope?: string[]`(품목 id 목록)으로 담당자 품목마다 다른 서베이를 내보낸다. 판정은 `applyProductScope()` 하나.
+
+- **대체 규칙**: 담당자 품목에 지정된 질문이 **하나라도 있으면 그 질문들만** 쓰고 공통 질문(`productScope` 비었거나 없음)은 숨긴다. 없으면 공통으로 폴백. 품목별로 공통 질문도 보여주려면 그 공통 질문에 해당 품목을 함께 체크해야 한다.
+- `productScope` 필드가 없는 기존 문서는 전부 공통 → **품목을 쓰기 전까지 동작이 바뀌지 않는다.** 시드(`seedRunner`)는 `surveyQuestions`를 업로드하지 않으므로 '기본 초기화'가 등록된 질문을 덮어쓰지도 않는다.
+- '직접 입력' 로그인은 `productId=''`라 지정 질문이 매칭되지 않아 항상 공통만 본다.
+- ⚠️ **품목 판정은 `surveyOnly`·공병증 필터를 통과한 뒤의 후보 집합에 적용한다.** 앞에 두면 "품목 A에 서베이 전용 질문만 있을 때 환자별 서베이가 통째로 비는" 사고가 난다 — 두 흐름이 각자 독립 판정해야 한다. `tests/surveyScope.test.ts`가 이 케이스를 잡는다.
+- 노출 판정을 쓰는 곳은 4곳뿐: `SurveyScreen`(질문 노출), `useSessionStore.selectPatient`(서베이 진입 여부), `PatientSelectScreen`('서베이만 진행' 버튼 노출), `SurveyTab`(품목별 미리보기). 전부 `productId`를 넘겨야 한다.
+- Admin '서베이' 탭: 품목 칩 + 상단 **품목별 미리보기**(그 품목 담당자가 보는 질문만 선명, 나머지는 흐리게 + '이 품목 미노출' 뱃지). 카드 편집은 `useDraftAutoSave` 자동 저장.
+- 이력 엑셀 열 헤더: 품목 지정 질문만 `[품목명] 질문내용`으로 접두사를 붙인다. 공통 질문 헤더는 종전 그대로(기존 엑셀 열 이름 보존).
+
 #### 이력 엑셀 = 통합 시트 1장 (`lib/historyExport.ts`)
 
 처방·서베이·룰렛·타겟진행을 탭 4개로 나누던 걸 시트 1장으로 합쳤다. `buildUnifiedSheet()`는 순수 함수(`tests/historyExport.test.ts`).

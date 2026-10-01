@@ -13,15 +13,17 @@ export default function SurveyScreen() {
   const completeSurvey = useSessionStore((s) => s.completeSurvey);
   const resetToSelect = useSessionStore((s) => s.resetToSelect);
   const surveyOnly = useSessionStore((s) => s.surveyOnly);
+  const productId = useSessionStore((s) => s.productId);
   const settings = useDataStore((s) => s.settings);
 
   const currentPatient = patients.find((p) => p.id === currentPatientId);
   const patientName = currentPatient?.name ?? '';
 
   // '서베이만 진행' 흐름은 서베이 전용 질문만, 환자 시연 서베이는 전용이 아닌 공병 매칭 질문만.
+  // 두 흐름 모두 담당자 품목(productId)으로 한 번 더 걸러진다 (lib/surveyScope.ts 대체 규칙).
   const sorted = surveyOnly
-    ? surveyOnlyQuestions(questions)
-    : surveyQuestionsForPatient(questions, currentPatient?.comorbidities ?? []);
+    ? surveyOnlyQuestions(questions, productId)
+    : surveyQuestionsForPatient(questions, currentPatient?.comorbidities ?? [], productId);
 
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});

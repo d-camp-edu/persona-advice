@@ -19,6 +19,7 @@ export default function HistoryTab() {
   const questions = useDataStore((s) => s.surveyQuestions);
   const loginFields = useDataStore((s) => s.settings.loginFields ?? []);
   const campaigns = useDataStore((s) => s.targetCampaigns);
+  const products = useDataStore((s) => s.products);
 
   const [sessions, setSessions] = useState<RxSession[] | null>(null);
   const [surveys, setSurveys] = useState<SurveyResponse[]>([]);
@@ -64,6 +65,7 @@ export default function HistoryTab() {
       questions,
       loginFields,
       campaigns,
+      products,
     });
     const now = new Date().toISOString().slice(0, 10);
     downloadWorkbook(`persona_rx_기록_${now}.xls`, [sheet]);

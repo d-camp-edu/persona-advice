@@ -16,6 +16,15 @@ export interface SurveyQuestion {
    * (공통 질문을 환자마다 반복하지 않도록 서베이 전용으로 분리하는 용도)
    */
   surveyOnly?: boolean;
+  /**
+   * 이 질문을 노출할 품목(Product) id 목록. 타겟처 로그인 1단계에서 담당자가 고른 품목이 기준.
+   * 비어 있거나 undefined면 '공통' 질문 — 품목 지정 질문이 없는 담당자에게 노출된다.
+   *
+   * ⚠️ 대체 규칙: 담당자 품목에 지정된 질문이 하나라도 있으면 그 질문들만 노출하고
+   * 공통 질문은 숨긴다 (lib/surveyScope.ts 의 applyProductScope).
+   * '직접 입력' 로그인은 품목이 없어 항상 공통 질문만 본다.
+   */
+  productScope?: string[];
 }
 
 export interface SurveyResponse {
