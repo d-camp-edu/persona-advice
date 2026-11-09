@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Trash2, FileUp, RefreshCw, Download, CalendarRange, ChevronDown, ChevronUp, Package } from 'lucide-react';
+import { Plus, Trash2, FileUp, RefreshCw, Download, CalendarRange, ChevronDown, ChevronUp, Package, Pencil } from 'lucide-react';
 import { useDataStore } from '../../store/useDataStore';
 import {
   saveCampaign,
@@ -122,18 +122,36 @@ export default function ProgressTab() {
   // ── 캠페인 폼 ─────────────────────────────────────────────────────────
   const [draft, setDraft] = useState<TargetCampaign>(newCampaign);
   const [savingCamp, setSavingCamp] = useState(false);
+  // 기존 캠페인 수정 중이면 그 id. 같은 id 로 setDoc 하므로 타겟처·완료 기록(campaignId 참조)은 그대로 유지된다.
+  const [editingCampId, setEditingCampId] = useState<string | null>(null);
+  const campFormRef = useRef<HTMLDivElement>(null);
   const setC = <K extends keyof TargetCampaign>(k: K, v: TargetCampaign[K]) =>
     setDraft((d) => ({ ...d, [k]: v }));
+
+  const handleEditCampaign = (c: TargetCampaign) => {
+    setDraft({ ...c });
+    setEditingCampId(c.id);
+    campFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+  const handleCancelEdit = () => {
+    setEditingCampId(null);
+    setDraft(newCampaign());
+  };
 
   const handleSaveCampaign = async () => {
     if (!draft.name.trim() || !draft.month) {
       showFlash('캠페인명과 월(月)을 입력하세요.');
       return;
     }
+    if (draft.startDate && draft.endDate && draft.startDate > draft.endDate) {
+      showFlash('종료일이 시작일보다 빠릅니다.');
+      return;
+    }
     setSavingCamp(true);
     try {
       await saveCampaign({ ...draft, name: draft.name.trim() });
-      showFlash('캠페인 저장됨');
+      showFlash(editingCampId ? '캠페인 수정됨' : '캠페인 저장됨');
+      setEditingCampId(null);
       setDraft(newCampaign());
     } catch (e) {
       showFlash(`저장 실패: ${e instanceof Error ? e.message : String(e)}`);
@@ -433,8 +451,18 @@ export default function ProgressTab() {
           <span className="text-gray-400"> (날짜를 비워두면 그 방향은 제한 없음)</span>
         </p>
 
-        {/* 새 캠페인 폼 */}
-        <div className="mb-4 grid grid-cols-2 gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3">
+        {/* 새 캠페인 / 캠페인 수정 폼 */}
+        <div
+          ref={campFormRef}
+          className={`mb-4 grid grid-cols-2 gap-2 rounded-lg border p-3 ${
+            editingCampId ? 'border-amber-300 bg-amber-50' : 'border-gray-100 bg-gray-50'
+          }`}
+        >
+          {editingCampId && (
+            <p className="col-span-2 text-xs font-semibold text-amber-700">
+              ✏️ 캠페인 수정 중 — 기간을 바꿔도 타겟처 명단·완료 기록은 그대로 유지됩니다.
+            </p>
+          )}
           <div className="col-span-2">
             <label className="mb-0.5 block text-xs text-gray-500">캠페인명</label>
             <input
@@ -482,16 +510,26 @@ export default function ProgressTab() {
             <label className="mb-0.5 block text-xs text-gray-500">진행 종료일</label>
             <input type="date" className={inp} value={draft.endDate} onChange={(e) => setC('endDate', e.target.value)} />
           </div>
-          <div className="col-span-2">
+          <div className="col-span-2 flex gap-2">
             <button
               type="button"
               onClick={() => void handleSaveCampaign()}
               disabled={savingCamp}
               className="flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
             >
-              <Plus size={14} />
-              {savingCamp ? '저장 중…' : '캠페인 추가'}
+              {editingCampId ? <Pencil size={14} /> : <Plus size={14} />}
+              {savingCamp ? '저장 중…' : editingCampId ? '수정 저장' : '캠페인 추가'}
             </button>
+            {editingCampId && (
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                disabled={savingCamp}
+                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
+              >
+                취소
+              </button>
+            )}
           </div>
         </div>
 
@@ -503,7 +541,10 @@ export default function ProgressTab() {
         ) : (
           <div className="divide-y divide-gray-100 overflow-hidden rounded-lg border border-gray-100">
             {sortedCampaigns.map((c) => (
-              <div key={c.id} className="flex items-center gap-2 px-3 py-2">
+              <div
+                key={c.id}
+                className={`flex items-center gap-2 px-3 py-2 ${editingCampId === c.id ? 'bg-amber-50' : ''}`}
+              >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <span className="truncate text-sm font-medium text-gray-900">{c.name}</span>
@@ -533,6 +574,15 @@ export default function ProgressTab() {
                   }`}
                 >
                   {c.active ? '활성' : '비활성'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleEditCampaign(c)}
+                  aria-label="수정"
+                  title="수정 (진행기간 변경)"
+                  className="shrink-0 rounded border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50"
+                >
+                  <Pencil size={13} />
                 </button>
                 <button
                   type="button"
